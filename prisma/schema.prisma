@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  client
+  staff
+  branch_admin
+  super_admin
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum Platform {
+  APP
+  WEB
+}
+
+enum VerificationType {
+  EMAIL
+  PHONE
+  PASSWORD_RESET
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
+  password  String
+  phone     String     @unique
+  role      Role
+  status    UserStatus @default(ACTIVE)
+
+  emailVerified Boolean @default(false)
+  phoneVerified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  verificationCodes VerificationCode[]
+}
+
+model VerificationCode {
+  id        Int              @id @default(autoincrement())
+  userId    Int
+  type      VerificationType
+  codeHash  String
+  expiresAt DateTime
+  used      Boolean          @default(false)
+  attempts  Int              @default(0)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, type])
+}
