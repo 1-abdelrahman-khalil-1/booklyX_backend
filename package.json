@@ -7,6 +7,9 @@
     "dev": "tsx watch src/server.ts",
     "postman:sync": "node scripts/push-postman-collection.mjs"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

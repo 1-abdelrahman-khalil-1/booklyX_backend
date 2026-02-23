@@ -31,6 +31,30 @@ enum VerificationType {
   PASSWORD_RESET
 }
 
+// ─── Business Application Enums ───────────────────────────────────────────────
+
+enum ApplicationStatus {
+  PENDING_VERIFICATION
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+enum BusinessCategory {
+  SPA
+  CLINIC
+  BARBER
+}
+
+enum ApplicationDocumentType {
+  TAX_CERTIFICATE
+  COMMERCIAL_REGISTER
+  NATIONAL_ID
+  FACILITY_LICENSE
+}
+
+// ─── User & Verification ─────────────────────────────────────────────────────
+
 model User {
   id        Int        @id @default(autoincrement())
   name      String
@@ -62,4 +86,89 @@ model VerificationCode {
   user User @relation(fields: [userId], references: [id])
 
   @@index([userId, type])
+}
+
+// ─── Business Application ─────────────────────────────────────────────────────
+
+model BusinessApplication {
+  id Int @id @default(autoincrement())
+
+  // =========================
+  // Owner (Identity Layer)
+  // =========================
+  ownerName    String
+  email        String @unique
+  phone        String @unique
+  passwordHash String
+
+  // =========================
+  // Business Info
+  // =========================
+  businessName String
+  category     BusinessCategory
+  description  String?
+  commercialRegisterNumber     String
+  taxId        String
+  logoUrl      String?
+  taxCertificateUrl String?
+  commercialRegisterUrl String?
+  nationalIdUrl String?
+  facilityLicenseUrl String?
+
+  // =========================
+  // Location Info
+  // =========================
+  city      String
+  district  String
+  address   String
+  latitude  Float
+  longitude Float
+
+  // =========================
+  // Lifecycle
+  // =========================
+  status          ApplicationStatus @default(PENDING_VERIFICATION)
+  emailVerified   Boolean           @default(false)
+  phoneVerified   Boolean           @default(false)
+  rejectionReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // =========================
+  // Relations
+  // =========================
+  verificationCodes ApplicationVerificationCode[]
+  documents         ApplicationDocument[]
+
+  @@index([status])
+  @@index([email])
+  @@index([phone])
+}
+
+model ApplicationVerificationCode {
+  id            Int              @id @default(autoincrement())
+  applicationId Int
+  type          VerificationType
+  codeHash      String
+  expiresAt     DateTime
+  used          Boolean          @default(false)
+  attempts      Int              @default(0)
+  createdAt     DateTime         @default(now())
+
+  application BusinessApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, type])
+}
+
+model ApplicationDocument {
+  id            Int                     @id @default(autoincrement())
+  applicationId Int
+  type          ApplicationDocumentType
+  fileUrl       String
+  createdAt     DateTime                @default(now())
+
+  application BusinessApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
 }

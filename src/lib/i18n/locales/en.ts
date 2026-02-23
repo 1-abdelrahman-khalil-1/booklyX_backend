@@ -66,6 +66,32 @@ const en: Messages = {
   EMAIL_NOT_VERIFIED: "Your email is not verified. Please verify your email before logging in.",
   PHONE_NOT_VERIFIED: "Your phone number is not verified. Please verify your phone number before logging in.",
   NAME_REQUIRED: "Name is required.",
+
+  // Branch Admin Onboarding
+  APPLICATION_NOT_FOUND: "Application not found.",
+  APPLICATION_ALREADY_EXISTS: "An application with this email or phone already exists.",
+  APPLICATION_SUBMITTED: "Your application has been submitted successfully. Please verify your email.",
+  APPLICATION_UNDER_REVIEW: "Your application has been verified and is now under review by our team.",
+  APPLICATION_APPROVED: "Application approved successfully.",
+  APPLICATION_REJECTED: "Application rejected.",
+  APPLICATION_NOT_PENDING_APPROVAL: "This application is not pending approval.",
+
+  // Business Validation
+  BUSINESS_NAME_REQUIRED: "Business name is required.",
+  CATEGORY_REQUIRED: "Business category is required.",
+  CATEGORY_MUST_BE_ONE_OF: "Category must be one of: {{values}}.",
+  CITY_REQUIRED: "City is required.",
+  ADDRESS_REQUIRED: "Address is required.",
+  LATITUDE_REQUIRED: "Latitude is required.",
+  LONGITUDE_REQUIRED: "Longitude is required.",
+  REJECTION_REASON_REQUIRED: "Rejection reason is required for rejection.",
+  DOCUMENT_TYPE_REQUIRED: "Document type is required.",
+  DOCUMENT_TYPE_MUST_BE_ONE_OF: "Document type must be one of: {{values}}.",
+  FILE_URL_REQUIRED: "File URL is required.",
+  TAX_ID_REQUIRED: "Tax ID is required.",
+  COMMERCIAL_REGISTER_NUMBER_REQUIRED: "Commercial register number is required.",
+  DESCRIPTION_REQUIRED: "Description is required.",
+  DISTRICT_REQUIRED: "District is required.",
 };
 
 export default en;

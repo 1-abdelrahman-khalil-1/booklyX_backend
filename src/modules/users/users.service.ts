@@ -30,6 +30,7 @@ export class DuplicateEmailError extends Error {
  * Role enum members (client, staff, branch_admin, super_admin).
  */
 const createUserSchema = z.object({
+  name: z.string({ error: tr.NAME_REQUIRED }),
   email: z.email({
     error: (issue) => {
       if (issue.input === undefined) return tr.EMAIL_REQUIRED;
@@ -68,13 +69,14 @@ function parseWithValidationError<T>(schema: z.ZodType<T>, data: unknown): T {
 }
 
 export async function createUser(body: unknown) {
-  const { email, password, phone, role } = parseWithValidationError(createUserSchema, body);
+  const { name, email, password, phone, role } = parseWithValidationError(createUserSchema, body);
 
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
   try {
     const user = await prisma.user.create({
       data: {
+        name,
         email,
         password: hashedPassword,
         phone,

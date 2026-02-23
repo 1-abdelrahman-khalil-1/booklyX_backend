@@ -4,13 +4,6 @@
     "description": "BooklyX backend API collection",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3000" },
-    { "key": "platform", "value": "APP" },
-    { "key": "lang", "value": "en" },
-    { "key": "token", "value": "" },
-    { "key": "resetToken", "value": "" }
-  ],
   "item": [
     {
       "name": "Auth",
@@ -54,7 +47,38 @@
                 "exec": [
                   "const json = pm.response.json();",
                   "if (json && json.data && json.data.token) {",
-                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "  pm.environment.set('token', json.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "en" },
+              { "key": "platform", "value": "WEB" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@booklyx.com\",\n  \"password\": \"12345678\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.token) {",
+                  "  pm.environment.set('token', json.data.token);",
+                  "  console.log('Admin token saved to environment variable');",
                   "}"
                 ]
               }
@@ -99,7 +123,7 @@
                 "exec": [
                   "const json = pm.response.json();",
                   "if (json && json.data && json.data.token) {",
-                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "  pm.environment.set('token', json.data.token);",
                   "}"
                 ]
               }
@@ -116,7 +140,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"client@example.com\",\n  \"phone\": \"0123456789\",\n  \"type\": \"EMAIL\"\n}"
+              "raw": "{\n  \"email\": \"client@example.com\",\n  \"phone\": \"0123456789\",\n  \"type\": \"EMAIL\" // \"PHONE\", \"PASSWORD_RESET\"\n}"
             },
             "url": "{{baseUrl}}/auth/resend-code"
           }
@@ -158,7 +182,7 @@
                 "exec": [
                   "const json = pm.response.json();",
                   "if (json && json.data && json.data.resetToken) {",
-                  "  pm.collectionVariables.set('resetToken', json.data.resetToken);",
+                  "  pm.environment.set('resetToken', json.data.resetToken);",
                   "}"
                 ]
               }
@@ -175,7 +199,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"resetToken\": \"{{resetToken}}\",\n  \"newPassword\": \"newStrongPass123\"\n}"
+              "raw": "{\n  \"resetToken\": \"{{resetToken}}\",\n  \"newPassword\": \"12345678\"\n}"
             },
             "url": "{{baseUrl}}/auth/reset-password"
           }
@@ -183,10 +207,117 @@
       ]
     },
     {
-      "name": "Users",
+      "name": "Branch Admin",
       "item": [
         {
-          "name": "Create User",
+          "name": "Apply",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "WEB" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ownerName\": \"Abdo Khalil\",\n  \"email\": \"branch@example.com\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\",\n  \"businessName\": \"Khalil Spa\",\n  \"category\": \"SPA\" // \"CLINIC\", \"BARBER\",\n  \"description\": \"Premium spa services\",\n  \"city\": \"Cairo\",\n  \"district\": \"Tahrir Square\",\n  \"address\": \"Tahrir Square\",\n  \"taxId\": \"123456789\",\n  \"commercialRegisterNumber\": \"123456789\",\n  \"latitude\": 30.0444,\n  \"longitude\": 31.2357\n}"
+            },
+            "url": "{{baseUrl}}/branch-admin/apply"
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"branch@example.com\",\n  \"code\": \"333333\"\n}"
+            },
+            "url": "{{baseUrl}}/branch-admin/verify-email"
+          }
+        },
+        {
+          "name": "Verify Phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"branch@example.com\",\n  \"code\": \"333333\"\n}"
+            },
+            "url": "{{baseUrl}}/branch-admin/verify-phone"
+          }
+        },
+        {
+          "name": "Resend Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"branch@example.com\",\n  \"type\": \"EMAIL\" // \"PHONE\"\n}"
+            },
+            "url": "{{baseUrl}}/branch-admin/resend-code"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List Applications",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "WEB" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/applications?status=PENDING_APPROVAL",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "applications"],
+              "query": [{ "key": "status", "value": "PENDING_APPROVAL" }]
+            }
+          }
+        },
+        {
+          "name": "Get Application Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "WEB" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/admin/applications/1"
+          }
+        },
+        {
+          "name": "Approve Application",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "WEB" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/admin/applications/1/approve"
+          }
+        },
+        {
+          "name": "Reject Application",
           "request": {
             "method": "POST",
             "header": [
@@ -197,7 +328,29 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"staff1@example.com\",\n  \"password\": \"12345678\",\n  \"phone\": \"0123456789\",\n  \"role\": \"staff\"\n}"
+              "raw": "{\n  \"reason\": \"Incomplete data\"\n}"
+            },
+            "url": "{{baseUrl}}/admin/applications/1/reject"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create User (Staff/Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "{{platform}}" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"staff@example.com\",\n  \"password\": \"12345678\",\n  \"phone\": \"0123456780\",\n  \"role\": \"staff\" // \"client\", \"branch_admin\", \"super_admin\"\n}"
             },
             "url": "{{baseUrl}}/users"
           }

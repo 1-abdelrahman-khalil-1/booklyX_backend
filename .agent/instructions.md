@@ -47,6 +47,11 @@ Every module follows a unidirectional 4-layer flow:
 - **Data Leakage**: Always strip `password` and sensitive fields before returning user objects.
 - **OTP**: 6-digit codes. DB stores **bcrypt hashes** of OTPs, never raw codes.
 - **Verification**: Strictly enforce the Register → Verify Email → Verify Phone flow.
+- **Branch Admin Onboarding**:
+  - Use `BusinessApplication` table for applicants. Do **not** create a `User` row until approved.
+  - Verification (`EMAIL` and `PHONE`) must occur on the `BusinessApplication` record first.
+  - Lifecycle: `PENDING_VERIFICATION` → `PENDING_APPROVAL` → `APPROVED` (creates `User`) or `REJECTED`.
+  - Approved branch admins log in via the shared `/auth/login` endpoint.
 
 ## 7. Postman Sync Policy (Critical)
 

@@ -57,6 +57,32 @@ const ar: Messages = {
   EMAIL_NOT_VERIFIED: "لم يتم التحقق من بريدك الإلكتروني. يرجى التحقق من بريدك قبل تسجيل الدخول.",
   PHONE_NOT_VERIFIED: "لم يتم التحقق من رقم هاتفك. يرجى التحقق من رقم هاتفك قبل تسجيل الدخول.",
   NAME_REQUIRED: "الاسم مطلوب.",
+
+  // Branch Admin Onboarding
+  APPLICATION_NOT_FOUND: "لم يتم العثور على الطلب.",
+  APPLICATION_ALREADY_EXISTS: "يوجد طلب بهذا البريد الإلكتروني أو رقم الهاتف بالفعل.",
+  APPLICATION_SUBMITTED: "تم تقديم طلبك بنجاح. يرجى التحقق من بريدك الإلكتروني.",
+  APPLICATION_UNDER_REVIEW: "تم التحقق من طلبك وهو الآن قيد المراجعة من قبل فريقنا.",
+  APPLICATION_APPROVED: "تمت الموافقة على الطلب بنجاح.",
+  APPLICATION_REJECTED: "تم رفض الطلب.",
+  APPLICATION_NOT_PENDING_APPROVAL: "هذا الطلب ليس قيد انتظار الموافقة.",
+
+  // Business Validation
+  BUSINESS_NAME_REQUIRED: "اسم العمل مطلوب.",
+  CATEGORY_REQUIRED: "فئة العمل مطلوبة.",
+  CATEGORY_MUST_BE_ONE_OF: "يجب أن تكون الفئة واحدة من: {{values}}.",
+  CITY_REQUIRED: "المدينة مطلوبة.",
+  ADDRESS_REQUIRED: "العنوان مطلوب.",
+  LATITUDE_REQUIRED: "خط العرض مطلوب.",
+  LONGITUDE_REQUIRED: "خط الطول مطلوب.",
+  REJECTION_REASON_REQUIRED: "سبب الرفض مطلوب عند الرفض.",
+  DOCUMENT_TYPE_REQUIRED: "نوع المستند مطلوب.",
+  DOCUMENT_TYPE_MUST_BE_ONE_OF: "يجب أن يكون نوع المستند واحدًا من: {{values}}.",
+  FILE_URL_REQUIRED: "رابط الملف مطلوب.",
+  TAX_ID_REQUIRED: "الرقم الضريبي مطلوب.",
+  COMMERCIAL_REGISTER_NUMBER_REQUIRED: "رقم السجل التجاري مطلوب.",
+  DESCRIPTION_REQUIRED: "الوصف مطلوب.",
+  DISTRICT_REQUIRED: "المنطقة مطلوبة.",
 };
 
 export default ar;

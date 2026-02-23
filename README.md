@@ -13,6 +13,22 @@ This README is adapted from `docs/postman-routes.md` and serves as the GitHub en
 - Platform-aware endpoints need: `platform: APP` or `platform: WEB`
 - Protected endpoints need: `Authorization: Bearer <token>`
 
+## Default Admin Account
+
+For testing admin-only endpoints (like `POST /users`), use these credentials:
+
+**Email:** `admin@booklyx.com`  
+**Password:** `12345678`  
+**Platform:** `WEB`
+
+Run the seed script after database setup:
+
+```bash
+npx prisma db seed
+```
+
+Then login via `POST /auth/login` to get the admin token.
+
 ## OTP Note
 
 - In development, OTP is fixed to `333333`.
@@ -28,6 +44,7 @@ Creates a `CLIENT` account and sends email OTP.
 
 ```json
 {
+  "name": "Abdo Khalil",
   "email": "client@example.com",
   "password": "12345678",
   "phone": "0123456789"
@@ -83,7 +100,7 @@ Resends OTP for `EMAIL`, `PHONE`, or `PASSWORD_RESET`.
 {
   "email": "client@example.com",
   "phone": "0123456789",
-  "type": "EMAIL"
+  "type": "EMAIL" // "PHONE", "PASSWORD_RESET"
 }
 ```
 
@@ -135,27 +152,88 @@ Create user endpoint, allowed for `super_admin` and `branch_admin` only.
 
 ```json
 {
+  "name": "Staff Member",
   "email": "staff1@example.com",
   "password": "12345678",
-  "phone": "0123456789",
-  "role": "staff"
+  "phone": "0123456780",
+  "role": "staff" // "client", "branch_admin", "super_admin"
 }
 ```
 
+## Branch Admin Onboarding (`/branch-admin`)
+
+### `POST /branch-admin/apply`
+
+Initial application submission for Branch Admins.
+
+**Request body**
+
+```json
+{
+  "ownerName": "Abdo Khalil",
+  "email": "branch@example.com",
+  "phone": "0101234567",
+  "password": "strongPassword123",
+  "businessName": "Khalil Spa",
+  "category": "SPA" // "CLINIC", "BARBER",
+  "description": "Premium spa services",
+  "commercialRegisterNumber": "123456789",
+  "taxId": "123456789",
+  "city": "Cairo",
+  "district": "Tahrir Square",
+  "address": "Tahrir Square",
+  "latitude": 30.0444,
+  "longitude": 31.2357
+}
+```
+
+### `POST /branch-admin/verify-email`
+
+Verifies application email.
+
+### `POST /branch-admin/verify-phone`
+
+Verifies application phone. Moves application to review state.
+
+## Admin Management (`/admin`)
+
+Requires `super_admin` role.
+
+### `GET /admin/applications`
+
+List all business applications.
+
+### `POST /admin/applications/:id/approve`
+
+Approve a business application and create its `User` record.
+
+### `POST /admin/applications/:id/reject`
+
+Reject an application with a reason.
+
 ## Quick Test Order
+
+### For Client Registration
 
 1. `POST /auth/register`
 2. `POST /auth/verify-email` with code `333333`
 3. `POST /auth/verify-phone` with code `333333`
-4. Use returned token in `POST /users`
+4. Use returned token
+
+### For Admin Access
+
+1. Run `npx prisma db seed` (first time only)
+2. `POST /auth/login` with admin credentials (see "Default Admin Account" above)
+3. Use returned token in admin-only endpoints like `POST /users`
 
 ## Project Commands
 
 ```bash
-npm run dev
-npx prisma generate
-npx prisma migrate dev
-npm run postman:sync
+npm run dev                  # Start dev server
+npx prisma generate          # Regenerate Prisma Client
+npx prisma migrate dev       # Create and apply migrations
+npx prisma db seed           # Seed super_admin account
+npm run postman:sync         # Sync Postman collection to cloud
 ```
 
 ## Postman
@@ -170,8 +248,12 @@ Required env vars:
 
 ```bash
 POSTMAN_API_KEY="your_api_key_here"
+POSTMAN_WORKSPACE_ID="your_workspace_id_here"
 POSTMAN_COLLECTION_UID="your_uid_here"
+POSTMAN_ENVIRONMENT_UID="your_environment_uid_here"
 ```
+
+`POSTMAN_COLLECTION_UID` and `POSTMAN_ENVIRONMENT_UID` are optional on first run (the sync script prints them after creation).
 
 Run:
 

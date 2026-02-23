@@ -16,6 +16,25 @@ This file is the single source of truth for:
 - Platform-aware endpoints need: `platform: APP` or `platform: WEB`
 - Protected endpoints need: `Authorization: Bearer <token>`
 
+### Default Admin Account (For Testing)
+
+To test admin-only endpoints (like `POST /users`), use these **seeded credentials**:
+
+**Email:** `admin@booklyx.com`  
+**Password:** `12345678`  
+**Phone:** `01000000000`  
+**Platform:** `WEB`
+
+**First time setup:**
+
+```bash
+npx prisma db seed
+```
+
+**Get admin token:**
+
+Login via `POST /auth/login` with the credentials above. The token returned can be used in all admin-protected endpoints.
+
 ## 2) Auth endpoints (`/auth`)
 
 OTP note:
@@ -31,6 +50,7 @@ Request body:
 
 ```json
 {
+  "name": "Abdo Khalil",
   "email": "client@example.com",
   "password": "12345678",
   "phone": "0123456789"
@@ -204,7 +224,7 @@ Request body:
 {
   "email": "client@example.com",
   "phone": "0123456789",
-  "type": "EMAIL"
+  "type": "EMAIL" // "PHONE", "PASSWORD_RESET"
 }
 ```
 
@@ -352,10 +372,11 @@ Request body:
 
 ```json
 {
+  "name": "Staff Member",
   "email": "staff1@example.com",
   "password": "12345678",
-  "phone": "0123456789",
-  "role": "staff"
+  "phone": "0123456780",
+  "role": "staff" // "client", "branch_admin", "super_admin"
 }
 ```
 
@@ -368,8 +389,9 @@ Success example (`201`):
   "message": "User created successfully.",
   "data": {
     "id": 2,
+    "name": "Staff Member",
     "email": "staff1@example.com",
-    "phone": "0123456789",
+    "phone": "0123456780",
     "role": "staff"
   }
 }
@@ -386,12 +408,192 @@ Error example (`403`):
 }
 ```
 
-## 4) Quick test order
+## 4) Branch Admin Onboarding (`/branch-admin`)
+
+### POST `/branch-admin/apply`
+
+Initial endpoint for Branch Admin application.
+
+Request body:
+
+```json
+{
+  "ownerName": "Abdo Khalil",
+  "email": "branch@example.com",
+  "phone": "0101234567",
+  "password": "strongPassword123",
+  "businessName": "Khalil Spa",
+  "category": "SPA" // "CLINIC", "BARBER",
+  "description": "Premium spa services",
+  "commercialRegisterNumber": "123456789",
+  "taxId": "123456789",
+  "city": "Cairo",
+  "district": "Tahrir Square",
+  "address": "Tahrir Square",
+  "latitude": 30.0444,
+  "longitude": 31.2357
+}
+```
+
+Success example (`201`):
+
+```json
+{
+  "status": 201,
+  "error": false,
+  "message": "Your application has been submitted successfully. Please verify your email.",
+  "data": null
+}
+```
+
+---
+
+### POST `/branch-admin/verify-email`
+
+Verifies application email.
+
+Request body:
+
+```json
+{
+  "email": "branch@example.com",
+  "code": "333333"
+}
+```
+
+Success example (`200`):
+
+```json
+{
+  "status": 200,
+  "error": false,
+  "message": "Email verified successfully.",
+  "data": null
+}
+```
+
+---
+
+### POST `/branch-admin/verify-phone`
+
+Verifies application phone. Moves to `PENDING_APPROVAL`.
+
+Request body:
+
+```json
+{
+  "email": "branch@example.com",
+  "code": "333333"
+}
+```
+
+Success example (`200`):
+
+```json
+{
+  "status": 200,
+  "error": false,
+  "message": "Your application has been verified and is now under review by our team.",
+  "data": null
+}
+```
+
+---
+
+### POST `/branch-admin/resend-code`
+
+Resends OTP for application.
+
+Request body:
+
+```json
+{
+  "email": "branch@example.com",
+  "type": "EMAIL" // "PHONE"
+}
+```
+
+## 5) Admin Management (`/admin`)
+
+Requires `super_admin` role.
+
+### GET `/admin/applications`
+
+List all applications.
+
+Success example (`200`):
+
+```json
+{
+  "status": 200,
+  "error": false,
+  "message": "Applications retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "ownerName": "Abdo Khalil",
+      "businessName": "Khalil Spa",
+      "status": "PENDING_APPROVAL"
+    }
+  ]
+}
+```
+
+---
+
+### POST `/admin/applications/:id/approve`
+
+Approve application and create User.
+
+Success example (`200`):
+
+```json
+{
+  "status": 200,
+  "error": false,
+  "message": "Application approved successfully.",
+  "data": {
+    "id": 10,
+    "email": "branch@example.com",
+    "role": "branch_admin"
+  }
+}
+```
+
+---
+
+### POST `/admin/applications/:id/reject`
+
+Reject application with reason.
+
+Request body:
+
+```json
+{
+  "reason": "Missing documentation"
+}
+```
+
+## 6) Quick test order
+
+### For Client Registration & Login
 
 1. `POST /auth/register`
 2. `POST /auth/verify-email` with code `333333`
 3. `POST /auth/verify-phone` with code `333333`
-4. Use returned token in `POST /users`
+4. Use returned token in protected endpoints
+
+### For Admin Access
+
+1. Run `npx prisma db seed` (first time only)
+2. `POST /auth/login` with:
+   ```json
+   {
+     "email": "admin@booklyx.com",
+     "password": "12345678"
+   }
+   ```
+3. Use returned token in admin-only endpoints like `POST /users`
 
 ## 5) Postman files in repo
 
@@ -406,8 +608,12 @@ Required env vars:
 
 ```bash
 POSTMAN_API_KEY="your_api_key_here"
+POSTMAN_WORKSPACE_ID="your_workspace_id_here"
 POSTMAN_COLLECTION_UID="your_uid_here"
+POSTMAN_ENVIRONMENT_UID="your_environment_uid_here"
 ```
+
+On first run, UID values are optional. The script prints both values after successful creation.
 
 Run:
 
