@@ -239,7 +239,7 @@ model VerificationCode {
 
 ### OTP Rules
 
-- Codes are **6-digit**, generated with `crypto.randomInt(100000, 1000000)` (cryptographically secure).
+- Codes are **currently fixed to `333333`** for development/testing flows.
 - The **raw code** is sent to the user; only the **bcrypt hash** is stored in the DB (same reason we hash passwords).
 - Expiry is controlled by `VERIFICATION_CODE_EXPIRES_MINUTES` env var (default: `10`).
 - **Max 5 failed attempts** per code → `MaxAttemptsExceededError` (HTTP 429) after limit.
@@ -269,10 +269,36 @@ The short-lived JWT in step 2 is a stateless proof that the OTP was already veri
 
 ```bash
 npm run dev                  # Start dev server with hot reload (tsx watch)
+npm run postman:sync         # Sync local Postman collection (+ docs) to Postman Cloud
 npx prisma generate          # Regenerate client after schema changes
 npx prisma migrate dev       # Create and apply a new migration
 npx prisma validate          # Validate schema (source of truth for Prisma 7)
 ```
+
+---
+
+## Postman Sync Policy
+
+When changing anything related to API surface or docs, always keep Postman in sync.
+
+### Must run sync after these changes
+
+- Any edit in route/controller/service that changes endpoint behavior, input, output, status code, headers, auth, or validation.
+- Any edit to API docs, especially `docs/postman-routes.md`.
+- Any edit to `docs/postman/booklyx-backend.postman_collection.json`.
+
+### Required final step
+
+After such changes, run:
+
+```bash
+npm run postman:sync
+```
+
+### Completion requirement
+
+- Do not consider API-related tasks finished until Postman sync succeeds.
+- If sync fails, report the exact reason and the fix needed (for example missing `POSTMAN_API_KEY` or `POSTMAN_COLLECTION_UID`).
 
 ---
 

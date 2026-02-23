@@ -4,23 +4,26 @@ import { errorResponse, successResponse } from "../../utils/response.js";
 import {
     AuthValidationError,
     DuplicateAccountError,
+    EmailNotVerifiedError,
     InactiveUserError,
     InvalidCredentialsError,
     InvalidTokenError,
     login,
     MaxAttemptsExceededError,
+    PhoneNotVerifiedError,
     PlatformAccessDeniedError,
     register,
     requestPasswordReset,
+    resendCode,
     resetPassword,
-    sendPhoneVerification,
-    sendVerificationEmail,
     TokenExpiredError,
     UserNotFound,
     verifyEmail,
     verifyPasswordReset,
-    verifyPhone,
+    verifyPhone
 } from "./auth.service.js";
+
+// ─── Login ────────────────────────────────────────────────────────────────────
 
 export async function loginHandler(req: Request, res: Response): Promise<void> {
     const lang = getLanguage(req);
@@ -39,17 +42,30 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
             return void errorResponse(res, 403, t(error.message, lang));
         if (error instanceof PlatformAccessDeniedError)
             return void errorResponse(res, 403, t(error.message, lang));
+        // 403 → email step pending (client should navigate to email OTP screen)
+        if (error instanceof EmailNotVerifiedError)
+            return void errorResponse(res, 403, t(error.message, lang));
+        // 403 → phone step pending (client should navigate to phone OTP screen)
+        if (error instanceof PhoneNotVerifiedError)
+            return void errorResponse(res, 403, t(error.message, lang));
         console.error("Unexpected error in loginHandler:", error);
         errorResponse(res, 500, t(tr.INTERNAL_SERVER_ERROR, lang));
     }
 }
 
+// ─── Register ─────────────────────────────────────────────────────────────────
+
+/**
+ * Register response: 201 with no token.
+ * The user must complete email + phone verification before they can log in.
+ * An email OTP is automatically sent by the service.
+ */
 export async function registerHandler(req: Request, res: Response): Promise<void> {
     const lang = getLanguage(req);
     try {
         const platformHeader = req.headers["platform"];
-        const result = await register(req.body, platformHeader);
-        successResponse(res, 201, t(tr.REGISTER_SUCCESS, lang), result);
+        await register(req.body, platformHeader);
+        successResponse(res, 201, t(tr.REGISTER_SUCCESS, lang));
     } catch (error) {
         if (error instanceof AuthValidationError)
             return void errorResponse(res, 400, t(error.message, lang, error.params));
@@ -62,22 +78,12 @@ export async function registerHandler(req: Request, res: Response): Promise<void
     }
 }
 
-export async function sendVerificationEmailHandler(req: Request, res: Response): Promise<void> {
-    const lang = getLanguage(req);
-    try {
-        const { email } = req.body;
-        await sendVerificationEmail(email);
-        successResponse(res, 200, t(tr.VERIFICATION_EMAIL_SENT, lang));
-    } catch (error) {
-        if (error instanceof UserNotFound)
-            return void errorResponse(res, 404, t(error.message, lang));
-        if (error instanceof AuthValidationError)
-            return void errorResponse(res, 400, t(error.message, lang, error.params));
-        console.error("Unexpected error in sendVerificationEmailHandler:", error);
-        errorResponse(res, 500, t(tr.INTERNAL_SERVER_ERROR, lang));
-    }
-}
+// ─── Email Verification ───────────────────────────────────────────────────────
 
+/**
+ * Verify Email response: 200 with no token.
+ * The service automatically sends a phone OTP after successful verification.
+ */
 export async function verifyEmailHandler(req: Request, res: Response): Promise<void> {
     const lang = getLanguage(req);
     try {
@@ -85,6 +91,8 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
         await verifyEmail(email, code);
         successResponse(res, 200, t(tr.EMAIL_VERIFIED_SUCCESS, lang));
     } catch (error) {
+        if (error instanceof AuthValidationError)
+            return void errorResponse(res, 400, t(error.message, lang, error.params));
         if (error instanceof MaxAttemptsExceededError)
             return void errorResponse(res, 429, t(error.message, lang));
         if (error instanceof TokenExpiredError)
@@ -98,30 +106,26 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
     }
 }
 
-export async function sendPhoneVerificationHandler(req: Request, res: Response): Promise<void> {
-    const lang = getLanguage(req);
-    try {
-        if (!req.user) return void errorResponse(res, 401, t(tr.AUTH_REQUIRED, lang));
-        await sendPhoneVerification(req.user.sub);
-        successResponse(res, 200, t(tr.VERIFICATION_CODE_SENT, lang));
-    } catch (error) {
-        if (error instanceof UserNotFound)
-            return void errorResponse(res, 404, t(error.message, lang));
-        if (error instanceof AuthValidationError)
-            return void errorResponse(res, 400, t(error.message, lang, error.params));
-        console.error("Unexpected error in sendPhoneVerificationHandler:", error);
-        errorResponse(res, 500, t(tr.INTERNAL_SERVER_ERROR, lang));
-    }
-}
+// ─── Phone Verification ───────────────────────────────────────────────────────
 
+/**
+ * Verify Phone response: 200 with token + user.
+ * This is the final step — after this the user is fully registered and logged in.
+ */
 export async function verifyPhoneHandler(req: Request, res: Response): Promise<void> {
     const lang = getLanguage(req);
     try {
-        if (!req.user) return void errorResponse(res, 401, t(tr.AUTH_REQUIRED, lang));
-        const { code } = req.body;
-        await verifyPhone(req.user.sub, code);
-        successResponse(res, 200, t(tr.PHONE_VERIFIED_SUCCESS, lang));
+        const { email, code } = req.body;
+        const platformHeader = req.headers["platform"];
+        const result = await verifyPhone(email, code, platformHeader);
+        successResponse(res, 200, t(tr.PHONE_VERIFIED_SUCCESS, lang), result);
     } catch (error) {
+        if (error instanceof AuthValidationError)
+            return void errorResponse(res, 400, t(error.message, lang, error.params));
+        if (error instanceof EmailNotVerifiedError)
+            return void errorResponse(res, 403, t(error.message, lang));
+        if (error instanceof PlatformAccessDeniedError)
+            return void errorResponse(res, 403, t(error.message, lang));
         if (error instanceof MaxAttemptsExceededError)
             return void errorResponse(res, 429, t(error.message, lang));
         if (error instanceof TokenExpiredError)
@@ -135,6 +139,8 @@ export async function verifyPhoneHandler(req: Request, res: Response): Promise<v
     }
 }
 
+// ─── Password Reset ───────────────────────────────────────────────────────────
+
 export async function requestPasswordResetHandler(req: Request, res: Response): Promise<void> {
     const lang = getLanguage(req);
     try {
@@ -142,6 +148,8 @@ export async function requestPasswordResetHandler(req: Request, res: Response): 
         await requestPasswordReset(email);
         successResponse(res, 200, t(tr.PASSWORD_RESET_EMAIL_SENT, lang));
     } catch (error) {
+        if (error instanceof AuthValidationError)
+            return void errorResponse(res, 400, t(error.message, lang, error.params));
         console.error("Unexpected error in requestPasswordResetHandler:", error);
         errorResponse(res, 500, t(tr.INTERNAL_SERVER_ERROR, lang));
     }
@@ -154,6 +162,8 @@ export async function verifyPasswordResetHandler(req: Request, res: Response): P
         const result = await verifyPasswordReset(email, code);
         successResponse(res, 200, t(tr.PASSWORD_RESET_OTP_VERIFIED, lang), result);
     } catch (error) {
+        if (error instanceof AuthValidationError)
+            return void errorResponse(res, 400, t(error.message, lang, error.params));
         if (error instanceof MaxAttemptsExceededError)
             return void errorResponse(res, 429, t(error.message, lang));
         if (error instanceof TokenExpiredError)
@@ -174,14 +184,29 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
         await resetPassword(resetToken, newPassword);
         successResponse(res, 200, t(tr.PASSWORD_RESET_SUCCESS, lang));
     } catch (error) {
+        if (error instanceof AuthValidationError)
+            return void errorResponse(res, 400, t(error.message, lang, error.params));
         if (error instanceof InvalidTokenError)
             return void errorResponse(res, 400, t(error.message, lang));
         if (error instanceof TokenExpiredError)
             return void errorResponse(res, 400, t(error.message, lang));
-        if (error instanceof AuthValidationError)
-            return void errorResponse(res, 400, t(error.message, lang, error.params));
         console.error("Unexpected error in resetPasswordHandler:", error);
         errorResponse(res, 500, t(tr.INTERNAL_SERVER_ERROR, lang));
     }
 }
 
+export async function resendCodeHandler(req: Request, res: Response): Promise<void> {
+    const lang = getLanguage(req);
+    try {
+        const { email, phone, type } = req.body;
+        await resendCode(email, phone, type);
+        successResponse(res, 200, t(tr.VERIFICATION_CODE_SENT, lang));
+    } catch (error) {
+        if (error instanceof AuthValidationError)
+            return void errorResponse(res, 400, t(error.message, lang, error.params));
+        if (error instanceof UserNotFound)
+            return void errorResponse(res, 404, t(error.message, lang));
+        console.error("Unexpected error in resendCodeHandler:", error);
+        errorResponse(res, 500, t(tr.INTERNAL_SERVER_ERROR, lang));
+    }
+}

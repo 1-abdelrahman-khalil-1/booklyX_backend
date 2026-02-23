@@ -1,7 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { Platform, Role } from "../generated/prisma/client.js";
+import { Platform, Role, UserStatus } from "../generated/prisma/client.js";
 import { getLanguage, t, tr } from "../lib/i18n/index.js";
+import prisma from "../lib/prisma.js";
 import { errorResponse } from "../utils/response.js";
 
 /**
@@ -18,15 +19,16 @@ export interface JwtPayload {
  * authenticate — Express middleware
  *
  * Reads the `Authorization: Bearer <token>` header, verifies the JWT,
- * and attaches the decoded payload to `req.user`.
+ * validates the user exists and is active, and attaches the decoded
+ * payload to `req.user`.
  *
- * If the token is missing or invalid → 401 Unauthorized.
+ * If the token is missing, invalid, or user is inactive → 401 Unauthorized.
  */
-export function authenticate(
+export async function authenticate(
   req: Request,
   res: Response,
   next: NextFunction,
-): void {
+): Promise<void> {
   const lang = getLanguage(req);
   const authHeader = req.headers.authorization;
 
@@ -47,11 +49,39 @@ export function authenticate(
   try {
     const decoded = jwt.verify(token, jwtSecret) as unknown as JwtPayload;
 
+    // 1️⃣ Validate decoded JWT payload shape
+    if (
+      typeof decoded !== "object" ||
+      decoded === null ||
+      typeof decoded.sub !== "number" ||
+      !decoded.role ||
+      !decoded.platform
+    ) {
+      errorResponse(res, 401, t(tr.INVALID_OR_EXPIRED_TOKEN, lang));
+      return;
+    }
+
+    // 2️⃣ Validate platform header properly
     // Ensure the request is coming from the same platform the token was issued for.
-    // The client must send an `platform` header (e.g. "APP" or "WEB") on every request.
     const requestPlatform = req.headers["platform"];
-    if (decoded.platform !== requestPlatform) {
+
+    if (!requestPlatform || typeof requestPlatform !== "string") {
+      errorResponse(res, 400, t(tr.PLATFORM_HEADER_REQUIRED, lang));
+      return;
+    }
+
+    if (decoded.platform !== (requestPlatform as Platform)) {
       errorResponse(res, 403, t(tr.TOKEN_PLATFORM_MISMATCH, lang));
+      return;
+    }
+
+    // 3️⃣ Verify user still exists and is ACTIVE
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.sub },
+    });
+
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      errorResponse(res, 401, t(tr.AUTH_REQUIRED, lang));
       return;
     }
 

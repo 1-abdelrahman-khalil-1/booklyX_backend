@@ -47,6 +47,16 @@ const ar: Messages = {
   INVALID_OR_EXPIRED_TOKEN: "الرمز غير صالح أو منتهي الصلاحية.",
   FORBIDDEN: "ليس لديك صلاحية للوصول إلى هذا المورد.",
   INTERNAL_SERVER_ERROR: "خطأ في الخادم الداخلي.",
+  OTP_SENT_SUCCESS: "تم إرسال رمز التحقق.",
+  OTP_VERIFIED_SUCCESS: "تم التحقق من الرمز بنجاح.",
+  OTP_REQUIRED: "رمز التحقق مطلوب.",
+  OTP_INVALID: "رمز التحقق غير صالح.",
+  OTP_EXPIRED: "رمز التحقق منتهي الصلاحية.",
+  OTP_MAX_ATTEMPTS_EXCEEDED: "عدد المحاولات تجاوز الحد المسموح. يرجى طلب رمز جديد.",
+  TOKEN_REQUIRED: "الرمز مطلوب.",
+  EMAIL_NOT_VERIFIED: "لم يتم التحقق من بريدك الإلكتروني. يرجى التحقق من بريدك قبل تسجيل الدخول.",
+  PHONE_NOT_VERIFIED: "لم يتم التحقق من رقم هاتفك. يرجى التحقق من رقم هاتفك قبل تسجيل الدخول.",
+  NAME_REQUIRED: "الاسم مطلوب.",
 };
 
 export default ar;

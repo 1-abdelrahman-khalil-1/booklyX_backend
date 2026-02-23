@@ -42,20 +42,20 @@ export async function sendPasswordResetEmail(
   email: string,
   code: string,
 ): Promise<void> {
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM || '"BooklyX" <noreply@booklyx.com>',
-    to: email,
-    subject: "Your Password Reset Code",
-    html: `
-      <h1>Password Reset Request</h1>
-      <p>You requested to reset your password for your BooklyX account.</p>
-      <p>Your password reset code is:</p>
-      <h2 style="font-size: 32px; letter-spacing: 5px; color: #dc3545;">${code}</h2>
-      <p>Enter this code in the app to reset your password.</p>
-      <p>This code will expire in ${process.env.VERIFICATION_CODE_EXPIRES_MINUTES || 10} minutes.</p>
-      <p>If you didn't request a password reset, please ignore this email.</p>
-    `,
-  });
+  // await transporter.sendMail({
+  //   from: process.env.EMAIL_FROM || '"BooklyX" <noreply@booklyx.com>',
+  //   to: email,
+  //   subject: "Your Password Reset Code",
+  //   html: `
+  //     <h1>Password Reset Request</h1>
+  //     <p>You requested to reset your password for your BooklyX account.</p>
+  //     <p>Your password reset code is:</p>
+  //     <h2 style="font-size: 32px; letter-spacing: 5px; color: #dc3545;">${code}</h2>
+  //     <p>Enter this code in the app to reset your password.</p>
+  //     <p>This code will expire in ${process.env.VERIFICATION_CODE_EXPIRES_MINUTES || 10} minutes.</p>
+  //     <p>If you didn't request a password reset, please ignore this email.</p>
+  //   `,
+  // });
 }
 
 /**
@@ -65,17 +65,17 @@ export async function sendPhoneVerificationCode(
   email: string,
   code: string,
 ): Promise<void> {
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM || '"BooklyX" <noreply@booklyx.com>',
-    to: email,
-    subject: "Your Phone Verification Code",
-    html: `
-      <h1>Phone Verification</h1>
-      <p>Your verification code is:</p>
-      <h2 style="font-size: 32px; letter-spacing: 5px; color: #007bff;">${code}</h2>
-      <p>Enter this code in the app to verify your phone number.</p>
-      <p>This code will expire in 10 minutes.</p>
-      <p>If you didn't request this code, please ignore this email.</p>
-    `,
-  });
+  // await transporter.sendMail({
+  //   from: process.env.EMAIL_FROM || '"BooklyX" <noreply@booklyx.com>',
+  //   to: email,
+  //   subject: "Your Phone Verification Code",
+  //   html: `
+  //     <h1>Phone Verification</h1>
+  //     <p>Your verification code is:</p>
+  //     <h2 style="font-size: 32px; letter-spacing: 5px; color: #007bff;">${code}</h2>
+  //     <p>Enter this code in the app to verify your phone number.</p>
+  //     <p>This code will expire in 10 minutes.</p>
+  //     <p>If you didn't request this code, please ignore this email.</p>
+  //   `,
+  // });
 }

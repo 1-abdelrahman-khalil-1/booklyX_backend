@@ -56,6 +56,16 @@ const en: Messages = {
   INVALID_OR_EXPIRED_TOKEN: "Invalid or expired token.",
   FORBIDDEN: "You do not have permission to access this resource.",
   INTERNAL_SERVER_ERROR: "Internal server error.",
+  OTP_SENT_SUCCESS: "Verification code sent.",
+  OTP_VERIFIED_SUCCESS: "Code verified successfully.",
+  OTP_REQUIRED: "Code is required.",
+  OTP_INVALID: "Invalid code.",
+  OTP_EXPIRED: "Code has expired.",
+  OTP_MAX_ATTEMPTS_EXCEEDED: "Too many failed attempts. Please request a new code.",
+  TOKEN_REQUIRED: "Token is required.",
+  EMAIL_NOT_VERIFIED: "Your email is not verified. Please verify your email before logging in.",
+  PHONE_NOT_VERIFIED: "Your phone number is not verified. Please verify your phone number before logging in.",
+  NAME_REQUIRED: "Name is required.",
 };
 
 export default en;

@@ -1,12 +1,10 @@
 import { Router } from "express";
-import { authenticate } from "../../middleware/authenticate.js";
 import {
   loginHandler,
   registerHandler,
   requestPasswordResetHandler,
+  resendCodeHandler,
   resetPasswordHandler,
-  sendPhoneVerificationHandler,
-  sendVerificationEmailHandler,
   verifyEmailHandler,
   verifyPasswordResetHandler,
   verifyPhoneHandler,
@@ -14,21 +12,21 @@ import {
 
 const router = Router();
 
-// Public endpoints
-router.post("/login", loginHandler);
+// ─── Registration Funnel (public) ─────────────────────────────────────────────
+// Step 1: Create account → email OTP sent automatically
 router.post("/register", registerHandler);
-
-// Email verification (public)
-router.post("/send-verification-email", sendVerificationEmailHandler);
+// Step 2: Verify email code → phone OTP sent automatically
 router.post("/verify-email", verifyEmailHandler);
+// Step 3: Verify phone code → returns token + user (fully logged in)
+router.post("/verify-phone", verifyPhoneHandler);
 
-// Password reset (public) — 3-step OTP flow
+// ─── Login (public) ───────────────────────────────────────────────────────────
+router.post("/login", loginHandler);
+router.post("/resend-code", resendCodeHandler);
+
+// ─── Password Reset (public) — 3-step OTP flow ───────────────────────────────
 router.post("/request-password-reset", requestPasswordResetHandler);
 router.post("/verify-password-reset", verifyPasswordResetHandler);
 router.post("/reset-password", resetPasswordHandler);
-
-// Phone verification (requires authentication)
-router.post("/send-phone-verification", authenticate, sendPhoneVerificationHandler);
-router.post("/verify-phone", authenticate, verifyPhoneHandler);
 
 export default router;
