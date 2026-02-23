@@ -16,7 +16,7 @@
       "name": "Auth",
       "item": [
         {
-          "name": "Register",
+          "name": "Registe",
           "request": {
             "method": "POST",
             "header": [
