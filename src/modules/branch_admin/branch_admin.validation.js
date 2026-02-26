@@ -21,8 +21,8 @@ export const applySchema = z.object({
 
     // Business Info
     businessName: z.string({ error: tr.BUSINESS_NAME_REQUIRED }),
-    category: z.enum(BusinessCategory, {
-        error: tr.CATEGORY_MUST_BE_ONE_OF,
+    category: z.enum(Object.values(BusinessCategory), {
+        errorMap: () => ({ message: tr.CATEGORY_MUST_BE_ONE_OF }),
     }),
     description: z.string({ error: tr.DESCRIPTION_REQUIRED }),
     commercialRegisterNumber: z.string({ error: tr.COMMERCIAL_REGISTER_NUMBER_REQUIRED }),
@@ -64,7 +64,7 @@ export const createStaffSchema = z.object({
 
 export const resendCodeSchema = z.object({
     email: z.email({ error: tr.EMAIL_INVALID }),
-    type: z.enum(VerificationType),
+    type: z.enum(Object.values(VerificationType)),
 });
 
 export const verifyApplicationSchema = z.object({
@@ -80,7 +80,7 @@ export const rejectApplicationSchema = z.object({
     reason: z.string({ error: tr.REJECTION_REASON_REQUIRED }),
 });
 
-export function validateBranchAdminInput<T>(schema: z.ZodType<T>, data: unknown): T {
+export function validateBranchAdminInput(schema, data) {
     const result = schema.safeParse(data);
     if (result.success) return result.data;
 
@@ -96,6 +96,6 @@ export function validateBranchAdminInput<T>(schema: z.ZodType<T>, data: unknown)
 }
 
 
-export function validateCreateStaffSchema(data: unknown) {
+export function validateCreateStaffSchema(data) {
     return validateBranchAdminInput(createStaffSchema, data);
 }

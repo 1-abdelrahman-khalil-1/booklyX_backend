@@ -1,12 +1,11 @@
 /**
  * Arabic translations (الترجمة العربية).
  *
- * Same rules as en.ts — every key from `M` must be present.
+ * Same rules as en.js — every key from `tr` must be present.
  * Use `{{placeholder}}` for dynamic values (same placeholders as English).
  */
-import type { Messages } from "../keys.js";
 
-const ar: Messages = {
+const ar = {
   USER_NOT_FOUND: "لم يتم العثور على المستخدم.",
   INVALID_CREDENTIALS: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
   PLATFORM_ACCESS_DENIED: "هذا الدور غير مسموح له بالوصول من هذه المنصة.",

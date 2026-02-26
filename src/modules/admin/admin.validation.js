@@ -2,7 +2,7 @@ import z from "zod";
 import { tr } from "../../lib/i18n/index.js";
 import { AdminValidationError } from "./admin.service.js";
 
-export function validateAdminInput<T>(schema: z.ZodType<T>, data: unknown): T {
+export function validateAdminInput(schema, data) {
     const result = schema.safeParse(data);
     if (result.success) return result.data;
 

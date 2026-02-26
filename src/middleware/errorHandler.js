@@ -1,14 +1,13 @@
-import { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import { getLanguage, t, tr } from "../lib/i18n/index.js";
 import { AppError } from "../utils/AppError.js";
 import { errorResponse } from "../utils/response.js";
 
 export const errorHandler = (
-    err: Error,
-    req: Request,
-    res: Response,
-    _next: NextFunction
+    err,
+    req,
+    res,
+    _next
 ) => {
     const lang = getLanguage(req);
 
@@ -16,7 +15,7 @@ export const errorHandler = (
         return void errorResponse(
             res,
             err.statusCode,
-            t(err.message as keyof typeof tr, lang, err.params) || err.message
+            t(err.message, lang, err.params) || err.message
         );
     }
 
@@ -25,7 +24,7 @@ export const errorHandler = (
         return void errorResponse(
             res,
             400,
-            t(firstIssue.message as keyof typeof tr, lang) || firstIssue.message
+            t(firstIssue.message, lang) || firstIssue.message
         );
     }
 

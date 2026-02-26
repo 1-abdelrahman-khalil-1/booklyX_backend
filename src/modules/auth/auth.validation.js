@@ -29,8 +29,8 @@ export const registerSchema = z.object({
         .regex(/^\d{10}$/, tr.PHONE_INVALID),
 });
 
-export const platformSchema = z.enum(Platform, {
-    error: tr.PLATFORM_MUST_BE_ONE_OF,
+export const platformSchema = z.enum([Platform.APP, Platform.WEB], {
+    errorMap: () => ({ message: tr.PLATFORM_MUST_BE_ONE_OF }),
 });
 
 export const verifyEmailSchema = z.object({
@@ -115,7 +115,7 @@ export const resendCodeSchema = z
         },
     );
 
-export function validateAuthInput<T>(schema: z.ZodType<T>, data: unknown): T {
+export function validateAuthInput(schema, data) {
     const result = schema.safeParse(data);
     if (result.success) return result.data;
 

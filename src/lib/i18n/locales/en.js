@@ -1,9 +1,9 @@
 /**
  * English translations — the default/fallback language.
  *
- * Every key from `M` (in keys.ts) must have an entry here.
- * If you add a new key but forget the translation, TypeScript
- * will show a compile error because `Messages` requires all keys.
+ * Every key from `tr` (in keys.ts) must have an entry here.
+ * If you add a new key but forget the translation, JavaScript
+ * won't catch it at compile time, so be careful.
  *
  * ### Interpolation
  * Use `{{placeholder}}` for dynamic values. At runtime the `t()` function
@@ -11,9 +11,8 @@
  * Example key:  PLATFORM_MUST_BE_ONE_OF → "Platform must be one of: {{values}}."
  * Example call: t(M.PLATFORM_MUST_BE_ONE_OF, lang, { values: "APP, WEB" })
  */
-import type { Messages } from "../keys.js";
 
-const en: Messages = {
+const en = {
   USER_NOT_FOUND: "No user found.",
   INVALID_CREDENTIALS: "Invalid email or password.",
   PLATFORM_ACCESS_DENIED:

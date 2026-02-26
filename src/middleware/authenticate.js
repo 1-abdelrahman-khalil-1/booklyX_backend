@@ -1,19 +1,8 @@
-import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { Platform, Role, UserStatus } from "../generated/prisma/client.js";
+import { UserStatus } from "../generated/prisma/client.js";
 import { getLanguage, t, tr } from "../lib/i18n/index.js";
 import prisma from "../lib/prisma.js";
 import { errorResponse } from "../utils/response.js";
-
-/**
- * Shape of the JWT payload our login endpoint signs.
- * After `authenticate` runs successfully, `req.user` holds this object.
- */
-export interface JwtPayload {
-  sub: number; // userId
-  role: Role;
-  platform: Platform;
-}
 
 /**
  * authenticate — Express middleware
@@ -24,11 +13,7 @@ export interface JwtPayload {
  *
  * If the token is missing, invalid, or user is inactive → 401 Unauthorized.
  */
-export async function authenticate(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
+export async function authenticate(req, res, next) {
   const lang = getLanguage(req);
   const authHeader = req.headers.authorization;
 
@@ -47,7 +32,7 @@ export async function authenticate(
   }
 
   try {
-    const decoded = jwt.verify(token, jwtSecret) as unknown as JwtPayload;
+    const decoded = jwt.verify(token, jwtSecret);
 
     // 1️⃣ Validate decoded JWT payload shape
     if (
@@ -70,7 +55,7 @@ export async function authenticate(
       return;
     }
 
-    if (decoded.platform !== (requestPlatform as Platform)) {
+    if (decoded.platform !== requestPlatform) {
       errorResponse(res, 403, t(tr.TOKEN_PLATFORM_MISMATCH, lang));
       return;
     }
@@ -105,8 +90,8 @@ export async function authenticate(
  * Usage:
  *   router.get("/admin", authenticate, authorize(Role.super_admin), handler);
  */
-export function authorize(...allowedRoles: Role[]) {
-  return (req: Request, res: Response, next: NextFunction): void => {
+export function authorize(...allowedRoles) {
+  return (req, res, next) => {
     const lang = getLanguage(req);
 
     if (!req.user) {

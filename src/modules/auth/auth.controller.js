@@ -1,4 +1,3 @@
-import { Request, Response } from "express";
 import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
@@ -15,7 +14,7 @@ import {
 
 // ─── Login ────────────────────────────────────────────────────────────────────
 
-export const loginHandler = asyncHandler(async (req: Request, res: Response) => {
+export const loginHandler = asyncHandler(async (req, res) => {
     const lang = getLanguage(req);
     const platformHeader = req.headers["platform"];
     const result = await login(req.body, platformHeader);
@@ -29,7 +28,7 @@ export const loginHandler = asyncHandler(async (req: Request, res: Response) => 
  * The user must complete email + phone verification before they can log in.
  * An email OTP is automatically sent by the service.
  */
-export const registerHandler = asyncHandler(async (req: Request, res: Response) => {
+export const registerHandler = asyncHandler(async (req, res) => {
     const lang = getLanguage(req);
     const platformHeader = req.headers["platform"];
     await register(req.body, platformHeader);
@@ -42,7 +41,7 @@ export const registerHandler = asyncHandler(async (req: Request, res: Response) 
  * Verify Email response: 200 with no token.
  * The service automatically sends a phone OTP after successful verification.
  */
-export const verifyEmailHandler = asyncHandler(async (req: Request, res: Response) => {
+export const verifyEmailHandler = asyncHandler(async (req, res) => {
     const lang = getLanguage(req);
     const { email, code } = req.body;
     await verifyEmail(email, code);
@@ -55,7 +54,7 @@ export const verifyEmailHandler = asyncHandler(async (req: Request, res: Respons
  * Verify Phone response: 200 with token + user.
  * This is the final step — after this the user is fully registered and logged in.
  */
-export const verifyPhoneHandler = asyncHandler(async (req: Request, res: Response) => {
+export const verifyPhoneHandler = asyncHandler(async (req, res) => {
     const lang = getLanguage(req);
     const { email, code } = req.body;
     const platformHeader = req.headers["platform"];
@@ -65,28 +64,28 @@ export const verifyPhoneHandler = asyncHandler(async (req: Request, res: Respons
 
 // ─── Password Reset ───────────────────────────────────────────────────────────
 
-export const requestPasswordResetHandler = asyncHandler(async (req: Request, res: Response) => {
+export const requestPasswordResetHandler = asyncHandler(async (req, res) => {
     const lang = getLanguage(req);
     const { email } = req.body;
     await requestPasswordReset(email);
     successResponse(res, 200, t(tr.PASSWORD_RESET_EMAIL_SENT, lang));
 });
 
-export const verifyPasswordResetHandler = asyncHandler(async (req: Request, res: Response) => {
+export const verifyPasswordResetHandler = asyncHandler(async (req, res) => {
     const lang = getLanguage(req);
     const { email, code } = req.body;
     const result = await verifyPasswordReset(email, code);
     successResponse(res, 200, t(tr.PASSWORD_RESET_OTP_VERIFIED, lang), result);
 });
 
-export const resetPasswordHandler = asyncHandler(async (req: Request, res: Response) => {
+export const resetPasswordHandler = asyncHandler(async (req, res) => {
     const lang = getLanguage(req);
     const { resetToken, newPassword } = req.body;
     await resetPassword(resetToken, newPassword);
     successResponse(res, 200, t(tr.PASSWORD_RESET_SUCCESS, lang));
 });
 
-export const resendCodeHandler = asyncHandler(async (req: Request, res: Response) => {
+export const resendCodeHandler = asyncHandler(async (req, res) => {
     const lang = getLanguage(req);
     const { email, phone, type } = req.body;
     await resendCode(email, phone, type);

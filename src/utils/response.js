@@ -1,11 +1,9 @@
-import { Response } from "express";
-
 export function successResponse(
-  res: Response,
-  status: number,
-  message: string,
-  data: unknown = null,
-): void {
+  res,
+  status,
+  message,
+  data = null
+) {
   res.status(status).json({
     status,
     error: false,
@@ -14,12 +12,11 @@ export function successResponse(
   });
 }
 
-
 export function errorResponse(
-  res: Response,
-  status: number,
-  message: string,
-): void {
+  res,
+  status,
+  message
+) {
   res.status(status).json({
     status,
     error: true,

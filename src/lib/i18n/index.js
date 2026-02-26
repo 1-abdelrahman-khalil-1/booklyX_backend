@@ -27,18 +27,14 @@
  * // Arabic  → "يجب أن تكون المنصة واحدة من: APP, WEB."
  * ```
  */
-import { Request } from "express";
 import ar from "./locales/ar.js";
 import en from "./locales/en.js";
 
-// Re-export keys so consumers can do: import { M, t, getLanguage } from "…/i18n/index.js";
-export { tr, type MessageKey } from "./keys.js";
-
-/** Languages currently supported by the backend. */
-export type SupportedLanguage = "en" | "ar";
+// Re-export keys so consumers can do: import { tr } from "…/i18n/index.js";
+export { tr } from "./keys.js";
 
 /** Map of language code → translated messages object. */
-const locales: Record<string, Record<string, string>> = { en, ar };
+const locales = { en, ar };
 
 /**
  * Detect the preferred language from the incoming request.
@@ -54,7 +50,7 @@ const locales: Record<string, Record<string, string>> = { en, ar };
  * // Request header: Accept-Language: fr
  * getLanguage(req) // → "en" (unsupported → fallback)
  */
-export function getLanguage(req: Request): SupportedLanguage {
+export function getLanguage(req) {
   const header = req.headers["accept-language"];
 
   if (typeof header === "string" && header.toLowerCase().startsWith("ar")) {
@@ -78,10 +74,10 @@ export function getLanguage(req: Request): SupportedLanguage {
  * 3. If still missing, return the raw key string so it's visible in logs.
  */
 export function t(
-  key: string,
-  lang: SupportedLanguage = "en",
-  params?: Record<string, string>,
-): string {
+  key,
+  lang = "en",
+  params
+) {
   const locale = locales[lang] ?? locales.en;
   let message = locale[key] ?? locales.en[key] ?? key;
 

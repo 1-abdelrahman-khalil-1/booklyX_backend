@@ -23,7 +23,7 @@ const CODE_EXPIRES_MINUTES = parseInt(process.env.VERIFICATION_CODE_EXPIRES_MINU
 const MAX_ATTEMPTS = 5;
 
 export class BranchAdminValidationError extends AppError {
-    constructor(message: string, params?: Record<string, string>) {
+    constructor(message, params) {
         super(message, 400, params);
         this.name = "BranchAdminValidationError";
     }
@@ -78,14 +78,14 @@ export class MaxAttemptsExceededError extends AppError {
     }
 }
 
-function generateOtpCode(): string {
+function generateOtpCode() {
     if (process.env.NODE_ENV === "production") {
         throw new Error("Hardcoded OTP not allowed in production.");
     }
     return "333333";
 }
 
-async function createApplicationOtp(applicationId: number, type: VerificationType): Promise<string> {
+async function createApplicationOtp(applicationId, type) {
     await prisma.applicationVerificationCode.deleteMany({
         where: { applicationId, type, used: false },
     });
@@ -102,7 +102,7 @@ async function createApplicationOtp(applicationId: number, type: VerificationTyp
     return code;
 }
 
-async function consumeApplicationOtp(applicationId: number, type: VerificationType, code: string): Promise<void> {
+async function consumeApplicationOtp(applicationId, type, code) {
     const record = await prisma.applicationVerificationCode.findFirst({
         where: { applicationId, type, used: false },
         orderBy: { createdAt: "desc" },
@@ -127,7 +127,7 @@ async function consumeApplicationOtp(applicationId: number, type: VerificationTy
     });
 }
 
-export async function submitApplication(body: unknown) {
+export async function submitApplication(body) {
     const data = validateBranchAdminInput(applySchema, body);
 
     const [existingUser, existingApplication] = await Promise.all([
@@ -173,7 +173,7 @@ export async function submitApplication(body: unknown) {
     return { message: tr.APPLICATION_SUBMITTED, applicationId: application.id };
 }
 
-export async function verifyApplicationEmail(email: string, code: string) {
+export async function verifyApplicationEmail(email, code) {
     const data = validateBranchAdminInput(verifyEmailSchema, { email, code });
 
     const application = await prisma.branchAdmin.findFirst({ where: { email: data.email } });
@@ -193,7 +193,7 @@ export async function verifyApplicationEmail(email: string, code: string) {
     return { message: tr.EMAIL_VERIFIED_SUCCESS };
 }
 
-export async function verifyApplicationPhone(email: string, code: string) {
+export async function verifyApplicationPhone(email, code) {
     const data = validateBranchAdminInput(verifyPhoneSchema, { email, code });
 
     const application = await prisma.branchAdmin.findFirst({ where: { email: data.email } });
@@ -211,7 +211,7 @@ export async function verifyApplicationPhone(email: string, code: string) {
     return { message: tr.APPLICATION_UNDER_REVIEW };
 }
 
-export async function resendApplicationCode(email: string, type: VerificationType) {
+export async function resendApplicationCode(email, type) {
     const data = validateBranchAdminInput(resendCodeSchema, { email, type });
 
     const application = await prisma.branchAdmin.findFirst({ where: { email: data.email } });
@@ -236,7 +236,7 @@ export async function resendApplicationCode(email: string, type: VerificationTyp
     return { message: tr.VERIFICATION_CODE_SENT };
 }
 
-export async function createStaff(body: unknown) {
+export async function createStaff(body) {
     const data = validateBranchAdminInput(createStaffSchema, body);
 
     const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);

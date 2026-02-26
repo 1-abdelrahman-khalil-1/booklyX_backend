@@ -7,7 +7,7 @@ import { approveApplicationSchema, rejectApplicationSchema, validateAdminInput }
 // ─── Domain Error Classes ─────────────────────────────────────────────────────
 
 export class AdminValidationError extends AppError {
-    constructor(message: string, params?: Record<string, string>) {
+    constructor(message, params) {
         super(message, 400, params);
         this.name = "AdminValidationError";
     }
@@ -28,7 +28,7 @@ export class ApplicationNotPendingError extends AppError {
 }
 
 
-export async function listApplications(status?: ApplicationStatus) {
+export async function listApplications(status) {
 
     const applications = await prisma.branchAdmin.findMany({
         where: status ? { status } : { status: ApplicationStatus.PENDING },
@@ -44,7 +44,7 @@ export async function listApplications(status?: ApplicationStatus) {
     });
 }
 
-export async function getApplicationDetail(id: number) {
+export async function getApplicationDetail(id) {
     const application = await prisma.branchAdmin.findUnique({
         where: { id },
         include: {
@@ -61,7 +61,7 @@ export async function getApplicationDetail(id: number) {
     return safeApplication;
 }
 
-export async function approveApplication(id: number) {
+export async function approveApplication(id) {
     const parsed = validateAdminInput(approveApplicationSchema, { id });
     const application = await prisma.branchAdmin.findUnique({
         where: { id: parsed.id },
@@ -101,7 +101,7 @@ export async function approveApplication(id: number) {
 }
 
 
-export async function rejectApplication(id: number, reason: string) {
+export async function rejectApplication(id, reason) {
     const parsed = validateAdminInput(rejectApplicationSchema, { id, reason });
     const application = await prisma.branchAdmin.findUnique({
         where: { id: parsed.id },

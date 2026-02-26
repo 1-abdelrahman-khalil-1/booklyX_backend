@@ -20,11 +20,9 @@ router.post("/verify-email", verifyEmailHandler);
 // Step 3: Verify phone code → returns token + user (fully logged in)
 router.post("/verify-phone", verifyPhoneHandler);
 
-// ─── Login (public) ───────────────────────────────────────────────────────────
 router.post("/login", loginHandler);
 router.post("/resend-code", resendCodeHandler);
 
-// ─── Password Reset (public) — 3-step OTP flow ───────────────────────────────
 router.post("/request-password-reset", requestPasswordResetHandler);
 router.post("/verify-password-reset", verifyPasswordResetHandler);
 router.post("/reset-password", resetPasswordHandler);

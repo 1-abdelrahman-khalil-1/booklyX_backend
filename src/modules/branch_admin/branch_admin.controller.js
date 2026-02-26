@@ -1,4 +1,3 @@
-import { Request, Response } from "express";
 import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
@@ -8,12 +7,12 @@ import {
     submitApplication,
     verifyApplicationEmail,
     verifyApplicationPhone,
-} from "./branch_admin.service";
+} from "./branch_admin.service.js";
 
 
 // ─── Apply Handler ───────────────────────────────────────────────────────────
 
-export const applyHandler = asyncHandler(async (req: Request, res: Response) => {
+export const applyHandler = asyncHandler(async (req, res) => {
     const lang = getLanguage(req);
     const result = await submitApplication(req.body);
     successResponse(res, 201, t(result.message, lang));
@@ -21,7 +20,7 @@ export const applyHandler = asyncHandler(async (req: Request, res: Response) => 
 
 // ─── Verify Email Handler ─────────────────────────────────────────────────────
 
-export const verifyEmailHandler = asyncHandler(async (req: Request, res: Response) => {
+export const verifyEmailHandler = asyncHandler(async (req, res) => {
     const lang = getLanguage(req);
     const { email, code } = req.body;
     const result = await verifyApplicationEmail(email, code);
@@ -30,7 +29,7 @@ export const verifyEmailHandler = asyncHandler(async (req: Request, res: Respons
 
 // ─── Verify Phone Handler ─────────────────────────────────────────────────────
 
-export const verifyPhoneHandler = asyncHandler(async (req: Request, res: Response) => {
+export const verifyPhoneHandler = asyncHandler(async (req, res) => {
     const lang = getLanguage(req);
     const { email, code } = req.body;
     const result = await verifyApplicationPhone(email, code);
@@ -39,7 +38,7 @@ export const verifyPhoneHandler = asyncHandler(async (req: Request, res: Respons
 
 // ─── Resend Code Handler ──────────────────────────────────────────────────────
 
-export const resendCodeHandler = asyncHandler(async (req: Request, res: Response) => {
+export const resendCodeHandler = asyncHandler(async (req, res) => {
     const lang = getLanguage(req);
     const { email, type } = req.body;
     const result = await resendApplicationCode(email, type);
@@ -48,7 +47,7 @@ export const resendCodeHandler = asyncHandler(async (req: Request, res: Response
 
 // ─── Create Staff Handler ─────────────────────────────────────────────────────
 
-export const createStaffHandler = asyncHandler(async (req: Request, res: Response) => {
+export const createStaffHandler = asyncHandler(async (req, res) => {
     const lang = getLanguage(req);
     const result = await createStaff(req.body);
     successResponse(res, 201, t(tr.STAFF_CREATED, lang), result);

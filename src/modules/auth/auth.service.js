@@ -1,11 +1,10 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import {
-    Platform,
     Prisma,
     Role,
     UserStatus,
-    VerificationType,
+    VerificationType
 } from "../../generated/prisma/client.js";
 import {
     sendEmailVerification,
@@ -40,7 +39,7 @@ const MAX_ATTEMPTS = 5;
 // ─── Domain Error Classes ─────────────────────────────────────────────────────
 
 export class AuthValidationError extends AppError {
-    constructor(message: string, params?: Record<string, string>) {
+    constructor(message, params) {
         super(message, 400, params);
         this.name = "AuthValidationError";
     }
@@ -82,7 +81,7 @@ export class BranchAdminNotApprovedError extends AppError {
 }
 
 export class DuplicateAccountError extends AppError {
-    constructor(message: string) {
+    constructor(message) {
         super(message, 409);
         this.name = "DuplicateAccountError";
     }
@@ -145,48 +144,48 @@ export class PhoneNotVerifiedError extends AppError {
 
 // ─── Thin Validate Wrappers ───────────────────────────────────────────────────
 
-function validateLoginInput(data: unknown) {
+function validateLoginInput(data) {
     return validateAuthInput(loginSchema, data);
 }
 
-function validatePlatform(platform: unknown): Platform {
+function validatePlatform(platform) {
     if (!platform || typeof platform !== "string") {
         throw new AuthValidationError(tr.PLATFORM_HEADER_REQUIRED);
     }
     return validateAuthInput(platformSchema, platform);
 }
 
-function validateRegisterInput(data: unknown) {
+function validateRegisterInput(data) {
     return validateAuthInput(registerSchema, data);
 }
 
-function validateVerifyEmailInput(data: unknown) {
+function validateVerifyEmailInput(data) {
     return validateAuthInput(verifyEmailSchema, data);
 }
 
-function validateVerifyPhoneInput(data: unknown) {
+function validateVerifyPhoneInput(data) {
     return validateAuthInput(verifyPhoneSchema, data);
 }
 
-function validateRequestPasswordResetInput(data: unknown) {
+function validateRequestPasswordResetInput(data) {
     return validateAuthInput(requestPasswordResetSchema, data);
 }
 
-function validateVerifyPasswordResetInput(data: unknown) {
+function validateVerifyPasswordResetInput(data) {
     return validateAuthInput(verifyPasswordResetSchema, data);
 }
 
-function validateResetPasswordInput(data: unknown) {
+function validateResetPasswordInput(data) {
     return validateAuthInput(resetPasswordSchema, data);
 }
 
-function validateResendCodeInput(data: unknown) {
+function validateResendCodeInput(data) {
     return validateAuthInput(resendCodeSchema, data);
 }
 
 // ─── OTP Helpers ─────────────────────────────────────────────────────────────
 
-function generateOtpCode(): string {
+function generateOtpCode() {
     if (process.env.NODE_ENV === "production") {
         throw new Error("Hardcoded OTP not allowed in production.");
     }
@@ -194,9 +193,9 @@ function generateOtpCode(): string {
 }
 
 async function createVerificationCode(
-    userId: number,
-    type: VerificationType,
-): Promise<string> {
+    userId,
+    type,
+) {
     // Delete all previous unused codes of the same type to invalidate them
     await prisma.verificationCode.deleteMany({
         where: { userId, type, used: false },
@@ -215,10 +214,10 @@ async function createVerificationCode(
 }
 
 async function consumeVerificationCode(
-    userId: number,
-    type: VerificationType,
-    code: string,
-): Promise<void> {
+    userId,
+    type,
+    code,
+) {
     const record = await prisma.verificationCode.findFirst({
         where: { userId, type, used: false },
         orderBy: { createdAt: "desc" },
@@ -246,7 +245,7 @@ async function consumeVerificationCode(
 
 // ─── JWT Helper ──────────────────────────────────────────────────────────────
 
-function issueAuthToken(userId: number, role: Role, platform: Platform): string {
+function issueAuthToken(userId, role, platform) {
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) throw new Error("JWT_SECRET is not set.");
     return jwt.sign({ sub: userId, role, platform }, jwtSecret, { expiresIn: "1d" });
@@ -261,7 +260,7 @@ function issueAuthToken(userId: number, role: Role, platform: Platform): string 
  * Using two distinct error classes lets the controller map them to separate
  * HTTP status codes so the mobile/web app can route to the right screen.
  */
-export async function login(body: unknown, platformHeader: unknown) {
+export async function login(body, platformHeader) {
     const { email, password } = validateLoginInput(body);
     const platform = validatePlatform(platformHeader);
 
@@ -299,7 +298,7 @@ export async function login(body: unknown, platformHeader: unknown) {
  * Creates the account and immediately sends an email verification OTP.
  * Token is NOT issued here — the user must complete both verifications first.
  */
-export async function register(body: unknown, platformHeader: unknown) {
+export async function register(body, platformHeader) {
     const { name, email, password, phone } = validateRegisterInput(body);
     const platform = validatePlatform(platformHeader);
 
@@ -322,7 +321,7 @@ export async function register(body: unknown, platformHeader: unknown) {
 
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-    let user: Awaited<ReturnType<typeof prisma.user.create>>;
+    let user;
     try {
         user = await prisma.user.create({
             data: {
@@ -339,7 +338,7 @@ export async function register(body: unknown, platformHeader: unknown) {
             error instanceof Prisma.PrismaClientKnownRequestError &&
             error.code === "P2002"
         ) {
-            const target = error.meta?.target as string[] | undefined;
+            const target = error.meta?.target;
             if (target?.includes("email")) throw new DuplicateAccountError(tr.DUPLICATE_EMAIL);
             if (target?.includes("phone")) throw new DuplicateAccountError(tr.DUPLICATE_PHONE);
             throw new DuplicateAccountError(tr.DUPLICATE_ACCOUNT);
@@ -356,7 +355,7 @@ export async function register(body: unknown, platformHeader: unknown) {
  * Verify Email — Step 2 of the sign-up funnel.
  * Marks the email as verified and immediately sends a phone verification OTP.
  */
-export async function verifyEmail(email: string, code: string): Promise<void> {
+export async function verifyEmail(email, code) {
     const data = validateVerifyEmailInput({ email, code });
     const user = await prisma.user.findUnique({ where: { email: data.email } });
     if (!user) throw new UserNotFound();
@@ -384,10 +383,10 @@ export async function verifyEmail(email: string, code: string): Promise<void> {
  * This is the only point in the flow where a token is returned.
  */
 export async function verifyPhone(
-    email: string,
-    code: string,
-    platformHeader: unknown,
-): Promise<{ token: string; user: object }> {
+    email,
+    code,
+    platformHeader,
+) {
     const data = validateVerifyPhoneInput({ email, code });
     const platform = validatePlatform(platformHeader);
     const user = await prisma.user.findUnique({ where: { email: data.email } });
@@ -426,7 +425,7 @@ export async function verifyPhone(
  * Step 1 — Request a password reset OTP.
  * Silent on unknown email to prevent user-enumeration attacks.
  */
-export async function requestPasswordReset(email: string): Promise<void> {
+export async function requestPasswordReset(email) {
     const data = validateRequestPasswordResetInput({ email });
     const user = await prisma.user.findUnique({ where: { email: data.email } });
     if (!user) return; // Silently do nothing — don't reveal if email exists
@@ -442,9 +441,9 @@ export async function requestPasswordReset(email: string): Promise<void> {
  * regular login token even if someone intercepts it.
  */
 export async function verifyPasswordReset(
-    email: string,
-    code: string,
-): Promise<{ resetToken: string }> {
+    email,
+    code,
+) {
     const data = validateVerifyPasswordResetInput({ email, code });
     const user = await prisma.user.findUnique({ where: { email: data.email } });
     if (!user) throw new UserNotFound();
@@ -469,20 +468,17 @@ export async function verifyPasswordReset(
  * was issued by step 2 and cannot be reused for normal authentication.
  */
 export async function resetPassword(
-    resetToken: string,
-    newPassword: string,
-): Promise<void> {
+    resetToken,
+    newPassword,
+) {
     const data = validateResetPasswordInput({ resetToken, newPassword });
 
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) throw new Error("JWT_SECRET is not set.");
 
-    let payload: { sub: number; purpose: string };
+    let payload;
     try {
-        payload = jwt.verify(data.resetToken, jwtSecret) as unknown as {
-            sub: number;
-            purpose: string;
-        };
+        payload = jwt.verify(data.resetToken, jwtSecret);
     } catch {
         throw new InvalidTokenError();
     }
@@ -501,13 +497,13 @@ export async function resetPassword(
  * It invalidates old codes of the same type and sends a fresh one.
  */
 export async function resendCode(
-    email: string | undefined,
-    phone: string | undefined,
-    type: VerificationType,
-): Promise<void> {
+    email,
+    phone,
+    type,
+) {
     const data = validateResendCodeInput({ email, phone, type });
 
-    let where: Prisma.UserWhereInput = {};
+    let where = {};
 
     if (data.email) {
         where.email = data.email;

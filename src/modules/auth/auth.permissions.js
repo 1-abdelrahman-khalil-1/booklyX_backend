@@ -1,9 +1,6 @@
 import { Platform, Role } from "../../generated/prisma/client.js";
 
-export function isPlatformAllowedForRole(
-  role: Role,
-  platform: Platform,
-): boolean {
+export function isPlatformAllowedForRole(role, platform) {
   if (role === Role.client) {
     return platform === Platform.APP || platform === Platform.WEB;
   }

@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
@@ -99,8 +99,8 @@ model VerificationCode {
 // ─── Business Application ─────────────────────────────────────────────────────
 
 model BranchAdmin {
-  id Int @id @default(autoincrement())
-  userId Int? @unique
+  id           Int    @id @default(autoincrement())
+  userId       Int?   @unique
   // =========================
   // Owner (Identity Layer)
   // =========================
@@ -149,7 +149,8 @@ model BranchAdmin {
   verificationCodes ApplicationVerificationCode[]
   documents         ApplicationDocument[]
   staffs            Staff[]
-  user User? @relation(fields: [userId], references: [id])
+  user              User?                         @relation(fields: [userId], references: [id])
+
   @@index([status])
   @@index([email])
   @@index([phone])
@@ -165,9 +166,9 @@ model ApplicationVerificationCode {
   used          Boolean          @default(false)
   attempts      Int              @default(0)
   createdAt     DateTime         @default(now())
-  
+
   application BranchAdmin @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  
+
   @@index([applicationId, type])
 }
 
@@ -184,14 +185,14 @@ model ApplicationDocument {
 }
 
 model Staff {
-  id        Int        @id @default(autoincrement())
-  userId    Int        @unique
-  branchId  Int
-  staffRole StaffRole
+  id                   Int       @id @default(autoincrement())
+  userId               Int       @unique
+  branchId             Int
+  staffRole            StaffRole
   commissionPercentage Float
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  isActive             Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   professionalProfile StaffProfessionalProfile?
   certificates        StaffCertificate[]
@@ -218,15 +219,15 @@ model StaffProfessionalProfile {
 }
 
 model StaffCertificate {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   staffId    Int
   title      String
   issuer     String
   issueDate  DateTime
   expiryDate DateTime?
   fileUrl    String
-  verified   Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  verified   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
 
   staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
 

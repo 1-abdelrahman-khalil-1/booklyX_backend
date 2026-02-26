@@ -1,4 +1,3 @@
-
 export const tr = {
   USER_NOT_FOUND: "USER_NOT_FOUND",
   INVALID_CREDENTIALS: "INVALID_CREDENTIALS",
@@ -78,9 +77,4 @@ export const tr = {
   DISTRICT_REQUIRED: "DISTRICT_REQUIRED",
   APPLICATION_RETRIEVED_SUCCESSFULLY: "APPLICATION_RETRIEVED_SUCCESSFULLY",
   STAFF_CREATED: "STAFF_CREATED",
-} as const;
-
-
-export type MessageKey = (typeof tr)[keyof typeof tr];
-
-export type Messages = Record<MessageKey, string>;
+};

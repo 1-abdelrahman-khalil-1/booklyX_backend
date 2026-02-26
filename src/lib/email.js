@@ -15,10 +15,7 @@ const transporter = nodemailer.createTransport({
 /**
  * Sends email verification code (6 digits) to user
  */
-export async function sendEmailVerification(
-  email: string,
-  code: string,
-): Promise<void> {
+export async function sendEmailVerification(email, code) {
   // await transporter.sendMail({
   //   from: process.env.EMAIL_FROM || '"BooklyX" <noreply@booklyx.com>',
   //   to: email,
@@ -38,10 +35,7 @@ export async function sendEmailVerification(
 /**
  * Sends password reset OTP code to user
  */
-export async function sendPasswordResetEmail(
-  email: string,
-  code: string,
-): Promise<void> {
+export async function sendPasswordResetEmail(email, code) {
   // await transporter.sendMail({
   //   from: process.env.EMAIL_FROM || '"BooklyX" <noreply@booklyx.com>',
   //   to: email,
@@ -61,10 +55,7 @@ export async function sendPasswordResetEmail(
 /**
  * Sends phone verification code via email (temporary, until SMS is integrated)
  */
-export async function sendPhoneVerificationCode(
-  email: string,
-  code: string,
-): Promise<void> {
+export async function sendPhoneVerificationCode(email, code) {
   // await transporter.sendMail({
   //   from: process.env.EMAIL_FROM || '"BooklyX" <noreply@booklyx.com>',
   //   to: email,
