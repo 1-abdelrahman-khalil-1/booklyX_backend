@@ -1,64 +1,51 @@
-import { z } from "zod";
 import { ApplicationStatus, Role, UserStatus } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
+import { AppError } from "../../utils/AppError.js";
+import { approveApplicationSchema, rejectApplicationSchema, validateAdminInput } from "./admin.validation.js";
 
 // ─── Domain Error Classes ─────────────────────────────────────────────────────
 
-export class AdminValidationError extends Error {
-    public params?: Record<string, string>;
+export class AdminValidationError extends AppError {
     constructor(message: string, params?: Record<string, string>) {
-        super(message);
-        this.params = params;
+        super(message, 400, params);
         this.name = "AdminValidationError";
     }
 }
 
-export class ApplicationNotFound extends Error {
+export class ApplicationNotFound extends AppError {
     constructor() {
-        super(tr.APPLICATION_NOT_FOUND);
+        super(tr.APPLICATION_NOT_FOUND, 404);
         this.name = "ApplicationNotFound";
     }
 }
 
-export class ApplicationNotPendingError extends Error {
+export class ApplicationNotPendingError extends AppError {
     constructor() {
-        super(tr.APPLICATION_NOT_PENDING_APPROVAL);
+        super(tr.APPLICATION_NOT_PENDING_APPROVAL, 400);
         this.name = "ApplicationNotPendingError";
     }
 }
 
-// ─── Zod Schemas ─────────────────────────────────────────────────────────────
 
-const approveApplicationSchema = z.object({
-    id: z.number(),
-});
-
-const rejectApplicationSchema = z.object({
-    id: z.number(),
-    reason: z.string({ error: tr.REJECTION_REASON_REQUIRED }),
-});
-
-// ─── Admin Services ──────────────────────────────────────────────────────────
-
-/**
- * listApplications — List business applications with optional status filter.
- */
 export async function listApplications(status?: ApplicationStatus) {
-    return await prisma.businessApplication.findMany({
-        where: status ? { status } : { status: ApplicationStatus.PENDING_APPROVAL },
+
+    const applications = await prisma.branchAdmin.findMany({
+        where: status ? { status } : { status: ApplicationStatus.PENDING },
         include: {
             documents: true,
         },
         orderBy: { createdAt: "desc" },
     });
+
+    return applications.map((app) => {
+        const { passwordHash: _passwordHash, ...safeApp } = app;
+        return safeApp;
+    });
 }
 
-/**
- * getApplicationDetail — Get full detail of a business application.
- */
 export async function getApplicationDetail(id: number) {
-    const application = await prisma.businessApplication.findUnique({
+    const application = await prisma.branchAdmin.findUnique({
         where: { id },
         include: {
             documents: true,
@@ -70,25 +57,22 @@ export async function getApplicationDetail(id: number) {
     });
 
     if (!application) throw new ApplicationNotFound();
-    return application;
+    const { passwordHash: _passwordHash, ...safeApplication } = application;
+    return safeApplication;
 }
 
-/**
- * approveApplication — approve application and create User record.
- */
 export async function approveApplication(id: number) {
-    const application = await prisma.businessApplication.findUnique({
-        where: { id },
+    const parsed = validateAdminInput(approveApplicationSchema, { id });
+    const application = await prisma.branchAdmin.findUnique({
+        where: { id: parsed.id },
     });
 
     if (!application) throw new ApplicationNotFound();
-    if (application.status !== ApplicationStatus.PENDING_APPROVAL) {
+    if (application.status !== ApplicationStatus.PENDING) {
         throw new ApplicationNotPendingError();
     }
 
-    // Transaction: Create User + Update Application Status
     return await prisma.$transaction(async (tx) => {
-        // 1. Create the User row
         const user = await tx.user.create({
             data: {
                 name: application.ownerName,
@@ -102,10 +86,12 @@ export async function approveApplication(id: number) {
             },
         });
 
-        // 2. Mark application as APPROVED
-        await tx.businessApplication.update({
+        await tx.branchAdmin.update({
             where: { id: application.id },
-            data: { status: ApplicationStatus.APPROVED },
+            data: {
+                userId: user.id,
+                status: ApplicationStatus.APPROVED,
+            },
         });
 
         // Omit password from returned user
@@ -114,20 +100,19 @@ export async function approveApplication(id: number) {
     });
 }
 
-/**
- * rejectApplication — mark application as rejected.
- */
+
 export async function rejectApplication(id: number, reason: string) {
-    const application = await prisma.businessApplication.findUnique({
-        where: { id },
+    const parsed = validateAdminInput(rejectApplicationSchema, { id, reason });
+    const application = await prisma.branchAdmin.findUnique({
+        where: { id: parsed.id },
     });
 
     if (!application) throw new ApplicationNotFound();
-    if (application.status !== ApplicationStatus.PENDING_APPROVAL) {
+    if (application.status !== ApplicationStatus.PENDING) {
         throw new ApplicationNotPendingError();
     }
 
-    await prisma.businessApplication.update({
+    await prisma.branchAdmin.update({
         where: { id: application.id },
         data: {
             status: ApplicationStatus.REJECTED,

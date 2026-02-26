@@ -15,7 +15,7 @@ This README is adapted from `docs/postman-routes.md` and serves as the GitHub en
 
 ## Default Admin Account
 
-For testing admin-only endpoints (like `POST /users`), use these credentials:
+For testing admin-only endpoints (like `GET /admin/applications`), use these credentials:
 
 **Email:** `admin@booklyx.com`  
 **Password:** `12345678`  
@@ -142,24 +142,6 @@ Resets password using `resetToken`.
 }
 ```
 
-## Users Endpoints (`/users`)
-
-### `POST /users`
-
-Create user endpoint, allowed for `super_admin` and `branch_admin` only.
-
-**Request body**
-
-```json
-{
-  "name": "Staff Member",
-  "email": "staff1@example.com",
-  "password": "12345678",
-  "phone": "0123456780",
-  "role": "staff" // "client", "branch_admin", "super_admin"
-}
-```
-
 ## Branch Admin Onboarding (`/branch-admin`)
 
 ### `POST /branch-admin/apply`
@@ -195,6 +177,21 @@ Verifies application email.
 
 Verifies application phone. Moves application to review state.
 
+### `POST /branch-admin/create-staff`
+
+Creates a staff user account.
+
+**Request body**
+
+```json
+{
+  "name": "Sara Ali",
+  "email": "staff@example.com",
+  "phone": "0101234567",
+  "password": "12345678"
+}
+```
+
 ## Admin Management (`/admin`)
 
 Requires `super_admin` role.
@@ -202,6 +199,10 @@ Requires `super_admin` role.
 ### `GET /admin/applications`
 
 List all business applications.
+
+### `GET /admin/applications/:id`
+
+Get business application details by ID.
 
 ### `POST /admin/applications/:id/approve`
 
@@ -224,7 +225,7 @@ Reject an application with a reason.
 
 1. Run `npx prisma db seed` (first time only)
 2. `POST /auth/login` with admin credentials (see "Default Admin Account" above)
-3. Use returned token in admin-only endpoints like `POST /users`
+3. Use returned token in admin-only endpoints like `GET /admin/applications`
 
 ## Project Commands
 

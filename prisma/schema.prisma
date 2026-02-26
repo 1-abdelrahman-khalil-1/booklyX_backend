@@ -14,6 +14,12 @@ enum Role {
   super_admin
 }
 
+enum StaffRole {
+  DOCTOR
+  BARBER
+  SPA_SPECIALIST
+}
+
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -56,13 +62,13 @@ enum ApplicationDocumentType {
 // ─── User & Verification ─────────────────────────────────────────────────────
 
 model User {
-  id        Int        @id @default(autoincrement())
-  name      String
-  email     String     @unique
-  password  String
-  phone     String     @unique
-  role      Role
-  status    UserStatus @default(ACTIVE)
+  id       Int        @id @default(autoincrement())
+  name     String
+  email    String     @unique
+  password String
+  phone    String     @unique
+  role     Role
+  status   UserStatus @default(ACTIVE)
 
   emailVerified Boolean @default(false)
   phoneVerified Boolean @default(false)
@@ -71,6 +77,8 @@ model User {
   updatedAt DateTime @default(now()) @updatedAt
 
   verificationCodes VerificationCode[]
+  staff             Staff?
+  branchAdmin       BranchAdmin?
 }
 
 model VerificationCode {
@@ -90,30 +98,30 @@ model VerificationCode {
 
 // ─── Business Application ─────────────────────────────────────────────────────
 
-model BusinessApplication {
+model BranchAdmin {
   id Int @id @default(autoincrement())
-
+  userId Int? @unique
   // =========================
   // Owner (Identity Layer)
   // =========================
   ownerName    String
-  email        String @unique
-  phone        String @unique
+  email        String
+  phone        String
   passwordHash String
 
   // =========================
   // Business Info
   // =========================
-  businessName String
-  category     BusinessCategory
-  description  String?
-  commercialRegisterNumber     String
-  taxId        String
-  logoUrl      String?
-  taxCertificateUrl String?
-  commercialRegisterUrl String?
-  nationalIdUrl String?
-  facilityLicenseUrl String?
+  businessName             String
+  category                 BusinessCategory
+  description              String?
+  commercialRegisterNumber String
+  taxId                    String
+  logoUrl                  String?
+  taxCertificateUrl        String?
+  commercialRegisterUrl    String?
+  nationalIdUrl            String?
+  facilityLicenseUrl       String?
 
   // =========================
   // Location Info
@@ -140,10 +148,12 @@ model BusinessApplication {
   // =========================
   verificationCodes ApplicationVerificationCode[]
   documents         ApplicationDocument[]
-
+  staffs            Staff[]
+  user User? @relation(fields: [userId], references: [id])
   @@index([status])
   @@index([email])
   @@index([phone])
+  @@map("BranchAdmin")
 }
 
 model ApplicationVerificationCode {
@@ -155,9 +165,9 @@ model ApplicationVerificationCode {
   used          Boolean          @default(false)
   attempts      Int              @default(0)
   createdAt     DateTime         @default(now())
-
-  application BusinessApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-
+  
+  application BranchAdmin @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  
   @@index([applicationId, type])
 }
 
@@ -168,7 +178,57 @@ model ApplicationDocument {
   fileUrl       String
   createdAt     DateTime                @default(now())
 
-  application BusinessApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  application BranchAdmin @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@index([applicationId])
+}
+
+model Staff {
+  id        Int        @id @default(autoincrement())
+  userId    Int        @unique
+  branchId  Int
+  staffRole StaffRole
+  commissionPercentage Float
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  professionalProfile StaffProfessionalProfile?
+  certificates        StaffCertificate[]
+
+  user   User        @relation(fields: [userId], references: [id])
+  branch BranchAdmin @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([branchId])
+  @@map("Staff")
+}
+
+model StaffProfessionalProfile {
+  id                Int      @id @default(autoincrement())
+  staffId           Int      @unique
+  bio               String?
+  yearsOfExperience Int?
+  licenseNumber     String?
+  specialization    String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+}
+
+model StaffCertificate {
+  id         Int      @id @default(autoincrement())
+  staffId    Int
+  title      String
+  issuer     String
+  issueDate  DateTime
+  expiryDate DateTime?
+  fileUrl    String
+  verified   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
 }

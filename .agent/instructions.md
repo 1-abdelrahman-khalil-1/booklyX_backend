@@ -24,7 +24,7 @@ Every module follows a unidirectional 4-layer flow:
 
 ## 3. Prisma 7 & ESM Rules
 
-- **Prisma Client**: Import from `../../generated/prisma/index.js`. Never from `@prisma/client`.
+- **Prisma Client**: Import from `../../generated/prisma/client.js`. Never from `@prisma/client`.
 - **Enums**: Value-only. Behavioral logic (e.g. `isClient`) stays in TS service/helpers.
 - **ESM**: Every local import **must** include the `.js` extension (e.g. `import x from "./y.js"`).
 
@@ -46,17 +46,17 @@ Every module follows a unidirectional 4-layer flow:
 - **Passwords**: Hash with `bcrypt` (10 rounds) in the Service.
 - **Data Leakage**: Always strip `password` and sensitive fields before returning user objects.
 - **OTP**: 6-digit codes. DB stores **bcrypt hashes** of OTPs, never raw codes.
-- **Verification**: Strictly enforce the Register → Verify Email → Verify Phone flow.
-- **Branch Admin Onboarding**:
-  - Use `BusinessApplication` table for applicants. Do **not** create a `User` row until approved.
-  - Verification (`EMAIL` and `PHONE`) must occur on the `BusinessApplication` record first.
-  - Lifecycle: `PENDING_VERIFICATION` → `PENDING_APPROVAL` → `APPROVED` (creates `User`) or `REJECTED`.
-  - Approved branch admins log in via the shared `/auth/login` endpoint.
+- **Verification Funnels**:
+  - **Auth (Client)**: `register` -> `verify-email` -> `verify-phone`. Returns token on final step.
+  - **Branch Admin Onboarding**: `apply` -> `verify-email` -> `verify-phone`. Application moves to `PENDING_APPROVAL`.
+- **Admin Management**: Use `/admin` module for application review (`list`, `detail`, `approve`, `reject`). Approve creates the `User` record.
+- **User Management**: Use `/users` module for creating internal accounts (`staff`, `branch_admin`, `super_admin`).
 
-## 7. Postman Sync Policy (Critical)
+## 7. Postman & Documentation Style (Critical)
 
-Any change to API surface (routes, inputs, outputs, status codes) requires updating the Postman documentation.
-**Mandatory Final Step**: Run `npm run postman:sync` after any API-related task.
+- **Comment Style**: When providing JSON examples in Postman or documentation, always include enum options as comments (e.g., `"role": "staff" // "client", "branch_admin", "super_admin"`).
+- **Sync Policy**: Any change to API surface requires updating the Postman documentation.
+- **Mandatory Final Step**: Run `npm run postman:sync` after any API-related task.
 
 ## 8. Interaction Style: Teaching Mode
 

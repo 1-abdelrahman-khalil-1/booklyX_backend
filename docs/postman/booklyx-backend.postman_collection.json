@@ -12,6 +12,7 @@
           "name": "Register",
           "request": {
             "method": "POST",
+            "description": "Enum parameters:\n- Header `platform`: APP | WEB\n- Header `Accept-Language`: en | ar",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept-Language", "value": "{{lang}}" },
@@ -28,6 +29,7 @@
           "name": "Login",
           "request": {
             "method": "POST",
+            "description": "Enum parameters:\n- Header `platform`: APP | WEB\n- Header `Accept-Language`: en | ar",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept-Language", "value": "{{lang}}" },
@@ -58,6 +60,7 @@
           "name": "Admin Login",
           "request": {
             "method": "POST",
+            "description": "Enum parameters:\n- Header `platform`: APP | WEB (this request uses WEB)\n- Header `Accept-Language`: en | ar",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept-Language", "value": "en" },
@@ -104,6 +107,7 @@
           "name": "Verify Phone",
           "request": {
             "method": "POST",
+            "description": "Enum parameters:\n- Header `platform`: APP | WEB\n- Header `Accept-Language`: en | ar",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept-Language", "value": "{{lang}}" },
@@ -134,6 +138,7 @@
           "name": "Resend Code",
           "request": {
             "method": "POST",
+            "description": "Enum parameters:\n- Body `type`: EMAIL | PHONE | PASSWORD_RESET\n- Header `Accept-Language`: en | ar",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept-Language", "value": "{{lang}}" }
@@ -213,6 +218,7 @@
           "name": "Apply",
           "request": {
             "method": "POST",
+            "description": "Enum parameters:\n- Body `category`: SPA | CLINIC | BARBER\n- Header `platform`: APP | WEB (this request uses WEB)\n- Header `Accept-Language`: en | ar",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept-Language", "value": "{{lang}}" },
@@ -259,6 +265,7 @@
           "name": "Resend Code",
           "request": {
             "method": "POST",
+            "description": "Enum parameters:\n- Body `type`: EMAIL | PHONE\n- Header `Accept-Language`: en | ar",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept-Language", "value": "{{lang}}" }
@@ -268,6 +275,21 @@
               "raw": "{\n  \"email\": \"branch@example.com\",\n  \"type\": \"EMAIL\" // \"PHONE\"\n}"
             },
             "url": "{{baseUrl}}/branch-admin/resend-code"
+          }
+        },
+        {
+          "name": "Create Staff",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sara Ali\",\n  \"email\": \"staff@example.com\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\"\n}"
+            },
+            "url": "{{baseUrl}}/branch-admin/create-staff"
           }
         }
       ]
@@ -279,6 +301,7 @@
           "name": "List Applications",
           "request": {
             "method": "GET",
+            "description": "Enum parameters:\n- Query `status`: PENDING_VERIFICATION | PENDING_APPROVAL | APPROVED | REJECTED\n- Header `platform`: APP | WEB (this request uses WEB)\n- Header `Accept-Language`: en | ar",
             "header": [
               { "key": "Accept-Language", "value": "{{lang}}" },
               { "key": "platform", "value": "WEB" },
@@ -331,28 +354,6 @@
               "raw": "{\n  \"reason\": \"Incomplete data\"\n}"
             },
             "url": "{{baseUrl}}/admin/applications/1/reject"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Users",
-      "item": [
-        {
-          "name": "Create User (Staff/Admin)",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Accept-Language", "value": "{{lang}}" },
-              { "key": "platform", "value": "{{platform}}" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"staff@example.com\",\n  \"password\": \"12345678\",\n  \"phone\": \"0123456780\",\n  \"role\": \"staff\" // \"client\", \"branch_admin\", \"super_admin\"\n}"
-            },
-            "url": "{{baseUrl}}/users"
           }
         }
       ]

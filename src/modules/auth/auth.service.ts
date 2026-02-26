@@ -1,6 +1,5 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { z } from "zod";
 import {
     Platform,
     Prisma,
@@ -15,7 +14,20 @@ import {
 } from "../../lib/email.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
+import { AppError } from "../../utils/AppError.js";
 import { isPlatformAllowedForRole } from "./auth.permissions.js";
+import {
+    loginSchema,
+    platformSchema,
+    registerSchema,
+    requestPasswordResetSchema,
+    resendCodeSchema,
+    resetPasswordSchema,
+    validateAuthInput,
+    verifyEmailSchema,
+    verifyPasswordResetSchema,
+    verifyPhoneSchema,
+} from "./auth.validation.js";
 
 const SALT_ROUNDS = 10;
 
@@ -27,67 +39,72 @@ const MAX_ATTEMPTS = 5;
 
 // ─── Domain Error Classes ─────────────────────────────────────────────────────
 
-export class AuthValidationError extends Error {
-    public params?: Record<string, string>;
+export class AuthValidationError extends AppError {
     constructor(message: string, params?: Record<string, string>) {
-        super(message);
-        this.params = params;
+        super(message, 400, params);
         this.name = "AuthValidationError";
     }
 }
 
-export class UserNotFound extends Error {
+export class UserNotFound extends AppError {
     constructor() {
-        super(tr.USER_NOT_FOUND);
+        super(tr.USER_NOT_FOUND, 404);
         this.name = "UserNotFound";
     }
 }
 
-export class InvalidCredentialsError extends Error {
+export class InvalidCredentialsError extends AppError {
     constructor() {
-        super(tr.INVALID_CREDENTIALS);
+        super(tr.INVALID_CREDENTIALS, 401);
         this.name = "InvalidCredentialsError";
     }
 }
 
-export class PlatformAccessDeniedError extends Error {
+export class PlatformAccessDeniedError extends AppError {
     constructor() {
-        super(tr.PLATFORM_ACCESS_DENIED);
+        super(tr.PLATFORM_ACCESS_DENIED, 403);
         this.name = "PlatformAccessDeniedError";
     }
 }
 
-export class InactiveUserError extends Error {
+export class InactiveUserError extends AppError {
     constructor() {
-        super(tr.INACTIVE_USER);
+        super(tr.INACTIVE_USER, 403);
         this.name = "InactiveUserError";
     }
 }
 
-export class DuplicateAccountError extends Error {
+export class BranchAdminNotApprovedError extends AppError {
+    constructor() {
+        super(tr.APPLICATION_NOT_PENDING_APPROVAL, 403);
+        this.name = "BranchAdminNotApprovedError";
+    }
+}
+
+export class DuplicateAccountError extends AppError {
     constructor(message: string) {
-        super(message);
+        super(message, 409);
         this.name = "DuplicateAccountError";
     }
 }
 
-export class TokenExpiredError extends Error {
+export class TokenExpiredError extends AppError {
     constructor() {
-        super(tr.TOKEN_EXPIRED);
+        super(tr.TOKEN_EXPIRED, 400);
         this.name = "TokenExpiredError";
     }
 }
 
-export class InvalidTokenError extends Error {
+export class InvalidTokenError extends AppError {
     constructor() {
-        super(tr.INVALID_TOKEN);
+        super(tr.INVALID_TOKEN, 400);
         this.name = "InvalidTokenError";
     }
 }
 
-export class MaxAttemptsExceededError extends Error {
+export class MaxAttemptsExceededError extends AppError {
     constructor() {
-        super(tr.MAX_ATTEMPTS_EXCEEDED);
+        super(tr.MAX_ATTEMPTS_EXCEEDED, 429);
         this.name = "MaxAttemptsExceededError";
     }
 }
@@ -97,9 +114,9 @@ export class MaxAttemptsExceededError extends Error {
  * HTTP 403 — distinct from PhoneNotVerifiedError so the client can route
  * the user to the correct verification screen.
  */
-export class EmailNotVerifiedError extends Error {
+export class EmailNotVerifiedError extends AppError {
     constructor() {
-        super(tr.EMAIL_NOT_VERIFIED);
+        super(tr.EMAIL_NOT_VERIFIED, 403);
         this.name = "EmailNotVerifiedError";
     }
 }
@@ -109,126 +126,13 @@ export class EmailNotVerifiedError extends Error {
  * HTTP 403 — a different status code from EmailNotVerifiedError lets the
  * client distinguish which step is pending.
  */
-export class PhoneNotVerifiedError extends Error {
+export class PhoneNotVerifiedError extends AppError {
     constructor() {
-        super(tr.PHONE_NOT_VERIFIED);
+        super(tr.PHONE_NOT_VERIFIED, 403);
         this.name = "PhoneNotVerifiedError";
     }
 }
 
-// ─── Zod Schemas ─────────────────────────────────────────────────────────────
-
-const loginSchema = z.object({
-    email: z.email({
-        error: (issue) => {
-            if (issue.input === undefined) return tr.EMAIL_REQUIRED;
-            return tr.EMAIL_INVALID;
-        },
-    }),
-    password: z.string({ error: tr.PASSWORD_REQUIRED }),
-});
-
-const registerSchema = z.object({
-    name: z.string({ error: tr.NAME_REQUIRED }),
-    email: z.email({
-        error: (issue) => {
-            if (issue.input === undefined) return tr.EMAIL_REQUIRED;
-            return tr.EMAIL_INVALID;
-        },
-    }),
-    password: z
-        .string({ error: tr.PASSWORD_REQUIRED })
-        .min(8, tr.PASSWORD_MIN_LENGTH),
-    phone: z
-        .string({ error: tr.PHONE_REQUIRED })
-        .regex(/^\d{10}$/, tr.PHONE_INVALID),
-});
-
-const platformSchema = z.enum(Platform, {
-    error: tr.PLATFORM_MUST_BE_ONE_OF,
-});
-
-const verifyEmailSchema = z.object({
-    email: z.email({
-        error: (issue) => {
-            if (issue.input === undefined) return tr.EMAIL_REQUIRED;
-            return tr.EMAIL_INVALID;
-        },
-    }),
-    code: z.string({ error: tr.OTP_REQUIRED }),
-});
-
-const verifyPhoneSchema = z.object({
-    email: z.email({
-        error: (issue) => {
-            if (issue.input === undefined) return tr.EMAIL_REQUIRED;
-            return tr.EMAIL_INVALID;
-        },
-    }),
-    code: z.string({ error: tr.OTP_REQUIRED }),
-});
-
-const requestPasswordResetSchema = z.object({
-    email: z.email({
-        error: (issue) => {
-            if (issue.input === undefined) return tr.EMAIL_REQUIRED;
-            return tr.EMAIL_INVALID;
-        },
-    }),
-});
-
-const verifyPasswordResetSchema = z.object({
-    email: z.email({
-        error: (issue) => {
-            if (issue.input === undefined) return tr.EMAIL_REQUIRED;
-            return tr.EMAIL_INVALID;
-        },
-    }),
-    code: z.string({ error: tr.OTP_REQUIRED }),
-});
-
-const resetPasswordSchema = z.object({
-    resetToken: z.string({ error: tr.TOKEN_REQUIRED }),
-    newPassword: z
-        .string({ error: tr.PASSWORD_REQUIRED })
-        .min(8, tr.PASSWORD_MIN_LENGTH),
-});
-
-const resendCodeSchema = z
-    .object({
-        email: z
-            .email({
-                error: (issue) => {
-                    if (issue.input === undefined) return tr.EMAIL_REQUIRED;
-                    return tr.EMAIL_INVALID;
-                },
-            })
-            .optional(),
-        phone: z
-            .string({ error: tr.PHONE_REQUIRED })
-            .regex(/^\d{10}$/, tr.PHONE_INVALID)
-            .optional(),
-        type: z.enum([
-            VerificationType.EMAIL,
-            VerificationType.PHONE,
-            VerificationType.PASSWORD_RESET,
-        ]),
-    })
-    .refine(
-        (data) => {
-            if (
-                data.type === VerificationType.EMAIL ||
-                data.type === VerificationType.PASSWORD_RESET ||
-                data.type === VerificationType.PHONE
-            ) {
-                return !!data.email;
-            }
-            return true;
-        },
-        {
-            message: tr.EMAIL_REQUIRED,
-        },
-    );
 
 // ─── Parse Helper ─────────────────────────────────────────────────────────────
 
@@ -238,61 +142,46 @@ const resendCodeSchema = z
  * On failure re-throws the first validation issue as an `AuthValidationError`
  * (an i18n key), so the controller can translate it per the user's language.
  */
-function parseWithAuthError<T>(schema: z.ZodType<T>, data: unknown): T {
-    const result = schema.safeParse(data);
-    if (result.success) return result.data;
-
-    const firstIssue = result.error.issues[0];
-
-    // Attach dynamic enum values for the platform error
-    if (firstIssue.message === tr.PLATFORM_MUST_BE_ONE_OF) {
-        throw new AuthValidationError(firstIssue.message, {
-            values: Object.values(Platform).join(", "),
-        });
-    }
-
-    throw new AuthValidationError(firstIssue.message);
-}
 
 // ─── Thin Validate Wrappers ───────────────────────────────────────────────────
 
 function validateLoginInput(data: unknown) {
-    return parseWithAuthError(loginSchema, data);
+    return validateAuthInput(loginSchema, data);
 }
 
 function validatePlatform(platform: unknown): Platform {
     if (!platform || typeof platform !== "string") {
         throw new AuthValidationError(tr.PLATFORM_HEADER_REQUIRED);
     }
-    return parseWithAuthError(platformSchema, platform);
+    return validateAuthInput(platformSchema, platform);
 }
 
 function validateRegisterInput(data: unknown) {
-    return parseWithAuthError(registerSchema, data);
+    return validateAuthInput(registerSchema, data);
 }
 
 function validateVerifyEmailInput(data: unknown) {
-    return parseWithAuthError(verifyEmailSchema, data);
+    return validateAuthInput(verifyEmailSchema, data);
 }
 
 function validateVerifyPhoneInput(data: unknown) {
-    return parseWithAuthError(verifyPhoneSchema, data);
+    return validateAuthInput(verifyPhoneSchema, data);
 }
 
 function validateRequestPasswordResetInput(data: unknown) {
-    return parseWithAuthError(requestPasswordResetSchema, data);
+    return validateAuthInput(requestPasswordResetSchema, data);
 }
 
 function validateVerifyPasswordResetInput(data: unknown) {
-    return parseWithAuthError(verifyPasswordResetSchema, data);
+    return validateAuthInput(verifyPasswordResetSchema, data);
 }
 
 function validateResetPasswordInput(data: unknown) {
-    return parseWithAuthError(resetPasswordSchema, data);
+    return validateAuthInput(resetPasswordSchema, data);
 }
 
 function validateResendCodeInput(data: unknown) {
-    return parseWithAuthError(resendCodeSchema, data);
+    return validateAuthInput(resendCodeSchema, data);
 }
 
 // ─── OTP Helpers ─────────────────────────────────────────────────────────────
@@ -376,13 +265,23 @@ export async function login(body: unknown, platformHeader: unknown) {
     const { email, password } = validateLoginInput(body);
     const platform = validatePlatform(platformHeader);
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+        where: { email },
+        include: { branchAdmin: true },
+    });
     if (!user) throw new UserNotFound();
 
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     if (!isPasswordMatch) throw new InvalidCredentialsError();
 
     if (user.status !== UserStatus.ACTIVE) throw new InactiveUserError();
+
+    if (user.role === Role.branch_admin) {
+        if (!user.branchAdmin || user.branchAdmin.status !== "APPROVED") {
+            throw new BranchAdminNotApprovedError();
+        }
+    }
+
     if (!isPlatformAllowedForRole(user.role, platform)) throw new PlatformAccessDeniedError();
 
     // Enforce verification funnel — email first, then phone
@@ -401,7 +300,7 @@ export async function login(body: unknown, platformHeader: unknown) {
  * Token is NOT issued here — the user must complete both verifications first.
  */
 export async function register(body: unknown, platformHeader: unknown) {
-    const {name, email, password, phone } = validateRegisterInput(body);
+    const { name, email, password, phone } = validateRegisterInput(body);
     const platform = validatePlatform(platformHeader);
 
     // Only CLIENTs can self-register; staff/admins are created by super admins

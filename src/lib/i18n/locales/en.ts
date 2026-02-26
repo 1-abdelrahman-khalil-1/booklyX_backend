@@ -92,6 +92,8 @@ const en: Messages = {
   COMMERCIAL_REGISTER_NUMBER_REQUIRED: "Commercial register number is required.",
   DESCRIPTION_REQUIRED: "Description is required.",
   DISTRICT_REQUIRED: "District is required.",
+  APPLICATION_RETRIEVED_SUCCESSFULLY: "Application retrieved successfully.",
+  STAFF_CREATED: "Staff created successfully.",
 };
 
 export default en;

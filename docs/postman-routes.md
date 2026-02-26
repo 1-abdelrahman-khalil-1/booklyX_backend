@@ -18,7 +18,7 @@ This file is the single source of truth for:
 
 ### Default Admin Account (For Testing)
 
-To test admin-only endpoints (like `POST /users`), use these **seeded credentials**:
+To test admin-only endpoints (like `GET /admin/applications`), use these **seeded credentials**:
 
 **Email:** `admin@booklyx.com`  
 **Password:** `12345678`  
@@ -362,53 +362,7 @@ Error example (`400`):
 }
 ```
 
-## 3) Users endpoints (`/users`)
-
-### POST `/users`
-
-Create user endpoint, allowed for `super_admin` and `branch_admin` only.
-
-Request body:
-
-```json
-{
-  "name": "Staff Member",
-  "email": "staff1@example.com",
-  "password": "12345678",
-  "phone": "0123456780",
-  "role": "staff" // "client", "branch_admin", "super_admin"
-}
-```
-
-Success example (`201`):
-
-```json
-{
-  "status": 201,
-  "error": false,
-  "message": "User created successfully.",
-  "data": {
-    "id": 2,
-    "name": "Staff Member",
-    "email": "staff1@example.com",
-    "phone": "0123456780",
-    "role": "staff"
-  }
-}
-```
-
-Error example (`403`):
-
-```json
-{
-  "status": 403,
-  "error": true,
-  "message": "You do not have permission to access this resource.",
-  "data": null
-}
-```
-
-## 4) Branch Admin Onboarding (`/branch-admin`)
+## 3) Branch Admin Onboarding (`/branch-admin`)
 
 ### POST `/branch-admin/apply`
 
@@ -513,7 +467,42 @@ Request body:
 }
 ```
 
-## 5) Admin Management (`/admin`)
+---
+
+### POST `/branch-admin/create-staff`
+
+Creates a staff user account.
+
+Request body:
+
+```json
+{
+  "name": "Sara Ali",
+  "email": "staff@example.com",
+  "phone": "0101234567",
+  "password": "12345678"
+}
+```
+
+Success example (`201`):
+
+```json
+{
+  "status": 201,
+  "error": false,
+  "message": "Staff created successfully.",
+  "data": {
+    "id": 10,
+    "name": "Sara Ali",
+    "email": "staff@example.com",
+    "phone": "0101234567",
+    "role": "staff",
+    "status": "ACTIVE"
+  }
+}
+```
+
+## 4) Admin Management (`/admin`)
 
 Requires `super_admin` role.
 
@@ -536,6 +525,28 @@ Success example (`200`):
       "status": "PENDING_APPROVAL"
     }
   ]
+}
+```
+
+---
+
+### GET `/admin/applications/:id`
+
+Get application details by ID.
+
+Success example (`200`):
+
+```json
+{
+  "status": 200,
+  "error": false,
+  "message": "Application retrieved successfully.",
+  "data": {
+    "id": 1,
+    "ownerName": "Abdo Khalil",
+    "email": "branch@example.com",
+    "status": "PENDING_APPROVAL"
+  }
 }
 ```
 
@@ -574,7 +585,7 @@ Request body:
 }
 ```
 
-## 6) Quick test order
+## 5) Quick test order
 
 ### For Client Registration & Login
 
@@ -593,14 +604,14 @@ Request body:
      "password": "12345678"
    }
    ```
-3. Use returned token in admin-only endpoints like `POST /users`
+3. Use returned token in admin-only endpoints like `GET /admin/applications`
 
-## 5) Postman files in repo
+## 6) Postman files in repo
 
 - Collection: `docs/postman/booklyx-backend.postman_collection.json`
 - Environment: `docs/postman/booklyx-backend.postman_environment.json`
 
-## 6) Sync to Postman Cloud
+## 7) Sync to Postman Cloud
 
 `postman:sync` reads from `.env` automatically.
 

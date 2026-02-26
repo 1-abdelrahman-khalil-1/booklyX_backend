@@ -83,6 +83,8 @@ const ar: Messages = {
   COMMERCIAL_REGISTER_NUMBER_REQUIRED: "رقم السجل التجاري مطلوب.",
   DESCRIPTION_REQUIRED: "الوصف مطلوب.",
   DISTRICT_REQUIRED: "المنطقة مطلوبة.",
+  APPLICATION_RETRIEVED_SUCCESSFULLY: "تم استرجاع الطلب بنجاح.",
+  STAFF_CREATED: "تم إنشاء الموظف بنجاح.",
 };
 
 export default ar;
