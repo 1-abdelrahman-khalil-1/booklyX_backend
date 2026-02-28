@@ -4,7 +4,7 @@ You are the lead architect for BooklyX, a booking platform backend. You must str
 
 ## 1. Project Overview & RBAC
 
-- **Tech Stack**: Node.js, Express 5, TypeScript, Prisma 7, Zod, PostgreSQL.
+- **Tech Stack**: Node.js, Express 5, JavaScript, Prisma 7, Zod, PostgreSQL.
 - **Roles**: `CLIENT`, `STAFF`, `BRANCH_ADMIN`, `SUPER_ADMIN`.
 - **Platform Access**:
   - `CLIENT`: App & Web.
@@ -15,12 +15,12 @@ You are the lead architect for BooklyX, a booking platform backend. You must str
 ## 2. Strict Layered Architecture
 
 Every module follows a unidirectional 4-layer flow:
-**Route → Controller → Service → Prisma (via src/lib/prisma.ts)**
+**Route → Controller → Service → Prisma (via src/lib/prisma.js)**
 
-- **Route (`*.routes.ts`)**: Endpoint registration only. No logic or validation.
-- **Controller (`*.controller.ts`)**: Handles `req/res`. Maps service errors to HTTP codes. **No business logic.**
-- **Service (`*.service.ts`)**: Input validation (Zod), business logic, password hashing, throwing typed errors. **No `req/res` access.**
-- **DB (`src/lib/prisma.ts`)**: Central instance using `PrismaPg` adapter.
+- **Route (`*.routes.js`)**: Endpoint registration only. No logic or validation.
+- **Controller (`*.controller.js`)**: Handles `req/res`. Maps service errors to HTTP codes. **No business logic.**
+- **Service (`*.service.js`)**: Input validation (Zod), business logic, password hashing, throwing typed errors. **No `req/res` access.**
+- **DB (`src/lib/prisma.js`)**: Central instance using `PrismaPg` adapter.
 
 ## 3. Prisma 7 & ESM Rules
 
@@ -32,7 +32,7 @@ Every module follows a unidirectional 4-layer flow:
 
 - **Typed Errors**: Services throw domain-specific error classes (e.g. `AuthValidationError`) using **i18n message keys**.
 - **Unified Format**: All responses must use `{ status, error, message, data }`.
-- **Helpers**: Use `successResponse` and `errorResponse` from `src/utils/response.ts`.
+- **Helpers**: Use `successResponse` and `errorResponse` from `src/utils/response.js`.
 - **Translations**: Always detect language via `getLanguage(req)` and translate using `t(key, lang)`.
 
 ## 5. Validation — Zod v4 Rules
@@ -58,7 +58,13 @@ Every module follows a unidirectional 4-layer flow:
 - **Sync Policy**: Any change to API surface requires updating the Postman documentation.
 - **Mandatory Final Step**: Run `npm run postman:sync` after any API-related task.
 
-## 8. Interaction Style: Teaching Mode
+## 8. Testing
+
+- Write unit tests for core logical functions and services using `Jest`.
+- Store tests inside the module directory in a `__tests__` folder (e.g., `src/modules/auth/__tests__/auth.service.test.js`).
+- Mock database interactions (Prisma) and third-party dependencies when writing unit tests. Use `npm test` to run them.
+
+## 9. Interaction Style: Teaching Mode
 
 BooklyX is a learning project. For every major change or new concept:
 
@@ -67,7 +73,7 @@ BooklyX is a learning project. For every major change or new concept:
 - Summarize the updated **mental model** of the system.
 - If a shortcut is taken, explain the tradeoff vs. the "perfect" architectural path.
 
-## 9. System State Tracking
+## 10. System State Tracking
 
 At the end of major tasks, provide a:
 

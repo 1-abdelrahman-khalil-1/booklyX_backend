@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 
 // Create reusable transporter
 // For development: use Ethereal (fake SMTP) or configure with real SMTP
-const transporter = nodemailer.createTransport({
+const _transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || "smtp.ethereal.email",
   port: parseInt(process.env.EMAIL_PORT || "587"),
   secure: false, // true for 465, false for other ports
@@ -15,7 +15,9 @@ const transporter = nodemailer.createTransport({
 /**
  * Sends email verification code (6 digits) to user
  */
-export async function sendEmailVerification(email, code) {
+export const sendEmailVerification = async (_email, _code) => {
+  // Simulate delay
+  await new Promise((resolve) => setTimeout(resolve, 100));
   // await transporter.sendMail({
   //   from: process.env.EMAIL_FROM || '"BooklyX" <noreply@booklyx.com>',
   //   to: email,
@@ -30,12 +32,14 @@ export async function sendEmailVerification(email, code) {
   //     <p>If you didn't create an account, please ignore this email.</p>
   //   `,
   // });
-}
+};
 
 /**
  * Sends password reset OTP code to user
  */
-export async function sendPasswordResetEmail(email, code) {
+export const sendPasswordResetEmail = async (_email, _code) => {
+  // Simulate delay
+  await new Promise((resolve) => setTimeout(resolve, 100));
   // await transporter.sendMail({
   //   from: process.env.EMAIL_FROM || '"BooklyX" <noreply@booklyx.com>',
   //   to: email,
@@ -50,12 +54,14 @@ export async function sendPasswordResetEmail(email, code) {
   //     <p>If you didn't request a password reset, please ignore this email.</p>
   //   `,
   // });
-}
+};
 
 /**
  * Sends phone verification code via email (temporary, until SMS is integrated)
  */
-export async function sendPhoneVerificationCode(email, code) {
+export const sendPhoneVerificationCode = async (_email, _code) => {
+  // Simulate delay
+  await new Promise((resolve) => setTimeout(resolve, 100));
   // await transporter.sendMail({
   //   from: process.env.EMAIL_FROM || '"BooklyX" <noreply@booklyx.com>',
   //   to: email,
@@ -69,4 +75,4 @@ export async function sendPhoneVerificationCode(email, code) {
   //     <p>If you didn't request this code, please ignore this email.</p>
   //   `,
   // });
-}
+};

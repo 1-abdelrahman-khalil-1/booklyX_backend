@@ -1,6 +1,6 @@
 # BooklyX Backend
 
-Backend API for BooklyX (graduation project), built with **Node.js**, **Express 5**, **TypeScript**, **Prisma 7**, **Zod**, and **PostgreSQL**.
+Backend API for BooklyX (graduation project), built with **Node.js**, **Express 5**, **JavaScript**, **Prisma 7**, **Zod**, and **PostgreSQL**.
 
 This README is adapted from `docs/postman-routes.md` and serves as the GitHub entry point.
 
@@ -19,7 +19,8 @@ For testing admin-only endpoints (like `GET /admin/applications`), use these cre
 
 **Email:** `admin@booklyx.com`  
 **Password:** `12345678`  
-**Platform:** `WEB`
+**Platform:** `WEB`  
+**Role:** `super_admin`
 
 Run the seed script after database setup:
 
@@ -45,7 +46,7 @@ Creates a `CLIENT` account and sends email OTP.
 ```json
 {
   "name": "Abdo Khalil",
-  "email": "client@example.com",
+  "email": "khalil@booklyx.com",
   "password": "12345678",
   "phone": "0123456789"
 }
@@ -59,8 +60,21 @@ Logs user in (requires verified email + phone) and returns token.
 
 ```json
 {
-  "email": "client@example.com",
-  "password": "12345678"
+  "email": "khalil@booklyx.com",
+  "password": "12345678",
+  "role": "client" // "client", "branch_admin", "super_admin", "staff"
+}
+```
+
+### `POST /auth/refresh`
+
+Refreshes an access token using a valid `refreshToken`.
+
+**Request body**
+
+```json
+{
+  "refreshToken": "<valid-refresh-token>"
 }
 ```
 
@@ -179,7 +193,8 @@ Verifies application phone. Moves application to review state.
 
 ### `POST /branch-admin/create-staff`
 
-Creates a staff user account.
+Creates a staff user account associated with the logged-in branch admin's branch.
+Requires a Bearer token (`Authorization: Bearer <token>`) of a `branch_admin`.
 
 **Request body**
 
@@ -188,7 +203,9 @@ Creates a staff user account.
   "name": "Sara Ali",
   "email": "staff@example.com",
   "phone": "0101234567",
-  "password": "12345678"
+  "password": "12345678",
+  "staffRole": "SPA_SPECIALIST", // "DOCTOR", "BARBER", "SPA_SPECIALIST"
+  "commissionPercentage": 20.5
 }
 ```
 

@@ -23,7 +23,8 @@ To test admin-only endpoints (like `GET /admin/applications`), use these **seede
 **Email:** `admin@booklyx.com`  
 **Password:** `12345678`  
 **Phone:** `01000000000`  
-**Platform:** `WEB`
+**Platform:** `WEB`  
+**Role:** `super_admin`
 
 **First time setup:**
 
@@ -51,7 +52,7 @@ Request body:
 ```json
 {
   "name": "Abdo Khalil",
-  "email": "client@example.com",
+  "email": "khalil@booklyx.com",
   "password": "12345678",
   "phone": "0123456789"
 }
@@ -89,8 +90,9 @@ Request body:
 
 ```json
 {
-  "email": "client@example.com",
-  "password": "12345678"
+  "email": "khalil@booklyx.com",
+  "password": "12345678",
+  "role": "client" // "client", "branch_admin", "super_admin", "staff"
 }
 ```
 
@@ -246,6 +248,45 @@ Error example (`404`):
   "status": 404,
   "error": true,
   "message": "No user found.",
+  "data": null
+}
+```
+
+---
+
+### POST `/auth/refresh`
+
+Refreshes an access token using a valid `refreshToken`.
+
+Request body:
+
+```json
+{
+  "refreshToken": "<valid-refresh-token>"
+}
+```
+
+Success example (`200`):
+
+```json
+{
+  "status": 200,
+  "error": false,
+  "message": "Login successful.",
+  "data": {
+    "token": "<new-access-token>",
+    "refreshToken": "<new-refresh-token>"
+  }
+}
+```
+
+Error example (`400`):
+
+```json
+{
+  "status": 400,
+  "error": true,
+  "message": "Invalid token.",
   "data": null
 }
 ```
@@ -471,7 +512,8 @@ Request body:
 
 ### POST `/branch-admin/create-staff`
 
-Creates a staff user account.
+Creates a staff user account associated to the logged-in branch admin's branch.
+Requires a Bearer token (`Authorization: Bearer <token>`) of a `branch_admin` and platform header.
 
 Request body:
 
@@ -480,7 +522,9 @@ Request body:
   "name": "Sara Ali",
   "email": "staff@example.com",
   "phone": "0101234567",
-  "password": "12345678"
+  "password": "12345678",
+  "staffRole": "SPA_SPECIALIST", // "DOCTOR", "BARBER", "SPA_SPECIALIST"
+  "commissionPercentage": 20.5
 }
 ```
 
@@ -601,7 +645,8 @@ Request body:
    ```json
    {
      "email": "admin@booklyx.com",
-     "password": "12345678"
+     "password": "12345678",
+     "role": "super_admin"
    }
    ```
 3. Use returned token in admin-only endpoints like `GET /admin/applications`

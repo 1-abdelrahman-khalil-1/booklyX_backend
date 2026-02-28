@@ -1,11 +1,11 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcrypt";
 import {
-    ApplicationStatus,
-    BusinessCategory,
-    PrismaClient,
-    Role,
-    UserStatus,
+  ApplicationStatus,
+  BusinessCategory,
+  PrismaClient,
+  Role,
+  UserStatus,
 } from "../src/generated/prisma/client.js";
 
 const SUPER_ADMIN_EMAIL = "admin@booklyx.com";
@@ -32,11 +32,11 @@ const SEED_USERS = [
     status: UserStatus.ACTIVE,
   },
   {
-    name: "Mohamed Tarek",
-    email: "mohamed@booklyx.com",
+    name: "Abdo Khalil",
+    email: "khalil@booklyx.com",
     password: "12345678",
     phone: "01000000003",
-    role: Role.staff,
+    role: Role.client,
     status: UserStatus.ACTIVE,
   },
 ];
@@ -125,7 +125,6 @@ async function main() {
 
   for (const user of SEED_USERS) {
     const userPasswordHash = await bcrypt.hash(user.password, SALT_ROUNDS);
-
     await prisma.user.upsert({
       where: { email: user.email },
       update: {

@@ -64,7 +64,8 @@ const ar = {
   APPLICATION_UNDER_REVIEW: "تم التحقق من طلبك وهو الآن قيد المراجعة من قبل فريقنا.",
   APPLICATION_APPROVED: "تمت الموافقة على الطلب بنجاح.",
   APPLICATION_REJECTED: "تم رفض الطلب.",
-  APPLICATION_NOT_PENDING_APPROVAL: "هذا الطلب ليس قيد انتظار الموافقة.",
+  APPLICATION_IS_UNDER_REVIEW: "هذا الطلب قيد المراجعة.",
+  APPLICATION_IS_NOT_PENDING_APPROVAL: "هذا الطلب ليس قيد المراجعة.",
 
   // Business Validation
   BUSINESS_NAME_REQUIRED: "اسم العمل مطلوب.",

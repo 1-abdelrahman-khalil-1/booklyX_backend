@@ -73,7 +73,8 @@ const en = {
   APPLICATION_UNDER_REVIEW: "Your application has been verified and is now under review by our team.",
   APPLICATION_APPROVED: "Application approved successfully.",
   APPLICATION_REJECTED: "Application rejected.",
-  APPLICATION_NOT_PENDING_APPROVAL: "This application is not pending approval.",
+  APPLICATION_IS_UNDER_REVIEW: "This application is under review.",
+  APPLICATION_IS_NOT_PENDING_APPROVAL: "This application is not pending approval.",
 
   // Business Validation
   BUSINESS_NAME_REQUIRED: "Business name is required.",

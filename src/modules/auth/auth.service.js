@@ -1,37 +1,39 @@
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import {
-    Prisma,
-    Role,
-    UserStatus,
-    VerificationType
+  ApplicationStatus,
+  Prisma,
+  Role,
+  UserStatus,
+  VerificationType
 } from "../../generated/prisma/client.js";
 import {
-    sendEmailVerification,
-    sendPasswordResetEmail,
-    sendPhoneVerificationCode,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  sendPhoneVerificationCode,
 } from "../../lib/email.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import { isPlatformAllowedForRole } from "./auth.permissions.js";
 import {
-    loginSchema,
-    platformSchema,
-    registerSchema,
-    requestPasswordResetSchema,
-    resendCodeSchema,
-    resetPasswordSchema,
-    validateAuthInput,
-    verifyEmailSchema,
-    verifyPasswordResetSchema,
-    verifyPhoneSchema,
+  loginSchema,
+  platformSchema,
+  registerSchema,
+  requestPasswordResetSchema,
+  resendCodeSchema,
+  resetPasswordSchema,
+  validateAuthInput,
+  verifyEmailSchema,
+  verifyPasswordResetSchema,
+  verifyPhoneSchema,
 } from "./auth.validation.js";
 
 const SALT_ROUNDS = 10;
 
 const CODE_EXPIRES_MINUTES = parseInt(
-    process.env.VERIFICATION_CODE_EXPIRES_MINUTES || "10",
+  process.env.VERIFICATION_CODE_EXPIRES_MINUTES || "10",
 );
 
 const MAX_ATTEMPTS = 5;
@@ -39,73 +41,73 @@ const MAX_ATTEMPTS = 5;
 // ─── Domain Error Classes ─────────────────────────────────────────────────────
 
 export class AuthValidationError extends AppError {
-    constructor(message, params) {
-        super(message, 400, params);
-        this.name = "AuthValidationError";
-    }
+  constructor(message, params) {
+    super(message, 400, params);
+    this.name = "AuthValidationError";
+  }
 }
 
 export class UserNotFound extends AppError {
-    constructor() {
-        super(tr.USER_NOT_FOUND, 404);
-        this.name = "UserNotFound";
-    }
+  constructor() {
+    super(tr.USER_NOT_FOUND, 404);
+    this.name = "UserNotFound";
+  }
 }
 
 export class InvalidCredentialsError extends AppError {
-    constructor() {
-        super(tr.INVALID_CREDENTIALS, 401);
-        this.name = "InvalidCredentialsError";
-    }
+  constructor() {
+    super(tr.INVALID_CREDENTIALS, 401);
+    this.name = "InvalidCredentialsError";
+  }
 }
 
 export class PlatformAccessDeniedError extends AppError {
-    constructor() {
-        super(tr.PLATFORM_ACCESS_DENIED, 403);
-        this.name = "PlatformAccessDeniedError";
-    }
+  constructor() {
+    super(tr.PLATFORM_ACCESS_DENIED, 403);
+    this.name = "PlatformAccessDeniedError";
+  }
 }
 
 export class InactiveUserError extends AppError {
-    constructor() {
-        super(tr.INACTIVE_USER, 403);
-        this.name = "InactiveUserError";
-    }
+  constructor() {
+    super(tr.INACTIVE_USER, 403);
+    this.name = "InactiveUserError";
+  }
 }
 
 export class BranchAdminNotApprovedError extends AppError {
-    constructor() {
-        super(tr.APPLICATION_NOT_PENDING_APPROVAL, 403);
-        this.name = "BranchAdminNotApprovedError";
-    }
+  constructor() {
+    super(tr.APPLICATION_IS_UNDER_REVIEW, 403);
+    this.name = "BranchAdminNotApprovedError";
+  }
 }
 
 export class DuplicateAccountError extends AppError {
-    constructor(message) {
-        super(message, 409);
-        this.name = "DuplicateAccountError";
-    }
+  constructor(message) {
+    super(message, 409);
+    this.name = "DuplicateAccountError";
+  }
 }
 
 export class TokenExpiredError extends AppError {
-    constructor() {
-        super(tr.TOKEN_EXPIRED, 400);
-        this.name = "TokenExpiredError";
-    }
+  constructor() {
+    super(tr.TOKEN_EXPIRED, 400);
+    this.name = "TokenExpiredError";
+  }
 }
 
 export class InvalidTokenError extends AppError {
-    constructor() {
-        super(tr.INVALID_TOKEN, 400);
-        this.name = "InvalidTokenError";
-    }
+  constructor() {
+    super(tr.INVALID_TOKEN, 400);
+    this.name = "InvalidTokenError";
+  }
 }
 
 export class MaxAttemptsExceededError extends AppError {
-    constructor() {
-        super(tr.MAX_ATTEMPTS_EXCEEDED, 429);
-        this.name = "MaxAttemptsExceededError";
-    }
+  constructor() {
+    super(tr.MAX_ATTEMPTS_EXCEEDED, 429);
+    this.name = "MaxAttemptsExceededError";
+  }
 }
 
 /**
@@ -114,10 +116,10 @@ export class MaxAttemptsExceededError extends AppError {
  * the user to the correct verification screen.
  */
 export class EmailNotVerifiedError extends AppError {
-    constructor() {
-        super(tr.EMAIL_NOT_VERIFIED, 403);
-        this.name = "EmailNotVerifiedError";
-    }
+  constructor() {
+    super(tr.EMAIL_NOT_VERIFIED, 403);
+    this.name = "EmailNotVerifiedError";
+  }
 }
 
 /**
@@ -126,12 +128,11 @@ export class EmailNotVerifiedError extends AppError {
  * client distinguish which step is pending.
  */
 export class PhoneNotVerifiedError extends AppError {
-    constructor() {
-        super(tr.PHONE_NOT_VERIFIED, 403);
-        this.name = "PhoneNotVerifiedError";
-    }
+  constructor() {
+    super(tr.PHONE_NOT_VERIFIED, 403);
+    this.name = "PhoneNotVerifiedError";
+  }
 }
-
 
 // ─── Parse Helper ─────────────────────────────────────────────────────────────
 
@@ -142,155 +143,146 @@ export class PhoneNotVerifiedError extends AppError {
  * (an i18n key), so the controller can translate it per the user's language.
  */
 
-// ─── Thin Validate Wrappers ───────────────────────────────────────────────────
-
-function validateLoginInput(data) {
-    return validateAuthInput(loginSchema, data);
-}
-
-function validatePlatform(platform) {
-    if (!platform || typeof platform !== "string") {
-        throw new AuthValidationError(tr.PLATFORM_HEADER_REQUIRED);
-    }
-    return validateAuthInput(platformSchema, platform);
-}
-
-function validateRegisterInput(data) {
-    return validateAuthInput(registerSchema, data);
-}
-
-function validateVerifyEmailInput(data) {
-    return validateAuthInput(verifyEmailSchema, data);
-}
-
-function validateVerifyPhoneInput(data) {
-    return validateAuthInput(verifyPhoneSchema, data);
-}
-
-function validateRequestPasswordResetInput(data) {
-    return validateAuthInput(requestPasswordResetSchema, data);
-}
-
-function validateVerifyPasswordResetInput(data) {
-    return validateAuthInput(verifyPasswordResetSchema, data);
-}
-
-function validateResetPasswordInput(data) {
-    return validateAuthInput(resetPasswordSchema, data);
-}
-
-function validateResendCodeInput(data) {
-    return validateAuthInput(resendCodeSchema, data);
-}
-
 // ─── OTP Helpers ─────────────────────────────────────────────────────────────
 
 function generateOtpCode() {
-    if (process.env.NODE_ENV === "production") {
-        throw new Error("Hardcoded OTP not allowed in production.");
-    }
-    return "333333";
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Hardcoded OTP not allowed in production.");
+  }
+  return "333333";
 }
 
-async function createVerificationCode(
-    userId,
-    type,
-) {
-    // Delete all previous unused codes of the same type to invalidate them
-    await prisma.verificationCode.deleteMany({
-        where: { userId, type, used: false },
-    });
+async function createVerificationCode(userId, type) {
+  // Delete all previous unused codes of the same type to invalidate them
+  await prisma.verificationCode.deleteMany({
+    where: { userId, type, used: false },
+  });
 
-    const code = generateOtpCode();
-    const codeHash = await bcrypt.hash(code, SALT_ROUNDS);
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + CODE_EXPIRES_MINUTES);
+  const code = generateOtpCode();
+  const codeHash = await bcrypt.hash(code, SALT_ROUNDS);
+  const expiresAt = new Date();
+  expiresAt.setMinutes(expiresAt.getMinutes() + CODE_EXPIRES_MINUTES);
 
-    await prisma.verificationCode.create({
-        data: { userId, type, codeHash, expiresAt },
-    });
+  await prisma.verificationCode.create({
+    data: { userId, type, codeHash, expiresAt },
+  });
 
-    return code;
+  return code;
 }
 
-async function consumeVerificationCode(
-    userId,
-    type,
-    code,
-) {
-    const record = await prisma.verificationCode.findFirst({
-        where: { userId, type, used: false },
-        orderBy: { createdAt: "desc" },
-    });
+async function consumeVerificationCode(userId, type, code) {
+  const record = await prisma.verificationCode.findFirst({
+    where: { userId, type, used: false },
+    orderBy: { createdAt: "desc" },
+  });
 
-    if (!record) throw new InvalidTokenError();
-    if (record.attempts >= MAX_ATTEMPTS) throw new MaxAttemptsExceededError();
-    if (new Date() > record.expiresAt) throw new TokenExpiredError();
+  if (!record) throw new InvalidTokenError();
+  if (record.attempts >= MAX_ATTEMPTS) throw new MaxAttemptsExceededError();
+  if (new Date() > record.expiresAt) throw new TokenExpiredError();
 
-    const isValid = await bcrypt.compare(code, record.codeHash);
+  const isValid = await bcrypt.compare(code, record.codeHash);
 
-    if (!isValid) {
-        await prisma.verificationCode.update({
-            where: { id: record.id },
-            data: { attempts: { increment: 1 } },
-        });
-        throw new InvalidTokenError();
-    }
-
+  if (!isValid) {
     await prisma.verificationCode.update({
-        where: { id: record.id },
-        data: { used: true },
+      where: { id: record.id },
+      data: { attempts: { increment: 1 } },
     });
+    throw new InvalidTokenError();
+  }
+
+  await prisma.verificationCode.update({
+    where: { id: record.id },
+    data: { used: true },
+  });
 }
 
 // ─── JWT Helper ──────────────────────────────────────────────────────────────
 
-function issueAuthToken(userId, role, platform) {
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) throw new Error("JWT_SECRET is not set.");
-    return jwt.sign({ sub: userId, role, platform }, jwtSecret, { expiresIn: "1d" });
+async function issueAuthTokens(userId, role, platform) {
+  const jwtSecret = process.env.JWT_SECRET;
+
+  if (!jwtSecret) throw new Error("JWT_SECRET is not set.");
+
+  const accessToken = jwt.sign({ sub: userId, role, platform }, jwtSecret, {
+    expiresIn: "1h",
+  });
+
+  const refreshTokenString = crypto.randomBytes(40).toString("hex");
+  const tokenHash = crypto
+    .createHash("sha256")
+    .update(refreshTokenString)
+    .digest("hex");
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7);
+
+  await prisma.refreshToken.create({
+    data: { userId, tokenHash, expiresAt },
+  });
+  return { token: accessToken, refreshToken: refreshTokenString };
+}
+// ─── Sanitization Helper ───────────────────────────────────────────────────
+
+function toSafeUser(user) {
+  if (!user) return null;
+  const { password: _password, ...safeUser } = user;
+
+  if (safeUser.branchAdmin) {
+    const { passwordHash: _hash, ...safeBranchAdmin } = safeUser.branchAdmin;
+    safeUser.branchAdmin = safeBranchAdmin;
+  }
+
+  return safeUser;
 }
 
 // ─── Auth Services ────────────────────────────────────────────────────────────
 
-/**
- * Login — validates credentials then enforces the verification funnel:
- *   • Email not verified  → EmailNotVerifiedError  (HTTP 403)
- *   • Phone not verified  → PhoneNotVerifiedError  (HTTP 403, different status on client)
- * Using two distinct error classes lets the controller map them to separate
- * HTTP status codes so the mobile/web app can route to the right screen.
- */
 export async function login(body, platformHeader) {
-    const { email, password } = validateLoginInput(body);
-    const platform = validatePlatform(platformHeader);
+  const { email, role, password } = validateAuthInput(loginSchema, body);
+  const platform = validateAuthInput(platformSchema, platformHeader);
 
-    const user = await prisma.user.findUnique({
-        where: { email },
-        include: { branchAdmin: true },
-    });
-    if (!user) throw new UserNotFound();
+  const user = await prisma.user.findUnique({
+    where: { email, role },
+    include: { branchAdmin: true },
+  });
 
-    const isPasswordMatch = await bcrypt.compare(password, user.password);
-    if (!isPasswordMatch) throw new InvalidCredentialsError();
+  const branchAdminRecord = !user
+    ? await prisma.branchAdmin.findFirst({ where: { email } })
+    : null;
 
-    if (user.status !== UserStatus.ACTIVE) throw new InactiveUserError();
+  if (!user && !branchAdminRecord) throw new UserNotFound();
 
-    if (user.role === Role.branch_admin) {
-        if (!user.branchAdmin || user.branchAdmin.status !== "APPROVED") {
-            throw new BranchAdminNotApprovedError();
-        }
+  const isPasswordMatch = await bcrypt.compare(
+    password,
+    user?.password || branchAdminRecord?.passwordHash,
+  );
+  if (!isPasswordMatch) throw new InvalidCredentialsError();
+
+  if (!user) {
+    throw new BranchAdminNotApprovedError();
+  }
+
+  if (user.status !== UserStatus.ACTIVE) throw new InactiveUserError();
+
+  if (user.role === Role.branch_admin) {
+    if (
+      !user.branchAdmin ||
+      user.branchAdmin.status !== ApplicationStatus.APPROVED
+    ) {
+      throw new BranchAdminNotApprovedError();
     }
+  }
 
-    if (!isPlatformAllowedForRole(user.role, platform)) throw new PlatformAccessDeniedError();
+  if (!isPlatformAllowedForRole(user.role, platform))
+    throw new PlatformAccessDeniedError();
 
-    // Enforce verification funnel — email first, then phone
-    if (!user.emailVerified) throw new EmailNotVerifiedError();
-    if (!user.phoneVerified) throw new PhoneNotVerifiedError();
+  // Enforce verification funnel — email first, then phone
+  if (!user.emailVerified) throw new EmailNotVerifiedError();
+  if (!user.phoneVerified) throw new PhoneNotVerifiedError();
 
-    const token = issueAuthToken(user.id, user.role, platform);
-    const { password: _password, ...safeUser } = user;
+  const tokens = await issueAuthTokens(user.id, user.role, platform);
 
-    return { token, user: safeUser };
+  return { ...tokens, user: toSafeUser(user) };
 }
 
 /**
@@ -298,83 +290,97 @@ export async function login(body, platformHeader) {
  * Creates the account and immediately sends an email verification OTP.
  * Token is NOT issued here — the user must complete both verifications first.
  */
+
 export async function register(body, platformHeader) {
-    const { name, email, password, phone } = validateRegisterInput(body);
-    const platform = validatePlatform(platformHeader);
+  const { name, email, password, phone } = validateAuthInput(
+    registerSchema,
+    body,
+  );
+  const platform = validateAuthInput(platformSchema, platformHeader);
 
-    // Only CLIENTs can self-register; staff/admins are created by super admins
-    if (!isPlatformAllowedForRole(Role.client, platform)) {
-        throw new PlatformAccessDeniedError();
-    }
+  // Only CLIENTs can self-register; staff/admins are created by super admins
+  if (!isPlatformAllowedForRole(Role.client, platform)) {
+    throw new PlatformAccessDeniedError();
+  }
 
-    const existingUser = await prisma.user.findFirst({
-        where: {
-            OR: [{ email }, { phone }],
-        },
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [{ email }, { phone }],
+    },
+  });
+
+  if (existingUser) {
+    if (existingUser.email === email)
+      throw new DuplicateAccountError(tr.DUPLICATE_EMAIL);
+    if (existingUser.phone === phone)
+      throw new DuplicateAccountError(tr.DUPLICATE_PHONE);
+    throw new DuplicateAccountError(tr.DUPLICATE_ACCOUNT);
+  }
+
+  const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+  let user;
+  try {
+    user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        phone,
+        role: Role.client,
+        status: UserStatus.ACTIVE,
+      },
     });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      const target = error.meta?.target;
 
-    if (existingUser) {
-        if (existingUser.email === email) throw new DuplicateAccountError(tr.DUPLICATE_EMAIL);
-        if (existingUser.phone === phone) throw new DuplicateAccountError(tr.DUPLICATE_PHONE);
-        throw new DuplicateAccountError(tr.DUPLICATE_ACCOUNT);
+      if (target?.includes("email"))
+        throw new DuplicateAccountError(tr.DUPLICATE_EMAIL);
+
+      if (target?.includes("phone"))
+        throw new DuplicateAccountError(tr.DUPLICATE_PHONE);
+      throw new DuplicateAccountError(tr.DUPLICATE_ACCOUNT);
     }
+    throw error;
+  }
 
-    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-
-    let user;
-    try {
-        user = await prisma.user.create({
-            data: {
-                name,
-                email,
-                password: hashedPassword,
-                phone,
-                role: Role.client,
-                status: UserStatus.ACTIVE,
-            },
-        });
-    } catch (error) {
-        if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-            error.code === "P2002"
-        ) {
-            const target = error.meta?.target;
-            if (target?.includes("email")) throw new DuplicateAccountError(tr.DUPLICATE_EMAIL);
-            if (target?.includes("phone")) throw new DuplicateAccountError(tr.DUPLICATE_PHONE);
-            throw new DuplicateAccountError(tr.DUPLICATE_ACCOUNT);
-        }
-        throw error;
-    }
-
-    // Auto-send email verification OTP right after account creation
-    const code = await createVerificationCode(user.id, VerificationType.EMAIL);
-    await sendEmailVerification(email, code);
+  // Auto-send email verification OTP right after account creation
+  const code = await createVerificationCode(user.id, VerificationType.EMAIL);
+  await sendEmailVerification(email, code);
 }
 
 /**
  * Verify Email — Step 2 of the sign-up funnel.
  * Marks the email as verified and immediately sends a phone verification OTP.
  */
+
 export async function verifyEmail(email, code) {
-    const data = validateVerifyEmailInput({ email, code });
-    const user = await prisma.user.findUnique({ where: { email: data.email } });
-    if (!user) throw new UserNotFound();
+  const data = validateAuthInput(verifyEmailSchema, { email, code });
+  const user = await prisma.user.findUnique({ where: { email: data.email } });
+  if (!user) throw new UserNotFound();
 
-    if (user.emailVerified) {
-        throw new AuthValidationError(tr.EMAIL_ALREADY_VERIFIED);
-    }
+  if (user.emailVerified) {
+    throw new AuthValidationError(tr.EMAIL_ALREADY_VERIFIED);
+  }
 
-    await consumeVerificationCode(user.id, VerificationType.EMAIL, data.code);
+  await consumeVerificationCode(user.id, VerificationType.EMAIL, data.code);
 
-    await prisma.user.update({
-        where: { id: user.id },
-        data: { emailVerified: true },
-    });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { emailVerified: true },
+  });
 
-    // Auto-send phone verification OTP right after email is confirmed
-    const phoneCode = await createVerificationCode(user.id, VerificationType.PHONE);
-    // TODO: Swap sendPhoneVerificationCode for real SMS (Twilio, etc.) once integrated
-    await sendPhoneVerificationCode(user.email, phoneCode);
+  // Auto-send phone verification OTP right after email is confirmed
+  const phoneCode = await createVerificationCode(
+    user.id,
+    VerificationType.PHONE,
+  );
+  // TODO: Swap sendPhoneVerificationCode for real SMS (Twilio, etc.) once integrated
+  await sendPhoneVerificationCode(user.email, phoneCode);
 }
 
 /**
@@ -382,41 +388,41 @@ export async function verifyEmail(email, code) {
  * Marks the phone as verified and issues the auth token.
  * This is the only point in the flow where a token is returned.
  */
-export async function verifyPhone(
-    email,
-    code,
-    platformHeader,
-) {
-    const data = validateVerifyPhoneInput({ email, code });
-    const platform = validatePlatform(platformHeader);
-    const user = await prisma.user.findUnique({ where: { email: data.email } });
-    if (!user) throw new UserNotFound();
 
-    // Strict Step Enforcement: Cannot verify phone if email is still pending
-    if (!user.emailVerified) {
-        throw new EmailNotVerifiedError();
-    }
+export async function verifyPhone(email, code, platformHeader) {
+  const data = validateAuthInput(verifyPhoneSchema, { email, code });
+  const platform = validateAuthInput(platformSchema, platformHeader);
+  const user = await prisma.user.findUnique({ where: { email: data.email } });
+  if (!user) throw new UserNotFound();
 
-    if (user.phoneVerified) {
-        throw new AuthValidationError(tr.PHONE_ALREADY_VERIFIED);
-    }
+  // Strict Step Enforcement: Cannot verify phone if email is still pending
+  if (!user.emailVerified) {
+    throw new EmailNotVerifiedError();
+  }
 
-    if (!isPlatformAllowedForRole(user.role, platform)) {
-        throw new PlatformAccessDeniedError();
-    }
+  if (user.phoneVerified) {
+    throw new AuthValidationError(tr.PHONE_ALREADY_VERIFIED);
+  }
 
-    await consumeVerificationCode(user.id, VerificationType.PHONE, data.code);
+  if (!isPlatformAllowedForRole(user.role, platform)) {
+    throw new PlatformAccessDeniedError();
+  }
 
-    const updatedUser = await prisma.user.update({
-        where: { id: user.id },
-        data: { phoneVerified: true },
-    });
+  await consumeVerificationCode(user.id, VerificationType.PHONE, data.code);
 
-    // Issue the auth token now that both verifications are complete
-    const token = issueAuthToken(updatedUser.id, updatedUser.role, platform);
-    const { password: _password, ...safeUser } = updatedUser;
+  const updatedUser = await prisma.user.update({
+    where: { id: user.id },
+    data: { phoneVerified: true },
+  });
 
-    return { token, user: safeUser };
+  // Issue the auth token now that both verifications are complete
+  const tokens = await issueAuthTokens(
+    updatedUser.id,
+    updatedUser.role,
+    platform,
+  );
+
+  return { ...tokens, user: toSafeUser(updatedUser) };
 }
 
 // ─── Password Reset (3-step OTP flow) ────────────────────────────────────────
@@ -425,13 +431,17 @@ export async function verifyPhone(
  * Step 1 — Request a password reset OTP.
  * Silent on unknown email to prevent user-enumeration attacks.
  */
-export async function requestPasswordReset(email) {
-    const data = validateRequestPasswordResetInput({ email });
-    const user = await prisma.user.findUnique({ where: { email: data.email } });
-    if (!user) return; // Silently do nothing — don't reveal if email exists
 
-    const code = await createVerificationCode(user.id, VerificationType.PASSWORD_RESET);
-    await sendPasswordResetEmail(data.email, code);
+export async function requestPasswordReset(email) {
+  const data = validateAuthInput(requestPasswordResetSchema, { email });
+  const user = await prisma.user.findUnique({ where: { email: data.email } });
+  if (!user) return; // Silently do nothing — don't reveal if email exists
+
+  const code = await createVerificationCode(
+    user.id,
+    VerificationType.PASSWORD_RESET,
+  );
+  await sendPasswordResetEmail(data.email, code);
 }
 
 /**
@@ -440,26 +450,28 @@ export async function requestPasswordReset(email) {
  * The JWT carries `purpose: "PASSWORD_RESET"` so it cannot be used as a
  * regular login token even if someone intercepts it.
  */
-export async function verifyPasswordReset(
-    email,
-    code,
-) {
-    const data = validateVerifyPasswordResetInput({ email, code });
-    const user = await prisma.user.findUnique({ where: { email: data.email } });
-    if (!user) throw new UserNotFound();
 
-    await consumeVerificationCode(user.id, VerificationType.PASSWORD_RESET, data.code);
+export async function verifyPasswordReset(email, code) {
+  const data = validateAuthInput(verifyPasswordResetSchema, { email, code });
+  const user = await prisma.user.findUnique({ where: { email: data.email } });
+  if (!user) throw new UserNotFound();
 
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) throw new Error("JWT_SECRET is not set.");
+  await consumeVerificationCode(
+    user.id,
+    VerificationType.PASSWORD_RESET,
+    data.code,
+  );
 
-    const resetToken = jwt.sign(
-        { sub: user.id, purpose: "PASSWORD_RESET" },
-        jwtSecret,
-        { expiresIn: "15m" },
-    );
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) throw new Error("JWT_SECRET is not set.");
 
-    return { resetToken };
+  const resetToken = jwt.sign(
+    { sub: user.id, purpose: "PASSWORD_RESET" },
+    jwtSecret,
+    { expiresIn: "15m" },
+  );
+
+  return { resetToken };
 }
 
 /**
@@ -467,76 +479,110 @@ export async function verifyPasswordReset(
  * The JWT is verified and its `purpose` claim is checked to ensure it
  * was issued by step 2 and cannot be reused for normal authentication.
  */
-export async function resetPassword(
+
+export async function resetPassword(resetToken, newPassword) {
+  const data = validateAuthInput(resetPasswordSchema, {
     resetToken,
     newPassword,
-) {
-    const data = validateResetPasswordInput({ resetToken, newPassword });
+  });
 
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) throw new Error("JWT_SECRET is not set.");
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) throw new Error("JWT_SECRET is not set.");
 
-    let payload;
-    try {
-        payload = jwt.verify(data.resetToken, jwtSecret);
-    } catch {
-        throw new InvalidTokenError();
-    }
+  let payload;
+  try {
+    payload = jwt.verify(data.resetToken, jwtSecret);
+  } catch {
+    throw new InvalidTokenError();
+  }
 
-    if (payload.purpose !== "PASSWORD_RESET") throw new InvalidTokenError();
+  if (payload.purpose !== "PASSWORD_RESET") throw new InvalidTokenError();
 
-    const hashedPassword = await bcrypt.hash(data.newPassword, SALT_ROUNDS);
-    await prisma.user.update({
-        where: { id: payload.sub },
-        data: { password: hashedPassword },
-    });
+  const hashedPassword = await bcrypt.hash(data.newPassword, SALT_ROUNDS);
+  await prisma.user.update({
+    where: { id: payload.sub },
+    data: { password: hashedPassword },
+  });
 }
 
 /**
  * Resend Verification Code — triggers a new OTP for EMAIL, PHONE, or PASSWORD_RESET.
  * It invalidates old codes of the same type and sends a fresh one.
  */
-export async function resendCode(
-    email,
-    phone,
-    type,
-) {
-    const data = validateResendCodeInput({ email, phone, type });
 
-    let where = {};
+export async function resendCode(email, phone, type) {
+  const data = validateAuthInput(resendCodeSchema, { email, phone, type });
 
-    if (data.email) {
-        where.email = data.email;
-    }
+  let where = {};
 
-    if (data.phone) {
-        where.phone = data.phone;
-    }
+  if (data.email) {
+    where.email = data.email;
+  }
 
-    // Find the user by email or phone
-    const user = await prisma.user.findFirst({ where });
+  if (data.phone) {
+    where.phone = data.phone;
+  }
 
-    if (!user) throw new UserNotFound();
+  // Find the user by email or phone
+  const user = await prisma.user.findFirst({ where });
 
-    // Safety checks: don't resend if already verified
-    if (type === VerificationType.EMAIL && user.emailVerified) {
-        throw new AuthValidationError(tr.EMAIL_ALREADY_VERIFIED);
-    }
-    if (type === VerificationType.PHONE && user.phoneVerified) {
-        throw new AuthValidationError(tr.PHONE_ALREADY_VERIFIED);
-    }
+  if (!user) throw new UserNotFound();
 
-    // Create and send new code
-    const newCode = await createVerificationCode(user.id, type);
+  // Safety checks: don't resend if already verified
+  if (type === VerificationType.EMAIL && user.emailVerified) {
+    throw new AuthValidationError(tr.EMAIL_ALREADY_VERIFIED);
+  }
+  if (type === VerificationType.PHONE && user.phoneVerified) {
+    throw new AuthValidationError(tr.PHONE_ALREADY_VERIFIED);
+  }
 
-    if (type === VerificationType.EMAIL) {
-        await sendEmailVerification(user.email, newCode);
-    } else if (type === VerificationType.PHONE) {
-        // Still using email until SMS integrated
-        await sendPhoneVerificationCode(user.email, newCode);
-    } else if (type === VerificationType.PASSWORD_RESET) {
-        await sendPasswordResetEmail(user.email, newCode);
-    }
+  // Create and send new code
+  const newCode = await createVerificationCode(user.id, type);
+
+  if (type === VerificationType.EMAIL) {
+    await sendEmailVerification(user.email, newCode);
+  } else if (type === VerificationType.PHONE) {
+    // Still using email until SMS integrated
+    await sendPhoneVerificationCode(user.email, newCode);
+  } else if (type === VerificationType.PASSWORD_RESET) {
+    await sendPasswordResetEmail(user.email, newCode);
+  }
 }
 
+export async function refresh(refreshToken, platformHeader) {
+  const platform = validateAuthInput(platformSchema, platformHeader);
+  if (!refreshToken || typeof refreshToken !== "string") {
+    throw new InvalidTokenError();
+  }
 
+  const tokenHash = crypto
+    .createHash("sha256")
+    .update(refreshToken)
+    .digest("hex");
+
+  const record = await prisma.refreshToken.findUnique({ where: { tokenHash } });
+
+  if (!record) {
+    throw new InvalidTokenError();
+  }
+
+  if (record.expiresAt < new Date()) {
+    await prisma.refreshToken.delete({ where: { id: record.id } });
+    throw new TokenExpiredError();
+  }
+
+  // Rotate: delete the old token and issue a fresh pair
+  await prisma.refreshToken.delete({ where: { id: record.id } });
+
+  const user = await prisma.user.findUnique({ where: { id: record.userId } });
+  if (!user || user.status !== UserStatus.ACTIVE) {
+    throw new InactiveUserError();
+  }
+
+  if (!isPlatformAllowedForRole(user.role, platform)) {
+    throw new PlatformAccessDeniedError();
+  }
+
+  const tokens = await issueAuthTokens(user.id, user.role, platform);
+  return { ...tokens, role: user.role };
+}

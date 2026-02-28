@@ -39,6 +39,7 @@ const DEFAULT_ENV_VALUES = {
   platform: "APP",
   lang: "en",
   token: "",
+  refreshToken: "",
   resetToken: "",
 };
 
@@ -108,6 +109,7 @@ async function writeEnvironmentFile(targetPath, payload) {
 async function upsertDotEnvVar(key, value) {
   if (!value) return;
 
+  // eslint-disable-next-line no-useless-assignment
   let current = "";
   try {
     current = await fs.readFile(dotEnvPath, "utf8");
@@ -136,6 +138,7 @@ try {
   const docsMarkdown = await fs.readFile(docsFilePath, "utf8");
   if (!collection.info) collection.info = {};
   collection.info.description = docsMarkdown;
+// eslint-disable-next-line no-unused-vars
 } catch (error) {
   console.warn(
     "Could not load docs/postman-routes.md. Syncing without doc injection.",

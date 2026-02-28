@@ -20,7 +20,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Abdo Khalil\",\n  \"email\": \"client@example.com\",\n  \"password\": \"12345678\",\n  \"phone\": \"0123456789\"\n}"
+              "raw": "{\n  \"name\": \"Abdo Khalil\",\n  \"email\": \"khalil@booklyx.com\",\n  \"password\": \"12345678\",\n  \"phone\": \"0123456789\"\n}"
             },
             "url": "{{baseUrl}}/auth/register"
           }
@@ -37,7 +37,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"client@example.com\",\n  \"password\": \"12345678\"\n}"
+              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"password\": \"12345678\",\n  \"role\": \"client\" // \"client\", \"branch_admin\", \"super_admin\", \"staff\"\n}"
             },
             "url": "{{baseUrl}}/auth/login"
           },
@@ -48,8 +48,24 @@
                 "type": "text/javascript",
                 "exec": [
                   "const json = pm.response.json();",
-                  "if (json && json.data && json.data.token) {",
-                  "  pm.environment.set('token', json.data.token);",
+                  "if (json && json.data) {",
+                  "  const role = json.data.user ? json.data.user.role : json.data.role;",
+                  "  const token = json.data.token;",
+                  "  const refreshToken = json.data.refreshToken;",
+                  "  ",
+                  "  if (token) {",
+                  "    if (role === 'client') pm.environment.set('clientToken', token);",
+                  "    if (role === 'branch_admin') pm.environment.set('branchAdminToken', token);",
+                  "    if (role === 'staff') pm.environment.set('staffToken', token);",
+                  "    if (role === 'super_admin') pm.environment.set('adminToken', token);",
+                  "  }",
+                  "  ",
+                  "  if (refreshToken) {",
+                  "    if (role === 'client') pm.environment.set('refreshClientToken', refreshToken);",
+                  "    if (role === 'branch_admin') pm.environment.set('refreshBranchAdminToken', refreshToken);",
+                  "    if (role === 'staff') pm.environment.set('refreshStaffToken', refreshToken);",
+                  "    if (role === 'super_admin') pm.environment.set('refreshAdminToken', refreshToken);",
+                  "  }",
                   "}"
                 ]
               }
@@ -68,7 +84,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@booklyx.com\",\n  \"password\": \"12345678\"\n}"
+              "raw": "{\n  \"email\": \"admin@booklyx.com\",\n  \"password\": \"12345678\",\n  \"role\": \"super_admin\"\n}"
             },
             "url": "{{baseUrl}}/auth/login"
           },
@@ -79,9 +95,15 @@
                 "type": "text/javascript",
                 "exec": [
                   "const json = pm.response.json();",
-                  "if (json && json.data && json.data.token) {",
-                  "  pm.environment.set('token', json.data.token);",
-                  "  console.log('Admin token saved to environment variable');",
+                  "if (json && json.data) {",
+                  "  const token = json.data.token;",
+                  "  const refreshToken = json.data.refreshToken;",
+                  "  if (token) {",
+                  "    pm.environment.set('adminToken', token);",
+                  "  }",
+                  "  if (refreshToken) {",
+                  "    pm.environment.set('refreshAdminToken', refreshToken);",
+                  "  }",
                   "}"
                 ]
               }
@@ -98,7 +120,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"client@example.com\",\n  \"code\": \"333333\"\n}"
+              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"code\": \"333333\"\n}"
             },
             "url": "{{baseUrl}}/auth/verify-email"
           }
@@ -115,7 +137,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"client@example.com\",\n  \"code\": \"333333\"\n}"
+              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"code\": \"333333\"\n}"
             },
             "url": "{{baseUrl}}/auth/verify-phone"
           },
@@ -127,7 +149,10 @@
                 "exec": [
                   "const json = pm.response.json();",
                   "if (json && json.data && json.data.token) {",
-                  "  pm.environment.set('token', json.data.token);",
+                  "  pm.environment.set('clientToken', json.data.token);",
+                  "}",
+                  "if (json && json.data && json.data.refreshToken) {",
+                  "  pm.environment.set('refreshClientToken', json.data.refreshToken);",
                   "}"
                 ]
               }
@@ -145,7 +170,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"client@example.com\",\n  \"phone\": \"0123456789\",\n  \"type\": \"EMAIL\" // \"PHONE\", \"PASSWORD_RESET\"\n}"
+              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"phone\": \"0123456789\",\n  \"type\": \"EMAIL\" // \"PHONE\", \"PASSWORD_RESET\"\n}"
             },
             "url": "{{baseUrl}}/auth/resend-code"
           }
@@ -160,7 +185,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"client@example.com\"\n}"
+              "raw": "{\n  \"email\": \"khalil@booklyx.com\"\n}"
             },
             "url": "{{baseUrl}}/auth/request-password-reset"
           }
@@ -175,7 +200,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"client@example.com\",\n  \"code\": \"333333\"\n}"
+              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"code\": \"333333\"\n}"
             },
             "url": "{{baseUrl}}/auth/verify-password-reset"
           },
@@ -208,6 +233,53 @@
             },
             "url": "{{baseUrl}}/auth/reset-password"
           }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "{{platform}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshClientToken}}\" // or refreshBranchAdminToken, refreshStaffToken, refreshAdminToken\n}"
+            },
+            "url": "{{baseUrl}}/auth/refresh"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data) {",
+                  "  const role = json.data.role;",
+                  "  const token = json.data.token;",
+                  "  const refreshToken = json.data.refreshToken;",
+                  "  ",
+                  "  if (token) {",
+                  "    pm.environment.set('token', token);",
+                  "    if (role === 'client') pm.environment.set('clientToken', token);",
+                  "    if (role === 'branch_admin') pm.environment.set('branchAdminToken', token);",
+                  "    if (role === 'staff') pm.environment.set('staffToken', token);",
+                  "    if (role === 'super_admin') pm.environment.set('adminToken', token);",
+                  "  }",
+                  "  ",
+                  "  if (refreshToken) {",
+                  "    if (role === 'client') pm.environment.set('refreshClientToken', refreshToken);",
+                  "    if (role === 'branch_admin') pm.environment.set('refreshBranchAdminToken', refreshToken);",
+                  "    if (role === 'staff') pm.environment.set('refreshStaffToken', refreshToken);",
+                  "    if (role === 'super_admin') pm.environment.set('refreshAdminToken', refreshToken);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -226,7 +298,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"ownerName\": \"Abdo Khalil\",\n  \"email\": \"branch@example.com\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\",\n  \"businessName\": \"Khalil Spa\",\n  \"category\": \"SPA\" // \"CLINIC\", \"BARBER\",\n  \"description\": \"Premium spa services\",\n  \"city\": \"Cairo\",\n  \"district\": \"Tahrir Square\",\n  \"address\": \"Tahrir Square\",\n  \"taxId\": \"123456789\",\n  \"commercialRegisterNumber\": \"123456789\",\n  \"latitude\": 30.0444,\n  \"longitude\": 31.2357\n}"
+              "raw": "{\n  \"ownerName\": \"Abdo Khalil\",\n  \"email\": \"branch@example.com\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\",\n  \"businessName\": \"Khalil Spa\",\n  \"category\": \"SPA\" /* \"CLINIC\", \"BARBER\" */\n  \"description\": \"Premium spa services\",\n  \"city\": \"Cairo\",\n  \"district\": \"Tahrir Square\",\n  \"address\": \"Tahrir Square\",\n  \"taxId\": \"123456789\",\n  \"commercialRegisterNumber\": \"123456789\",\n  \"latitude\": 30.0444,\n  \"longitude\": 31.2357\n}"
             },
             "url": "{{baseUrl}}/branch-admin/apply"
           }
@@ -283,11 +355,13 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
-              { "key": "Accept-Language", "value": "{{lang}}" }
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "Authorization", "value": "Bearer {{branchAdminToken}}" },
+              { "key": "platform", "value": "{{platform}}"}
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Sara Ali\",\n  \"email\": \"staff@example.com\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\"\n}"
+              "raw": "{\n  \"name\": \"Sara Ali\",\n  \"email\": \"staff@example.com\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\",\n  \"staffRole\": \"SPA_SPECIALIST\",\n  \"commissionPercentage\": 20.5\n}"
             },
             "url": "{{baseUrl}}/branch-admin/create-staff"
           }
@@ -305,7 +379,7 @@
             "header": [
               { "key": "Accept-Language", "value": "{{lang}}" },
               { "key": "platform", "value": "WEB" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
             ],
             "url": {
               "raw": "{{baseUrl}}/admin/applications?status=PENDING_APPROVAL",
@@ -322,7 +396,7 @@
             "header": [
               { "key": "Accept-Language", "value": "{{lang}}" },
               { "key": "platform", "value": "WEB" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
             ],
             "url": "{{baseUrl}}/admin/applications/1"
           }
@@ -334,7 +408,7 @@
             "header": [
               { "key": "Accept-Language", "value": "{{lang}}" },
               { "key": "platform", "value": "WEB" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
             ],
             "url": "{{baseUrl}}/admin/applications/1/approve"
           }
@@ -347,7 +421,7 @@
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept-Language", "value": "{{lang}}" },
               { "key": "platform", "value": "WEB" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
             ],
             "body": {
               "mode": "raw",

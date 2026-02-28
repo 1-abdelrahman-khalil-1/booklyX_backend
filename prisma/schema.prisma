@@ -77,6 +77,7 @@ model User {
   updatedAt DateTime @default(now()) @updatedAt
 
   verificationCodes VerificationCode[]
+  refreshTokens     RefreshToken[]
   staff             Staff?
   branchAdmin       BranchAdmin?
 }
@@ -96,22 +97,27 @@ model VerificationCode {
   @@index([userId, type])
 }
 
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 // ─── Business Application ─────────────────────────────────────────────────────
 
 model BranchAdmin {
-  id           Int    @id @default(autoincrement())
-  userId       Int?   @unique
-  // =========================
-  // Owner (Identity Layer)
-  // =========================
-  ownerName    String
-  email        String
-  phone        String
-  passwordHash String
-
-  // =========================
-  // Business Info
-  // =========================
+  id                       Int               @id @default(autoincrement())
+  userId                   Int?              @unique
+  ownerName                String
+  email                    String 
+  phone                    String 
+  passwordHash             String
   businessName             String
   category                 BusinessCategory
   description              String?
@@ -122,30 +128,17 @@ model BranchAdmin {
   commercialRegisterUrl    String?
   nationalIdUrl            String?
   facilityLicenseUrl       String?
-
-  // =========================
-  // Location Info
-  // =========================
-  city      String
-  district  String
-  address   String
-  latitude  Float
-  longitude Float
-
-  // =========================
-  // Lifecycle
-  // =========================
-  status          ApplicationStatus @default(PENDING_VERIFICATION)
-  emailVerified   Boolean           @default(false)
-  phoneVerified   Boolean           @default(false)
-  rejectionReason String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // =========================
-  // Relations
-  // =========================
+  city                     String
+  district                 String
+  address                  String
+  latitude                 Float
+  longitude                Float
+  status                   ApplicationStatus @default(PENDING_VERIFICATION)
+  emailVerified            Boolean           @default(false)
+  phoneVerified            Boolean           @default(false)
+  rejectionReason          String?
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
   verificationCodes ApplicationVerificationCode[]
   documents         ApplicationDocument[]
   staffs            Staff[]
@@ -193,10 +186,8 @@ model Staff {
   isActive             Boolean   @default(true)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
-
   professionalProfile StaffProfessionalProfile?
   certificates        StaffCertificate[]
-
   user   User        @relation(fields: [userId], references: [id])
   branch BranchAdmin @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
