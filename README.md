@@ -254,6 +254,20 @@ npx prisma db seed           # Seed super_admin account
 npm run postman:sync         # Sync Postman collection to cloud
 ```
 
+## Railway Deployment Checklist
+
+- Start command is already configured in `package.json`:
+  - `npm start` → runs `prisma migrate deploy && node src/server.js`
+- Prisma client is generated automatically on install via:
+  - `postinstall: prisma generate`
+- Set these Railway environment variables (see `.env.example`):
+  - `DATABASE_URL`
+  - `JWT_SECRET`
+  - `NODE_ENV=production`
+  - `PORT` (Railway usually injects this automatically)
+  - `VERIFICATION_CODE_EXPIRES_MINUTES` (optional, default `10`)
+  - `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, `EMAIL_FROM` (optional while email sending is mocked)
+
 ## Postman
 
 - Collection: `docs/postman/booklyx-backend.postman_collection.json`
