@@ -9,7 +9,9 @@ This file is the single source of truth for:
 
 ## 1) Base setup
 
-- Base URL: `http://localhost:3000`
+- Base URL (development): `http://localhost:3000`
+- Production API URL (set in Postman environment as `api_url`): `https://booklyxbackend-production.up.railway.app`
+- In Postman, prefer using the environment variable `{{api_url}}` or `{{baseUrl}}` as needed. Example: `{{api_url}}/auth/login`.
 - Common headers:
   - `Content-Type: application/json`
   - `Accept-Language: en` (or `ar`)
@@ -521,12 +523,20 @@ Request body:
 {
   "name": "Sara Ali",
   "email": "staff@example.com",
+  "age": 28,
+  "startDate": "2026-03-01T00:00:00.000Z",
   "phone": "0101234567",
   "password": "12345678",
   "staffRole": "SPA_SPECIALIST", // "DOCTOR", "BARBER", "SPA_SPECIALIST"
-  "commissionPercentage": 20.5
+  "commissionPercentage": 20.5,
+  "serviceIds": [1, 2]
 }
 ```
+
+Notes:
+
+- `startDate` must be a valid ISO date string.
+- `serviceIds` must be approved services that belong to the same branch.
 
 Success example (`201`):
 
@@ -542,6 +552,43 @@ Success example (`201`):
     "phone": "0101234567",
     "role": "staff",
     "status": "ACTIVE"
+  }
+}
+```
+
+---
+
+### POST `/branch-admin/services`
+
+Creates a new branch service with default status `PENDING_APPROVAL`.
+Requires a Bearer token (`Authorization: Bearer <token>`) of a `branch_admin` and platform header.
+
+Request body:
+
+```json
+{
+  "name": "Haircut",
+  "description": "Classic haircut service",
+  "price": 80,
+  "duration": 45
+}
+```
+
+Success example (`201`):
+
+```json
+{
+  "status": 201,
+  "error": false,
+  "message": "Service submitted and waiting for admin approval.",
+  "data": {
+    "id": 1,
+    "branchId": 5,
+    "name": "Haircut",
+    "description": "Classic haircut service",
+    "price": 80,
+    "duration": 45,
+    "status": "PENDING_APPROVAL"
   }
 }
 ```
@@ -626,6 +673,56 @@ Request body:
 ```json
 {
   "reason": "Missing documentation"
+}
+```
+
+---
+
+### POST `/admin/services/:id/approve`
+
+Approves a pending branch service.
+
+Success example (`200`):
+
+```json
+{
+  "status": 200,
+  "error": false,
+  "message": "Service approved successfully.",
+  "data": {
+    "id": 1,
+    "status": "APPROVED",
+    "approvedAt": "2026-03-19T12:00:00.000Z"
+  }
+}
+```
+
+---
+
+### POST `/admin/services/:id/reject`
+
+Rejects a pending branch service with a reason.
+
+Request body:
+
+```json
+{
+  "reason": "Pricing policy mismatch"
+}
+```
+
+Success example (`200`):
+
+```json
+{
+  "status": 200,
+  "error": false,
+  "message": "Service rejected successfully.",
+  "data": {
+    "id": 1,
+    "status": "REJECTED",
+    "rejectionReason": "Pricing policy mismatch"
+  }
 }
 ```
 
