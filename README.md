@@ -35,6 +35,13 @@ Then login via `POST /auth/login` to get the admin token.
 - In development, OTP is fixed to `333333`.
 - In production, hardcoded OTP is blocked and will throw an error if used.
 
+### API URLs
+
+- Development: `http://localhost:3000`
+- Production (example): `https://booklyxbackend-production.up.railway.app`
+
+When using the Postman environment, the `api_url` variable is set to the production URL and `baseUrl` is typically `http://localhost:3000`.
+
 ## Auth Endpoints (`/auth`)
 
 ### `POST /auth/register`
@@ -202,10 +209,28 @@ Requires a Bearer token (`Authorization: Bearer <token>`) of a `branch_admin`.
 {
   "name": "Sara Ali",
   "email": "staff@example.com",
+  "age": 28,
+  "startDate": "2026-03-01T00:00:00.000Z",
   "phone": "0101234567",
   "password": "12345678",
   "staffRole": "SPA_SPECIALIST", // "DOCTOR", "BARBER", "SPA_SPECIALIST"
-  "commissionPercentage": 20.5
+  "commissionPercentage": 20.5,
+  "serviceIds": [1, 2]
+}
+```
+
+### `POST /branch-admin/services`
+
+Creates a new service for the branch. Service is created with `PENDING_APPROVAL` status until approved by admin.
+
+**Request body**
+
+```json
+{
+  "name": "Haircut",
+  "description": "Classic haircut service",
+  "price": 80,
+  "duration": 45
 }
 ```
 
@@ -228,6 +253,14 @@ Approve a business application and create its `User` record.
 ### `POST /admin/applications/:id/reject`
 
 Reject an application with a reason.
+
+### `POST /admin/services/:id/approve`
+
+Approve a pending branch service.
+
+### `POST /admin/services/:id/reject`
+
+Reject a pending branch service with a reason.
 
 ## Quick Test Order
 

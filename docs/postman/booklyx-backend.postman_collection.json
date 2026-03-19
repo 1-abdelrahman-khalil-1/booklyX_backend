@@ -353,6 +353,7 @@
           "name": "Create Staff",
           "request": {
             "method": "POST",
+            "description": "Creates staff profile and assigns approved branch services.\nNotes:\n- `startDate` must be ISO string\n- `serviceIds` must contain approved services from same branch.",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept-Language", "value": "{{lang}}" },
@@ -361,9 +362,27 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Sara Ali\",\n  \"email\": \"staff@example.com\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\",\n  \"staffRole\": \"SPA_SPECIALIST\",\n  \"commissionPercentage\": 20.5\n}"
+              "raw": "{\n  \"name\": \"Sara Ali\",\n  \"email\": \"staff@example.com\",\n  \"age\": 28,\n  \"startDate\": \"2026-03-01T00:00:00.000Z\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\",\n  \"staffRole\": \"SPA_SPECIALIST\",\n  \"commissionPercentage\": 20.5,\n  \"serviceIds\": [1, 2]\n}"
             },
             "url": "{{baseUrl}}/branch-admin/create-staff"
+          }
+        },
+        {
+          "name": "Create Service",
+          "request": {
+            "method": "POST",
+            "description": "Branch admin creates a service. Status will be PENDING_APPROVAL until super admin approves it.",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "Authorization", "value": "Bearer {{branchAdminToken}}" },
+              { "key": "platform", "value": "{{platform}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Haircut\",\n  \"description\": \"Classic haircut service\",\n  \"price\": 80,\n  \"duration\": 45\n}"
+            },
+            "url": "{{baseUrl}}/branch-admin/services"
           }
         }
       ]
@@ -428,6 +447,35 @@
               "raw": "{\n  \"reason\": \"Incomplete data\"\n}"
             },
             "url": "{{baseUrl}}/admin/applications/1/reject"
+          }
+        },
+        {
+          "name": "Approve Service",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "WEB" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": "{{baseUrl}}/admin/services/1/approve"
+          }
+        },
+        {
+          "name": "Reject Service",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "WEB" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Pricing policy mismatch\"\n}"
+            },
+            "url": "{{baseUrl}}/admin/services/1/reject"
           }
         }
       ]
