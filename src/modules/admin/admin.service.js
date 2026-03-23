@@ -1,6 +1,7 @@
 import {
     ApplicationStatus,
     Role,
+    ServiceApprovalStatus,
     UserStatus,
 } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
@@ -8,7 +9,9 @@ import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import {
     approveApplicationSchema,
+    approveServiceSchema,
     rejectApplicationSchema,
+    rejectServiceSchema,
     validateAdminInput,
 } from "./admin.validation.js";
 
@@ -32,6 +35,20 @@ export class ApplicationNotPendingError extends AppError {
   constructor() {
     super(tr.APPLICATION_IS_NOT_PENDING_APPROVAL, 400);
     this.name = "ApplicationIsNotPendingError";
+  }
+}
+
+export class ServiceNotFound extends AppError {
+  constructor() {
+    super(tr.SERVICE_NOT_FOUND, 404);
+    this.name = "ServiceNotFound";
+  }
+}
+
+export class ServiceNotPendingError extends AppError {
+  constructor() {
+    super(tr.SERVICE_IS_NOT_PENDING_APPROVAL, 400);
+    this.name = "ServiceNotPendingError";
   }
 }
 
@@ -126,4 +143,75 @@ export async function rejectApplication(id, reason) {
   });
 
   return { message: tr.APPLICATION_REJECTED };
+}
+
+export async function listPendingServices() {
+  return prisma.service.findMany({
+    where: { status: ServiceApprovalStatus.PENDING_APPROVAL },
+    include: {
+      category: true,
+      branch: {
+        select: {
+          id: true,
+          businessName: true,
+          ownerName: true,
+          userId: true,
+          status: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function approveService(id) {
+  const parsed = validateAdminInput(approveServiceSchema, { id });
+
+  const service = await prisma.service.findUnique({
+    where: { id: parsed.id },
+  });
+
+  if (!service) throw new ServiceNotFound();
+  if (service.status !== ServiceApprovalStatus.PENDING_APPROVAL) {
+    throw new ServiceNotPendingError();
+  }
+
+  const updatedService = await prisma.service.update({
+    where: { id: service.id },
+    data: {
+      status: ServiceApprovalStatus.APPROVED,
+      rejectionReason: null,
+    },
+    include: {
+      category: true,
+    },
+  });
+
+  return { message: tr.SERVICE_APPROVED, service: updatedService };
+}
+
+export async function rejectService(id, reason) {
+  const parsed = validateAdminInput(rejectServiceSchema, { id, reason });
+
+  const service = await prisma.service.findUnique({
+    where: { id: parsed.id },
+  });
+
+  if (!service) throw new ServiceNotFound();
+  if (service.status !== ServiceApprovalStatus.PENDING_APPROVAL) {
+    throw new ServiceNotPendingError();
+  }
+
+  const updatedService = await prisma.service.update({
+    where: { id: service.id },
+    data: {
+      status: ServiceApprovalStatus.REJECTED,
+      rejectionReason: parsed.reason,
+    },
+    include: {
+      category: true,
+    },
+  });
+
+  return { message: tr.SERVICE_REJECTED, service: updatedService };
 }

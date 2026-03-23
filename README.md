@@ -281,9 +281,15 @@ Reject a pending branch service with a reason.
 
 ```bash
 npm run dev                  # Start dev server
+npm run test                 # Run Jest unit tests
+
+# Database & Prisma
 npx prisma generate          # Regenerate Prisma Client
 npx prisma migrate dev       # Create and apply migrations
 npx prisma db seed           # Seed super_admin account
+npx prisma studio           # Open Prisma Studio (visual database viewer)
+
+# Postman Documentation
 npm run postman:sync         # Sync Postman collection to cloud
 ```
 
@@ -301,27 +307,32 @@ npm run postman:sync         # Sync Postman collection to cloud
   - `VERIFICATION_CODE_EXPIRES_MINUTES` (optional, default `10`)
   - `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, `EMAIL_FROM` (optional while email sending is mocked)
 
-## Postman
+## Postman Documentation
 
-- Collection: `docs/postman/booklyx-backend.postman_collection.json`
-- Environment: `docs/postman/booklyx-backend.postman_environment.json`
-- Full endpoint details, examples, and response cases: `docs/postman-routes.md`
+### Files
 
-### Sync to Postman Cloud
+- **Collection**: `docs/postman/booklyx-backend.postman_collection.json`
+- **Environment**: `docs/postman/booklyx-backend.postman_environment.json`
+- **Routes Documentation**: `docs/postman-routes.md` (full endpoint details, examples, and response cases)
 
-Required env vars:
+### Update Documentation with API Changes
 
-```bash
-POSTMAN_API_KEY="your_api_key_here"
-POSTMAN_WORKSPACE_ID="your_workspace_id_here"
-POSTMAN_COLLECTION_UID="your_uid_here"
-POSTMAN_ENVIRONMENT_UID="your_environment_uid_here"
-```
-
-`POSTMAN_COLLECTION_UID` and `POSTMAN_ENVIRONMENT_UID` are optional on first run (the sync script prints them after creation).
-
-Run:
+When you add or modify API endpoints, sync your collection using:
 
 ```bash
 npm run postman:sync
 ```
+
+### Configuration
+
+Required environment variables in `.env`:
+
+```bash
+# Postman API Integration
+POSTMAN_API_KEY="your_api_key"            # Get from https://postman.com/settings/me/api-keys
+POSTMAN_WORKSPACE_ID="your_workspace_id"  # Your Postman workspace ID
+POSTMAN_COLLECTION_UID="your_collection_uid"  # Collection UID (auto-generated on first sync)
+POSTMAN_ENVIRONMENT_UID="your_env_uid"    # Environment UID (auto-generated on first sync)
+```
+
+**Note:** `POSTMAN_COLLECTION_UID` and `POSTMAN_ENVIRONMENT_UID` are automatically printed after the first sync run.

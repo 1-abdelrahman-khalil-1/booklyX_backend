@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
     BusinessCategory,
+    ServiceApprovalStatus,
     StaffRole,
     VerificationType,
 } from "../../generated/prisma/client.js";
@@ -75,6 +76,57 @@ export const createStaffSchema = z.object({
 export const resendCodeSchema = z.object({
   email: z.email({ error: tr.EMAIL_INVALID }),
   type: z.enum(Object.values(VerificationType)),
+});
+
+export const addServiceCategorySchema = z.object({
+  name: z
+    .string({ error: tr.CATEGORY_REQUIRED })
+    .trim()
+    .min(1, tr.CATEGORY_REQUIRED),
+});
+
+export const createServiceSchema = z.object({
+  name: z.string({ error: tr.NAME_REQUIRED }).trim().min(1, tr.NAME_REQUIRED),
+  categoryId: z.number().int().positive().optional(),
+  categoryName: z.string().trim().min(1, tr.CATEGORY_REQUIRED).optional(),
+  description: z
+    .string({ error: tr.DESCRIPTION_REQUIRED })
+    .trim()
+    .min(1, tr.DESCRIPTION_REQUIRED),
+  price: z.number().positive(),
+  durationMinutes: z.number().int().positive(),
+  imageUrl: z.string().url().optional(),
+}).superRefine((data, ctx) => {
+  if (!data.categoryId && !data.categoryName) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["category"],
+      message: tr.CATEGORY_REQUIRED,
+    });
+  }
+});
+
+export const myServicesQuerySchema = z.object({
+  status: z.enum(Object.values(ServiceApprovalStatus)).optional(),
+});
+
+export const updateServiceSchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string({ error: tr.NAME_REQUIRED }).trim().min(1, tr.NAME_REQUIRED).optional(),
+  categoryId: z.number().int().positive().optional(),
+  categoryName: z.string().trim().min(1, tr.CATEGORY_REQUIRED).optional(),
+  description: z
+    .string({ error: tr.DESCRIPTION_REQUIRED })
+    .trim()
+    .min(1, tr.DESCRIPTION_REQUIRED)
+    .optional(),
+  price: z.number().positive().optional(),
+  durationMinutes: z.number().int().positive().optional(),
+  imageUrl: z.string().url().optional(),
+});
+
+export const deleteServiceSchema = z.object({
+  id: z.number().int().positive(),
 });
 
 export const verifyApplicationSchema = z.object({

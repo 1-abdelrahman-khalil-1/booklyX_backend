@@ -18,3 +18,12 @@ export const rejectApplicationSchema = z.object({
     id: z.number(),
     reason: z.string({ error: tr.REJECTION_REASON_REQUIRED }),
 });
+
+export const approveServiceSchema = z.object({
+    id: z.number(),
+});
+
+export const rejectServiceSchema = z.object({
+    id: z.number(),
+    reason: z.string({ error: tr.REJECTION_REASON_REQUIRED }),
+});

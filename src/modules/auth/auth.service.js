@@ -226,12 +226,13 @@ async function issueAuthTokens(userId, role, platform) {
 function toSafeUser(user) {
   if (!user) return null;
   const { password: _password, ...safeUser } = user;
+  console.log("Safe User:", safeUser);
 
   if (safeUser.branchAdmin) {
     const { passwordHash: _hash, ...safeBranchAdmin } = safeUser.branchAdmin;
     safeUser.branchAdmin = safeBranchAdmin;
+    return safeUser.branchAdmin;
   }
-
   return safeUser;
 }
 
@@ -243,7 +244,7 @@ export async function login(body, platformHeader) {
 
   const user = await prisma.user.findUnique({
     where: { email, role },
-    include: { branchAdmin: true },
+    include: { branchAdmin: role === Role.branch_admin ? true : false },
   });
 
   const branchAdminRecord = !user

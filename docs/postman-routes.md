@@ -558,7 +558,29 @@ Success example (`201`):
 
 ---
 
-### POST `/branch-admin/services`
+### POST `/branch-admin/services/categories`
+
+Adds a service category for the logged-in branch admin.
+Requires a Bearer token (`Authorization: Bearer <token>`) of a `branch_admin` and platform header.
+
+Request body:
+
+```json
+{
+  "name": "Hair"
+}
+```
+
+---
+
+### GET `/branch-admin/services/categories`
+
+Returns all service categories for the logged-in branch admin.
+Requires a Bearer token (`Authorization: Bearer <token>`) of a `branch_admin` and platform header.
+
+---
+
+### POST `/branch-admin/services/create-service`
 
 Creates a new branch service with default status `PENDING_APPROVAL`.
 Requires a Bearer token (`Authorization: Bearer <token>`) of a `branch_admin` and platform header.
@@ -570,28 +592,60 @@ Request body:
   "name": "Haircut",
   "description": "Classic haircut service",
   "price": 80,
-  "duration": 45
+  "durationMinutes": 45,
+  "categoryName": "Hair"
 }
 ```
 
-Success example (`201`):
+Notes:
+
+- One of `categoryId` or `categoryName` is required.
+- Service is created as `PENDING_APPROVAL` until approved by super admin.
+
+---
+
+### GET `/branch-admin/services/my-services`
+
+Returns services for the logged-in branch admin.
+Requires a Bearer token (`Authorization: Bearer <token>`) of a `branch_admin` and platform header.
+
+Optional query:
+
+- `status`: `PENDING_APPROVAL` | `APPROVED` | `REJECTED`
+
+---
+
+### PUT `/branch-admin/services/:id`
+
+Updates a branch service.
+Requires a Bearer token (`Authorization: Bearer <token>`) of a `branch_admin` and platform header.
+
+Notes:
+
+- Update is allowed only while status is `PENDING_APPROVAL`.
+- You can pass any subset of fields plus optional `categoryId` or `categoryName`.
+
+Request body example:
 
 ```json
 {
-  "status": 201,
-  "error": false,
-  "message": "Service submitted and waiting for admin approval.",
-  "data": {
-    "id": 1,
-    "branchId": 5,
-    "name": "Haircut",
-    "description": "Classic haircut service",
-    "price": 80,
-    "duration": 45,
-    "status": "PENDING_APPROVAL"
-  }
+  "id": 1,
+  "name": "Premium Haircut",
+  "price": 100,
+  "durationMinutes": 60
 }
 ```
+
+---
+
+### DELETE `/branch-admin/services/:id`
+
+Deletes a branch service.
+Requires a Bearer token (`Authorization: Bearer <token>`) of a `branch_admin` and platform header.
+
+Notes:
+
+- Delete is allowed only while status is `PENDING_APPROVAL`.
 
 ## 4) Admin Management (`/admin`)
 
@@ -673,6 +727,29 @@ Request body:
 ```json
 {
   "reason": "Missing documentation"
+}
+```
+
+---
+
+### GET `/admin/services/pending`
+
+Lists all pending services waiting for super admin approval.
+
+Success example (`200`):
+
+```json
+{
+  "status": 200,
+  "error": false,
+  "message": "Services retrieved successfully.",
+  "data": [
+    {
+      "id": 1,
+      "name": "Haircut",
+      "status": "PENDING_APPROVAL"
+    }
+  ]
 }
 ```
 

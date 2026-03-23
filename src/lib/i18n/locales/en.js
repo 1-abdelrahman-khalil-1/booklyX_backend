@@ -94,6 +94,18 @@ const en = {
   DISTRICT_REQUIRED: "District is required.",
   APPLICATION_RETRIEVED_SUCCESSFULLY: "Application retrieved successfully.",
   STAFF_CREATED: "Staff created successfully.",
+  SERVICE_CREATED: "Service created successfully and sent for admin approval.",
+  SERVICES_RETRIEVED_SUCCESSFULLY: "Services retrieved successfully.",
+  SERVICE_APPROVED: "Service approved successfully.",
+  SERVICE_REJECTED: "Service rejected.",
+  SERVICE_NOT_FOUND: "Service not found.",
+  SERVICE_IS_NOT_PENDING_APPROVAL: "This service is not pending approval.",
+  SERVICE_UPDATED: "Service updated successfully.",
+  SERVICE_DELETED: "Service deleted successfully.",
+  SERVICE_CANNOT_EDIT_AFTER_APPROVAL: "Services can only be edited while pending approval.",
+  SERVICE_CANNOT_DELETE_AFTER_APPROVAL: "Services can only be deleted while pending approval.",
+  CATEGORY_ADDED_SUCCESSFULLY: "Category added successfully.",
+  CATEGORIES_RETRIEVED_SUCCESSFULLY: "Categories retrieved successfully.",
 };
 
 export default en;

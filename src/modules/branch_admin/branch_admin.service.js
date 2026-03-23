@@ -1,24 +1,30 @@
 import bcrypt from "bcrypt";
 import {
-  ApplicationStatus,
-  Role,
-  UserStatus,
-  VerificationType,
+    ApplicationStatus,
+    Role,
+    ServiceApprovalStatus,
+    UserStatus,
+    VerificationType,
 } from "../../generated/prisma/client.js";
 import {
-  sendEmailVerification,
-  sendPhoneVerificationCode,
+    sendEmailVerification,
+    sendPhoneVerificationCode,
 } from "../../lib/email.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import {
-  applySchema,
-  createStaffSchema,
-  resendCodeSchema,
-  validateBranchAdminInput,
-  verifyEmailSchema,
-  verifyPhoneSchema,
+    addServiceCategorySchema,
+    applySchema,
+    createServiceSchema,
+    createStaffSchema,
+    deleteServiceSchema,
+    myServicesQuerySchema,
+    resendCodeSchema,
+    updateServiceSchema,
+    validateBranchAdminInput,
+    verifyEmailSchema,
+    verifyPhoneSchema,
 } from "./branch_admin.validation.js";
 
 const SALT_ROUNDS = 10;
@@ -73,6 +79,13 @@ export class MaxAttemptsExceededError extends AppError {
   constructor() {
     super(tr.MAX_ATTEMPTS_EXCEEDED, 429);
     this.name = "MaxAttemptsExceededError";
+  }
+}
+
+export class ServiceCategoryNotFoundError extends AppError {
+  constructor() {
+    super(tr.CATEGORY_REQUIRED, 404);
+    this.name = "ServiceCategoryNotFoundError";
   }
 }
 
@@ -323,3 +336,257 @@ export async function createStaff(body, branchAdminUserId) {
   const { password: _password, ...safeUser } = user;
   return safeUser;
 }
+
+export async function addServiceCategory(body, branchAdminUserId) {
+  const data = validateBranchAdminInput(addServiceCategorySchema, body);
+
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+  });
+
+  if (!branchAdmin) {
+    throw new ApplicationNotFound();
+  }
+
+  if (branchAdmin.status !== ApplicationStatus.APPROVED) {
+    throw new BranchAdminValidationError(tr.APPLICATION_IS_UNDER_REVIEW);
+  }
+
+  const normalizedName = data.name.trim();
+
+  const category = await prisma.serviceCategory.upsert({
+    where: {
+      branchId_name: {
+        branchId: branchAdmin.id,
+        name: normalizedName,
+      },
+    },
+    create: {
+      branchId: branchAdmin.id,
+      name: normalizedName,
+    },
+    update: {},
+  });
+
+  return category;
+}
+
+export async function getMyServiceCategories(branchAdminUserId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+  });
+
+  if (!branchAdmin) {
+    throw new ApplicationNotFound();
+  }
+
+  return prisma.serviceCategory.findMany({
+    where: { branchId: branchAdmin.id },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function createService(body, branchAdminUserId) {
+  const data = validateBranchAdminInput(createServiceSchema, body);
+
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+  });
+
+  if (!branchAdmin) {
+    throw new ApplicationNotFound();
+  }
+
+  if (branchAdmin.status !== ApplicationStatus.APPROVED) {
+    throw new BranchAdminValidationError(tr.APPLICATION_IS_UNDER_REVIEW);
+  }
+
+  let categoryId = data.categoryId;
+
+  if (data.categoryName) {
+    const createdCategory = await prisma.serviceCategory.upsert({
+      where: {
+        branchId_name: {
+          branchId: branchAdmin.id,
+          name: data.categoryName.trim(),
+        },
+      },
+      create: {
+        branchId: branchAdmin.id,
+        name: data.categoryName.trim(),
+      },
+      update: {},
+    });
+
+    categoryId = createdCategory.id;
+  }
+
+  if (categoryId) {
+    const existingCategory = await prisma.serviceCategory.findFirst({
+      where: {
+        id: categoryId,
+        branchId: branchAdmin.id,
+      },
+    });
+
+    if (!existingCategory) {
+      throw new ServiceCategoryNotFoundError();
+    }
+  }
+
+  const service = await prisma.service.create({
+    data: {
+      branchId: branchAdmin.id,
+      serviceCategoryId: categoryId,
+      name: data.name,
+      description: data.description,
+      price: data.price,
+      durationMinutes: data.durationMinutes,
+      imageUrl: data.imageUrl,
+      status: ServiceApprovalStatus.PENDING_APPROVAL,
+    },
+    include: {
+      category: true,
+    },
+  });
+
+  return service;
+}
+
+export async function getMyServices(branchAdminUserId, query) {
+  const parsedQuery = validateBranchAdminInput(myServicesQuerySchema, query);
+
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+  });
+
+  if (!branchAdmin) {
+    throw new ApplicationNotFound();
+  }
+
+  return prisma.service.findMany({
+    where: {
+      branchId: branchAdmin.id,
+      ...(parsedQuery.status ? { status: parsedQuery.status } : {}),
+    },
+    include: {
+      category: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function updateService(body, branchAdminUserId) {
+  const data = validateBranchAdminInput(updateServiceSchema, body);
+
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+  });
+
+  if (!branchAdmin) {
+    throw new ApplicationNotFound();
+  }
+
+  const service = await prisma.service.findFirst({
+    where: {
+      id: data.id,
+      branchId: branchAdmin.id,
+    },
+  });
+
+  if (!service) {
+    throw new ApplicationNotFound();
+  }
+
+  if (service.status !== ServiceApprovalStatus.PENDING_APPROVAL) {
+    throw new BranchAdminValidationError(
+      tr.SERVICE_CANNOT_EDIT_AFTER_APPROVAL
+    );
+  }
+
+  let categoryId = service.serviceCategoryId;
+
+  if (data.categoryName) {
+    const createdCategory = await prisma.serviceCategory.upsert({
+      where: {
+        branchId_name: {
+          branchId: branchAdmin.id,
+          name: data.categoryName.trim(),
+        },
+      },
+      create: {
+        branchId: branchAdmin.id,
+        name: data.categoryName.trim(),
+      },
+      update: {},
+    });
+
+    categoryId = createdCategory.id;
+  } else if (data.categoryId) {
+    const existingCategory = await prisma.serviceCategory.findFirst({
+      where: {
+        id: data.categoryId,
+        branchId: branchAdmin.id,
+      },
+    });
+
+    if (!existingCategory) {
+      throw new ServiceCategoryNotFoundError();
+    }
+
+    categoryId = data.categoryId;
+  }
+
+  const updatedService = await prisma.service.update({
+    where: { id: service.id },
+    data: {
+      name: data.name ?? service.name,
+      description: data.description ?? service.description,
+      price: data.price ?? service.price,
+      durationMinutes: data.durationMinutes ?? service.durationMinutes,
+      imageUrl: data.imageUrl ?? service.imageUrl,
+      serviceCategoryId: categoryId,
+    },
+    include: {
+      category: true,
+    },
+  });
+
+  return updatedService;
+}
+
+export async function deleteService(body, branchAdminUserId) {
+  const data = validateBranchAdminInput(deleteServiceSchema, body);
+
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+  });
+
+  if (!branchAdmin) {
+    throw new ApplicationNotFound();
+  }
+
+  const service = await prisma.service.findFirst({
+    where: {
+      id: data.id,
+      branchId: branchAdmin.id,
+    },
+  });
+
+  if (!service) {
+    throw new ApplicationNotFound();
+  }
+
+  if (service.status !== ServiceApprovalStatus.PENDING_APPROVAL) {
+    throw new BranchAdminValidationError(
+      tr.SERVICE_CANNOT_DELETE_AFTER_APPROVAL
+    );
+  }
+
+  await prisma.service.delete({
+    where: { id: service.id },
+  });
+
+  return { message: tr.SERVICE_DELETED };
+}
+

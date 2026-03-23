@@ -85,6 +85,18 @@ const ar = {
   DISTRICT_REQUIRED: "المنطقة مطلوبة.",
   APPLICATION_RETRIEVED_SUCCESSFULLY: "تم استرجاع الطلب بنجاح.",
   STAFF_CREATED: "تم إنشاء الموظف بنجاح.",
+  SERVICE_CREATED: "تم إنشاء الخدمة بنجاح وإرسالها لموافقة الإدارة.",
+  SERVICES_RETRIEVED_SUCCESSFULLY: "تم استرجاع الخدمات بنجاح.",
+  SERVICE_APPROVED: "تمت الموافقة على الخدمة بنجاح.",
+  SERVICE_REJECTED: "تم رفض الخدمة.",
+  SERVICE_NOT_FOUND: "الخدمة غير موجودة.",
+  SERVICE_IS_NOT_PENDING_APPROVAL: "هذه الخدمة ليست قيد المراجعة.",
+  SERVICE_UPDATED: "تم تحديث الخدمة بنجاح.",
+  SERVICE_DELETED: "تم حذف الخدمة بنجاح.",
+  SERVICE_CANNOT_EDIT_AFTER_APPROVAL: "يمكن تعديل الخدمات فقط أثناء انتظار الموافقة.",
+  SERVICE_CANNOT_DELETE_AFTER_APPROVAL: "يمكن حذف الخدمات فقط أثناء انتظار الموافقة.",
+  CATEGORY_ADDED_SUCCESSFULLY: "تمت إضافة الفئة بنجاح.",
+  CATEGORIES_RETRIEVED_SUCCESSFULLY: "تم استرجاع الفئات بنجاح.",
 };
 
 export default ar;

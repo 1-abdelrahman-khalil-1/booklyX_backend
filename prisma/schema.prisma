@@ -59,6 +59,12 @@ enum ApplicationDocumentType {
   FACILITY_LICENSE
 }
 
+enum ServiceApprovalStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
 // ─── User & Verification ─────────────────────────────────────────────────────
 
 model User {
@@ -141,6 +147,8 @@ model BranchAdmin {
   updatedAt         DateTime                      @updatedAt
   verificationCodes ApplicationVerificationCode[]
   documents         ApplicationDocument[]
+  serviceCategories ServiceCategory[]
+  services          Service[]
   staffs            Staff[]
   user              User?                         @relation(fields: [userId], references: [id])
 
@@ -223,4 +231,40 @@ model StaffCertificate {
   staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
   @@index([staffId])
+}
+
+model ServiceCategory {
+  id        Int      @id @default(autoincrement())
+  branchId  Int
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch   BranchAdmin @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  services Service[]
+
+  @@unique([branchId, name])
+  @@index([branchId])
+}
+
+model Service {
+  id              Int                   @id @default(autoincrement())
+  branchId        Int
+  serviceCategoryId Int
+  name            String
+  description     String
+  price           Float
+  durationMinutes Int
+  imageUrl        String?
+  status          ServiceApprovalStatus @default(PENDING_APPROVAL)
+  rejectionReason String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  branch   BranchAdmin     @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  category ServiceCategory @relation(fields: [serviceCategoryId], references: [id], onDelete: Cascade)
+
+  @@index([branchId])
+  @@index([status])
+  @@index([branchId, status])
 }

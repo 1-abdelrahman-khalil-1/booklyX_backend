@@ -357,8 +357,11 @@
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept-Language", "value": "{{lang}}" },
-              { "key": "Authorization", "value": "Bearer {{branchAdminToken}}" },
-              { "key": "platform", "value": "{{platform}}"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{branchAdminToken}}"
+              },
+              { "key": "platform", "value": "{{platform}}" }
             ],
             "body": {
               "mode": "raw",
@@ -375,14 +378,107 @@
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept-Language", "value": "{{lang}}" },
-              { "key": "Authorization", "value": "Bearer {{branchAdminToken}}" },
-              { "key": "platform", "value": "{{platform}}"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{branchAdminToken}}"
+              },
+              { "key": "platform", "value": "{{platform}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Haircut\",\n  \"description\": \"Classic haircut service\",\n  \"price\": 80,\n  \"duration\": 45\n}"
+              "raw": "{\n  \"name\": \"Haircut\",\n  \"description\": \"Classic haircut service\",\n  \"price\": 80,\n  \"durationMinutes\": 45,\n  \"categoryName\": \"Hair\"\n}"
             },
-            "url": "{{baseUrl}}/branch-admin/services"
+            "url": "{{baseUrl}}/branch-admin/services/create-service"
+          }
+        },
+        {
+          "name": "Add Service Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{branchAdminToken}}"
+              },
+              { "key": "platform", "value": "{{platform}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hair\"\n}"
+            },
+            "url": "{{baseUrl}}/branch-admin/services/categories"
+          }
+        },
+        {
+          "name": "Get Service Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{branchAdminToken}}"
+              },
+              { "key": "platform", "value": "{{platform}}" }
+            ],
+            "url": "{{baseUrl}}/branch-admin/services/categories"
+          }
+        },
+        {
+          "name": "Get My Services",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{branchAdminToken}}"
+              },
+              { "key": "platform", "value": "{{platform}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/branch-admin/services/my-services?status=PENDING_APPROVAL",
+              "host": ["{{baseUrl}}"],
+              "path": ["branch-admin", "services", "my-services"],
+              "query": [{ "key": "status", "value": "PENDING_APPROVAL" }]
+            }
+          }
+        },
+        {
+          "name": "Update Service",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{branchAdminToken}}"
+              },
+              { "key": "platform", "value": "{{platform}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"name\": \"Premium Haircut\",\n  \"price\": 100,\n  \"durationMinutes\": 60\n}"
+            },
+            "url": "{{baseUrl}}/branch-admin/services/1"
+          }
+        },
+        {
+          "name": "Delete Service",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{branchAdminToken}}"
+              },
+              { "key": "platform", "value": "{{platform}}" }
+            ],
+            "url": "{{baseUrl}}/branch-admin/services/1"
           }
         }
       ]
@@ -447,6 +543,18 @@
               "raw": "{\n  \"reason\": \"Incomplete data\"\n}"
             },
             "url": "{{baseUrl}}/admin/applications/1/reject"
+          }
+        },
+        {
+          "name": "List Pending Services",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "WEB" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": "{{baseUrl}}/admin/services/pending"
           }
         },
         {
