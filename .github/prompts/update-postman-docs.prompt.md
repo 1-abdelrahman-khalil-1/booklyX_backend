@@ -64,7 +64,8 @@ The prompt checks for changes in:
 Updates are applied to:
 
 - `docs/postman/booklyx-backend.postman_collection.json` - Main collection file
-- `docs/postman-routes.md` - Documentation file
+- `docs/postman-routes.md` - Documentation file for endpoint details
+- `README.md` - Ensure a clickable Table of Contents is present at the top and kept in sync with major README sections
 
 ## Workflow
 

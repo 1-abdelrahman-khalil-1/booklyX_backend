@@ -28,15 +28,40 @@ To test admin-only endpoints (like `GET /admin/applications`), use these **seede
 **Platform:** `WEB`  
 **Role:** `super_admin`
 
+---
+
+### Default Client Accounts
+
+These client accounts are seeded for testing:
+
+| Name            | Email                       | Password |
+| --------------- | --------------------------- | -------- |
+| Abdo Khalil     | abdo.khalil@booklyx.com     | 12345678 |
+| Eslam Wael      | eslam.wael@booklyx.com      | 12345678 |
+| Mazen Tamer     | mazen.tamer@booklyx.com     | 12345678 |
+| Mahmoud Ibrahim | mahmoud.ibrahim@booklyx.com | 12345678 |
+| Abdo Badr       | abdo.badr@booklyx.com       | 12345678 |
+
+### Default Branch Applications
+
+These branch admin applications are seeded for testing:
+
+| Owner Name     | Email                      | Password | Business Name       | Category |
+| -------------- | -------------------------- | -------- | ------------------- | -------- |
+| Hassan Mahmoud | hassan.mahmoud@booklyx.com | 12345678 | Hassan Beauty Salon | SPA      |
+| Ahmed Samir    | ahmed.samir@booklyx.com    | 12345678 | Samir Health Clinic | CLINIC   |
+
+---
+
 **First time setup:**
 
 ```bash
 npx prisma db seed
 ```
 
-**Get admin token:**
+**Get admin/client token:**
 
-Login via `POST /auth/login` with the credentials above. The token returned can be used in all admin-protected endpoints.
+Login via `POST /auth/login` with the credentials above. The token returned can be used in all protected endpoints.
 
 ## 2) Auth endpoints (`/auth`)
 

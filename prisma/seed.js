@@ -16,26 +16,42 @@ const SALT_ROUNDS = 10;
 
 const SEED_USERS = [
   {
-    name: "John Doe",
-    email: "john@booklyx.com",
+    name: "Abdo Khalil",
+    email: "abdo.khalil@booklyx.com",
     password: "12345678",
     phone: "01000000001",
     role: Role.client,
     status: UserStatus.ACTIVE,
   },
   {
-    name: "Sara Ali",
-    email: "sara@booklyx.com",
+    name: "Eslam Wael",
+    email: "eslam.wael@booklyx.com",
     password: "12345678",
     phone: "01000000002",
     role: Role.client,
     status: UserStatus.ACTIVE,
   },
   {
-    name: "Abdo Khalil",
-    email: "khalil@booklyx.com",
+    name: "Mazen Tamer",
+    email: "mazen.tamer@booklyx.com",
     password: "12345678",
     phone: "01000000003",
+    role: Role.client,
+    status: UserStatus.ACTIVE,
+  },
+  {
+    name: "Mahmoud Ibrahim",
+    email: "mahmoud.ibrahim@booklyx.com",
+    password: "12345678",
+    phone: "01000000004",
+    role: Role.client,
+    status: UserStatus.ACTIVE,
+  },
+  {
+    name: "Abdo Badr",
+    email: "abdo.badr@booklyx.com",
+    password: "12345678",
+    phone: "01000000005",
     role: Role.client,
     status: UserStatus.ACTIVE,
   },
@@ -43,11 +59,11 @@ const SEED_USERS = [
 
 const SEED_BRANCH_APPLICATIONS = [
   {
-    ownerName: "Mona Hassan",
-    email: "mona.branch@booklyx.com",
+    ownerName: "Hassan Mahmoud",
+    email: "hassan.mahmoud@booklyx.com",
     phone: "01000000011",
     password: "12345678",
-    businessName: "Mona Beauty Lounge",
+    businessName: "Hassan Beauty Salon",
     category: BusinessCategory.SPA,
     description: "Premium beauty and skincare services.",
     commercialRegisterNumber: "CR-2026-001",
@@ -61,7 +77,7 @@ const SEED_BRANCH_APPLICATIONS = [
   },
   {
     ownerName: "Ahmed Samir",
-    email: "ahmed.branch@booklyx.com",
+    email: "ahmed.samir@booklyx.com",
     phone: "01000000012",
     password: "12345678",
     businessName: "Samir Health Clinic",
