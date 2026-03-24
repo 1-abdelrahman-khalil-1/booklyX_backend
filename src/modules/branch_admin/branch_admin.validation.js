@@ -1,9 +1,9 @@
 import { z } from "zod";
 import {
-    BusinessCategory,
-    ServiceApprovalStatus,
-    StaffRole,
-    VerificationType,
+  BusinessCategory,
+  ServiceApprovalStatus,
+  StaffRole,
+  VerificationType,
 } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
 import { BranchAdminValidationError } from "./branch_admin.service.js";
@@ -44,8 +44,8 @@ export const applySchema = z.object({
   city: z.string({ error: tr.CITY_REQUIRED }),
   district: z.string({ error: tr.DISTRICT_REQUIRED }),
   address: z.string({ error: tr.ADDRESS_REQUIRED }),
-  latitude: z.number({ error: tr.LATITUDE_REQUIRED }),
-  longitude: z.number({ error: tr.LONGITUDE_REQUIRED }),
+  latitude: z.coerce.number({ error: tr.LATITUDE_REQUIRED }),
+  longitude: z.coerce.number({ error: tr.LONGITUDE_REQUIRED }),
 });
 
 export const verifyEmailSchema = z.object({
@@ -87,14 +87,14 @@ export const addServiceCategorySchema = z.object({
 
 export const createServiceSchema = z.object({
   name: z.string({ error: tr.NAME_REQUIRED }).trim().min(1, tr.NAME_REQUIRED),
-  categoryId: z.number().int().positive().optional(),
+  categoryId: z.coerce.number().int().positive().optional(),
   categoryName: z.string().trim().min(1, tr.CATEGORY_REQUIRED).optional(),
   description: z
     .string({ error: tr.DESCRIPTION_REQUIRED })
     .trim()
     .min(1, tr.DESCRIPTION_REQUIRED),
-  price: z.number().positive(),
-  durationMinutes: z.number().int().positive(),
+  price: z.coerce.number().positive(),
+  durationMinutes: z.coerce.number().int().positive(),
   imageUrl: z.string().url().optional(),
 }).superRefine((data, ctx) => {
   if (!data.categoryId && !data.categoryName) {
@@ -111,17 +111,17 @@ export const myServicesQuerySchema = z.object({
 });
 
 export const updateServiceSchema = z.object({
-  id: z.number().int().positive(),
+  id: z.coerce.number().int().positive(),
   name: z.string({ error: tr.NAME_REQUIRED }).trim().min(1, tr.NAME_REQUIRED).optional(),
-  categoryId: z.number().int().positive().optional(),
+  categoryId: z.coerce.number().int().positive().optional(),
   categoryName: z.string().trim().min(1, tr.CATEGORY_REQUIRED).optional(),
   description: z
     .string({ error: tr.DESCRIPTION_REQUIRED })
     .trim()
     .min(1, tr.DESCRIPTION_REQUIRED)
     .optional(),
-  price: z.number().positive().optional(),
-  durationMinutes: z.number().int().positive().optional(),
+  price: z.coerce.number().positive().optional(),
+  durationMinutes: z.coerce.number().int().positive().optional(),
   imageUrl: z.string().url().optional(),
 });
 

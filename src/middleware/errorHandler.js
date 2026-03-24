@@ -1,3 +1,4 @@
+import multer from "multer";
 import { ZodError } from "zod";
 import { getLanguage, t, tr } from "../lib/i18n/index.js";
 import { AppError } from "../utils/AppError.js";
@@ -26,6 +27,10 @@ export const errorHandler = (
             400,
             t(firstIssue.message, lang) || firstIssue.message
         );
+    }
+
+    if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+        return void errorResponse(res, 400, t(tr.FILE_TOO_LARGE, lang));
     }
 
     console.error("Unhandled error:", err);

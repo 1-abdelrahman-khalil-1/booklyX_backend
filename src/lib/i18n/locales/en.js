@@ -106,6 +106,8 @@ const en = {
   SERVICE_CANNOT_DELETE_AFTER_APPROVAL: "Services can only be deleted while pending approval.",
   CATEGORY_ADDED_SUCCESSFULLY: "Category added successfully.",
   CATEGORIES_RETRIEVED_SUCCESSFULLY: "Categories retrieved successfully.",
+  INVALID_FILE_TYPE: "Invalid file type. Only images and PDF files are allowed.",
+  FILE_TOO_LARGE: "File size is too large.",
 };
 
 export default en;

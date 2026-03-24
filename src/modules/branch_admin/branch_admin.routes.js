@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Role } from "../../generated/prisma/client.js";
 import { authenticate, authorize } from "../../middleware/authenticate.js";
+import { documentsUpload, imageOnlyUpload } from "../../middleware/upload.js";
 import {
     addServiceCategoryHandler,
     applyHandler,
@@ -17,7 +18,17 @@ import {
 
 const branchAdminRouter = Router();
 
-branchAdminRouter.post("/apply", applyHandler);
+const applicationUploadFields = documentsUpload.fields([
+  { name: "logo", maxCount: 1 },
+  { name: "taxCertificate", maxCount: 1 },
+  { name: "commercialRegister", maxCount: 1 },
+  { name: "nationalId", maxCount: 1 },
+  { name: "facilityLicense", maxCount: 1 },
+]);
+
+const serviceUploadField = imageOnlyUpload.fields([{ name: "image", maxCount: 1 }]);
+
+branchAdminRouter.post("/apply", applicationUploadFields, applyHandler);
 
 branchAdminRouter.post("/verify-email", verifyEmailHandler);
 
@@ -50,6 +61,7 @@ branchAdminRouter.post(
   "/services/create-service",
   authenticate,
   authorize(Role.branch_admin),
+  serviceUploadField,
   createServiceHandler,
 );
 
@@ -64,6 +76,7 @@ branchAdminRouter.put(
   "/services/:id",
   authenticate,
   authorize(Role.branch_admin),
+  serviceUploadField,
   updateServiceHandler,
 );
 

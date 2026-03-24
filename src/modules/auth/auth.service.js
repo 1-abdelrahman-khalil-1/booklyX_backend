@@ -226,14 +226,22 @@ async function issueAuthTokens(userId, role, platform) {
 function toSafeUser(user) {
   if (!user) return null;
   const { password: _password, ...safeUser } = user;
-  console.log("Safe User:", safeUser);
 
   if (safeUser.branchAdmin) {
     const { passwordHash: _hash, ...safeBranchAdmin } = safeUser.branchAdmin;
-    safeUser.branchAdmin = safeBranchAdmin;
-    return safeUser.branchAdmin;
+    return { ...safeBranchAdmin, role: user.role };
   }
   return safeUser;
+}
+
+async function ensureClientProfile(user) {
+  if (!user || user.role !== Role.client) return;
+
+  await prisma.client.upsert({
+    where: { userId: user.id },
+    create: { userId: user.id },
+    update: {},
+  });
 }
 
 // ─── Auth Services ────────────────────────────────────────────────────────────
@@ -280,6 +288,8 @@ export async function login(body, platformHeader) {
   // Enforce verification funnel — email first, then phone
   if (!user.emailVerified) throw new EmailNotVerifiedError();
   if (!user.phoneVerified) throw new PhoneNotVerifiedError();
+
+  await ensureClientProfile(user);
 
   const tokens = await issueAuthTokens(user.id, user.role, platform);
 
@@ -330,6 +340,9 @@ export async function register(body, platformHeader) {
         phone,
         role: Role.client,
         status: UserStatus.ACTIVE,
+        client: {
+          create: {},
+        },
       },
     });
   } catch (error) {

@@ -97,6 +97,8 @@ const ar = {
   SERVICE_CANNOT_DELETE_AFTER_APPROVAL: "يمكن حذف الخدمات فقط أثناء انتظار الموافقة.",
   CATEGORY_ADDED_SUCCESSFULLY: "تمت إضافة الفئة بنجاح.",
   CATEGORIES_RETRIEVED_SUCCESSFULLY: "تم استرجاع الفئات بنجاح.",
+  INVALID_FILE_TYPE: "نوع الملف غير مدعوم. المسموح فقط الصور وملفات PDF.",
+  FILE_TOO_LARGE: "حجم الملف كبير جدا.",
 };
 
 export default ar;

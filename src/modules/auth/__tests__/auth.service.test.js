@@ -25,6 +25,9 @@ jest.mock("../../../lib/prisma.js", () => ({
   user: {
     findUnique: jest.fn(),
   },
+  client: {
+    upsert: jest.fn(),
+  },
   branchAdmin: {
     findFirst: jest.fn(),
   },

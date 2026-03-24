@@ -37,7 +37,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"password\": \"12345678\",\n  \"role\": \"client\" // \"client\", \"branch_admin\", \"super_admin\", \"staff\"\n}"
+              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"password\": \"12345678\",\n  \"role\": \"client\"\n}"
             },
             "url": "{{baseUrl}}/auth/login"
           },
@@ -170,7 +170,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"phone\": \"0123456789\",\n  \"type\": \"EMAIL\" // \"PHONE\", \"PASSWORD_RESET\"\n}"
+              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"phone\": \"0123456789\",\n  \"type\": \"EMAIL\"\n}"
             },
             "url": "{{baseUrl}}/auth/resend-code"
           }
@@ -245,7 +245,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"refreshToken\": \"{{refreshClientToken}}\" // or refreshBranchAdminToken, refreshStaffToken, refreshAdminToken\n}"
+              "raw": "{\n  \"refreshToken\": \"{{refreshClientToken}}\"\n}"
             },
             "url": "{{baseUrl}}/auth/refresh"
           },
@@ -298,7 +298,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"ownerName\": \"Abdo Khalil\",\n  \"email\": \"branch@example.com\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\",\n  \"businessName\": \"Khalil Spa\",\n  \"category\": \"SPA\" /* \"CLINIC\", \"BARBER\" */\n  \"description\": \"Premium spa services\",\n  \"city\": \"Cairo\",\n  \"district\": \"Tahrir Square\",\n  \"address\": \"Tahrir Square\",\n  \"taxId\": \"123456789\",\n  \"commercialRegisterNumber\": \"123456789\",\n  \"latitude\": 30.0444,\n  \"longitude\": 31.2357\n}"
+              "raw": "{\n  \"ownerName\": \"Abdo Khalil\",\n  \"email\": \"branch@example.com\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\",\n  \"businessName\": \"Khalil Spa\",\n  \"category\": \"SPA\",\n  \"description\": \"Premium spa services\",\n  \"city\": \"Cairo\",\n  \"district\": \"Tahrir Square\",\n  \"address\": \"Tahrir Square\",\n  \"taxId\": \"123456789\",\n  \"commercialRegisterNumber\": \"123456789\",\n  \"latitude\": 30.0444,\n  \"longitude\": 31.2357\n}"
             },
             "url": "{{baseUrl}}/branch-admin/apply"
           }
@@ -344,7 +344,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"branch@example.com\",\n  \"type\": \"EMAIL\" // \"PHONE\"\n}"
+              "raw": "{\n  \"email\": \"branch@example.com\",\n  \"type\": \"EMAIL\"\n}"
             },
             "url": "{{baseUrl}}/branch-admin/resend-code"
           }
@@ -353,7 +353,7 @@
           "name": "Create Staff",
           "request": {
             "method": "POST",
-            "description": "Creates staff profile and assigns approved branch services.\nNotes:\n- `startDate` must be ISO string\n- `serviceIds` must contain approved services from same branch.",
+            "description": "Creates staff account for the authenticated branch admin.\nRequired fields: name, email, phone, password, staffRole, commissionPercentage.",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept-Language", "value": "{{lang}}" },
@@ -365,7 +365,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Sara Ali\",\n  \"email\": \"staff@example.com\",\n  \"age\": 28,\n  \"startDate\": \"2026-03-01T00:00:00.000Z\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\",\n  \"staffRole\": \"SPA_SPECIALIST\",\n  \"commissionPercentage\": 20.5,\n  \"serviceIds\": [1, 2]\n}"
+              "raw": "{\n  \"name\": \"Sara Ali\",\n  \"email\": \"staff@example.com\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\",\n  \"staffRole\": \"SPA_SPECIALIST\",\n  \"commissionPercentage\": 20.5\n}"
             },
             "url": "{{baseUrl}}/branch-admin/create-staff"
           }

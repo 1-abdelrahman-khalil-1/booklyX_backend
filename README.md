@@ -50,6 +50,7 @@ Backend API for BooklyX (graduation project), built with **Node.js**, **Express 
 - [Postman Documentation](#postman-documentation)
 
 ---
+
 ---
 
 ## Table of Contents
@@ -100,40 +101,42 @@ Backend API for BooklyX (graduation project), built with **Node.js**, **Express 
 
 ---
 
-## Default Admin Account
-
-For testing admin-only endpoints, use these seeded credentials:
-For testing admin-only endpoints, use these seeded credentials:
+## Default Super Admin Account
 
 | Field    | Value               |
 | -------- | ------------------- |
 | Email    | `admin@booklyx.com` |
 | Password | `12345678`          |
+| Phone    | `01000000000`       |
 | Platform | `WEB`               |
 | Role     | `super_admin`       |
 
 ---
 
+## Default Staff Accounts
+
+| Name       | Email                        | Password | Phone       | Branch              | Role   |
+| ---------- | ---------------------------- | -------- | ----------- | ------------------- | ------ |
+| Eslam Wael | eslam.wael.staff@booklyx.com | 12345678 | 01000000021 | Hassan Beauty Salon | BARBER |
+| Abdo Badr  | abdo.badr.staff@booklyx.com  | 12345678 | 01000000022 | Samir Health Clinic | DOCTOR |
+
+---
+
 ## Default Client Accounts
 
-These client accounts are seeded for testing:
+| Name        | Email                   | Password | Phone       |
+| ----------- | ----------------------- | -------- | ----------- |
+| Abdo Khalil | abdo.khalil@booklyx.com | 12345678 | 01000000001 |
+| Mazen Tamer | mazen.tamer@booklyx.com | 12345678 | 01000000003 |
 
-| Name            | Email                       | Password |
-| --------------- | --------------------------- | -------- |
-| Abdo Khalil     | abdo.khalil@booklyx.com     | 12345678 |
-| Eslam Wael      | eslam.wael@booklyx.com      | 12345678 |
-| Mazen Tamer     | mazen.tamer@booklyx.com     | 12345678 |
-| Mahmoud Ibrahim | mahmoud.ibrahim@booklyx.com | 12345678 |
-| Abdo Badr       | abdo.badr@booklyx.com       | 12345678 |
+---
 
-## Default Branch Applications
+## Default Branch Admin Accounts
 
-These branch admin applications are seeded for testing:
-
-| Owner Name     | Email                      | Password | Business Name       | Category |
-| -------------- | -------------------------- | -------- | ------------------- | -------- |
-| Hassan Mahmoud | hassan.mahmoud@booklyx.com | 12345678 | Hassan Beauty Salon | SPA      |
-| Ahmed Samir    | ahmed.samir@booklyx.com    | 12345678 | Samir Health Clinic | CLINIC   |
+| Owner Name      | Email                       | Password | Phone       | Business Name       | Category |
+| --------------- | --------------------------- | -------- | ----------- | ------------------- | -------- |
+| Mahmoud Ibrahim | mahmoud.ibrahim@booklyx.com | 12345678 | 01000000011 | Hassan Beauty Salon | SPA      |
+| Ahmed Samir     | ahmed.samir@booklyx.com     | 12345678 | 01000000012 | Samir Health Clinic | CLINIC   |
 
 ---
 
@@ -155,6 +158,7 @@ Then login via `POST /auth/login` to get the admin or client token.
 - In **production**, hardcoded OTP is blocked and will throw an error if used.
 
 ---
+
 ---
 
 ## Auth Endpoints (`/auth`)
@@ -804,6 +808,7 @@ Verifies application phone. Moves application to `PENDING_APPROVAL` state.
 ```
 
 ---
+
 Verifies application phone. Moves application to `PENDING_APPROVAL` state.
 
 **Request body**
@@ -1199,6 +1204,7 @@ Reject a pending branch service with a reason.
 3. POST /auth/verify-phone   → code: 333333
 4. Use returned token in protected endpoints
 ```
+
 ### Client Registration & Login
 
 ```
@@ -1209,6 +1215,7 @@ Reject a pending branch service with a reason.
 ```
 
 ### Admin Access
+
 ### Admin Access
 
 ```
@@ -1230,6 +1237,7 @@ Reject a pending branch service with a reason.
 ```
 
 ---
+
 ```
 1. npx prisma db seed        (first time only)
 2. POST /auth/login          → email: admin@booklyx.com, role: super_admin
@@ -1307,6 +1315,7 @@ EMAIL_FROM=
 ```
 
 ---
+
 - Prisma client is auto-generated on install via `postinstall: prisma generate`
 
 **Required environment variables:**

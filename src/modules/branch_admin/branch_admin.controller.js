@@ -2,20 +2,69 @@ import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
-  addServiceCategory,
-  createService,
+    addServiceCategory,
+    createService,
     createStaff,
-  deleteService,
-  getMyServiceCategories,
-  getMyServices,
-  resendApplicationCode,
-  submitApplication,
-  updateService,
+    deleteService,
+    getMyServiceCategories,
+    getMyServices,
+    resendApplicationCode,
+    submitApplication,
+    updateService,
+    verifyApplicationEmail, verifyApplicationPhone,
+} from "./branch_admin.service.js";
+
+function firstUploadedFile(req, fieldName) {
+  const fileList = req.files?.[fieldName];
+  return Array.isArray(fileList) ? fileList[0] : undefined;
+}
+
+/**
+ * Get authenticated download URL for sensitive documents.
+ * These require login to access.
+ */
+function getDocumentDownloadUrl(req, file) {
+  if (!file) return undefined;
+  return `${req.protocol}://${req.get("host")}/files/download/${file.filename}`;
+}
+
+/**
+ * Get public URL for service images.
+ * Service images can be accessed without authentication.
+ */
+function getPublicImageUrl(req, file) {
+  if (!file) return undefined;
+  return `${req.protocol}://${req.get("host")}/files/download/${file.filename}`;
+}
+
+function buildApplicationPayload(req) {
+  return {
+    ...req.body,
+    logoUrl:
+      getDocumentDownloadUrl(req, firstUploadedFile(req, "logo")) ?? req.body.logoUrl,
+    taxCertificateUrl:
+      getDocumentDownloadUrl(req, firstUploadedFile(req, "taxCertificate")) ?? req.body.taxCertificateUrl,
+    commercialRegisterUrl:
+      getDocumentDownloadUrl(req, firstUploadedFile(req, "commercialRegister")) ?? req.body.commercialRegisterUrl,
+    nationalIdUrl:
+      getDocumentDownloadUrl(req, firstUploadedFile(req, "nationalId")) ?? req.body.nationalIdUrl,
+    facilityLicenseUrl:
+      getDocumentDownloadUrl(req, firstUploadedFile(req, "facilityLicense")) ?? req.body.facilityLicenseUrl,
+  };
+}
+
+function buildServicePayload(req) {
+  return {
+    ...req.body,
+    imageUrl:
+      getPublicImageUrl(req, firstUploadedFile(req, "image")) ?? req.body.imageUrl,
+  };
+}
 // ─── Apply Handler ───────────────────────────────────────────────────────────
 
 export const applyHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await submitApplication(req.body);
+  const result = await submitApplication(buildApplicationPayload(req));
   successResponse(res, 201, t(result.message, lang));
 });
 
@@ -68,7 +117,7 @@ export const getMyServiceCategoriesHandler = asyncHandler(async (req, res) => {
 
 export const createServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await createService(req.body, req.user.sub);
+  const result = await createService(buildServicePayload(req), req.user.sub);
   successResponse(res, 201, t(tr.SERVICE_CREATED, lang), result);
 });
 
@@ -80,7 +129,13 @@ export const getMyServicesHandler = asyncHandler(async (req, res) => {
 
 export const updateServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await updateService(req.body, req.user.sub);
+  const result = await updateService(
+    {
+      ...buildServicePayload(req),
+      id: req.body.id ?? req.params.id,
+    },
+    req.user.sub,
+  );
   successResponse(res, 200, t(tr.SERVICE_UPDATED, lang), result);
 });
 
