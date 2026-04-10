@@ -49,10 +49,11 @@ export const exampleHandler = asyncHandler(async (req, res) => {
 - Store tests inside the module directory in a `__tests__` folder (e.g., `src/modules/auth/__tests__/auth.service.test.js`).
 - Mock database interactions (Prisma) and third-party dependencies when writing unit tests. Use `npm test` to run them.
 
-## 8. Postman Documentation Sync
+## 8. OpenAPI + Apidog Sync
 
-- When adding new API endpoints or routes, sync changes to your Postman workspace using the existing push script.
-- Use terminal command: `npm run postman:sync`
-- Requires valid Postman API credentials in `.env` (POSTMAN_API_KEY, POSTMAN_WORKSPACE_ID, etc.)
+- When adding new API endpoints or routes, update `openapi.yaml` first.
+- Validate using: `npm run openapi:validate`
+- Sync to Apidog using: `npm run apidog:sync`
+- Requires valid Apidog credentials in `.env` (`APIDOG_ACCESS_TOKEN`, `APIDOG_PROJECT_ID`).
 
 look at project workflow in `.github/ai_workflow.md` for more details on how to use AI tools effectively in this project.

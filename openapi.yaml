@@ -1,0 +1,2399 @@
+openapi: 3.0.3
+info:
+  title: BooklyX Backend API
+  version: 1.0.0
+  description: |
+    OpenAPI specification for BooklyX backend.
+    
+    Notes:
+    - Platform-aware endpoints require `platform` header: `APP` or `WEB`.
+    - Localized messages use `Accept-Language`: `en` or `ar`.
+    - Protected endpoints require `Authorization: Bearer <token>`.
+    - In development, OTP is commonly `333333`.
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://booklyxbackend-production.up.railway.app
+    description: Production server
+
+tags:
+  - name: Auth
+  - name: Branch Admin
+  - name: Admin
+  - name: Files
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    AcceptLanguageHeader:
+      name: Accept-Language
+      in: header
+      required: false
+      description: Preferred response language.
+      schema:
+        type: string
+        enum: [en, ar]
+        default: en
+        example: en
+
+    PlatformHeader:
+      name: platform
+      in: header
+      required: true
+      description: Platform where request is coming from.
+      schema:
+        type: string
+        enum: [APP, WEB]
+        example: APP
+
+    ApplicationStatusQuery:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [PENDING_VERIFICATION, PENDING_APPROVAL, APPROVED, REJECTED]
+        example: PENDING_APPROVAL
+
+    ServiceStatusQuery:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [PENDING_APPROVAL, APPROVED, REJECTED]
+        example: PENDING_APPROVAL
+
+  schemas:
+    ApiSuccess:
+      type: object
+      required: [status, error, message, data]
+      properties:
+        status:
+          type: integer
+          example: 200
+        error:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Request successful.
+        data:
+          nullable: true
+
+    ApiError:
+      type: object
+      required: [status, error, message, data]
+      properties:
+        status:
+          type: integer
+          example: 400
+        error:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Invalid request.
+        data:
+          nullable: true
+          example: null
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Abdo Khalil
+        email:
+          type: string
+          format: email
+          example: abdo.khalil@booklyx.com
+        phone:
+          type: string
+          example: "01000000001"
+        role:
+          type: string
+          enum: [client, staff, branch_admin, super_admin]
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, SUSPENDED]
+        emailVerified:
+          type: boolean
+          example: true
+        phoneVerified:
+          type: boolean
+          example: true
+        staff:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+              example: 7
+            branchId:
+              type: integer
+              example: 1
+            staffRole:
+              type: string
+              enum: [DOCTOR, BARBER, SPA_SPECIALIST]
+              example: BARBER
+            commissionPercentage:
+              type: number
+              example: 15
+            isActive:
+              type: boolean
+              example: true
+      example:
+        id: 2
+        name: Abdo Khalil
+        email: abdo.khalil@booklyx.com
+        phone: "01000000001"
+        role: client
+        status: ACTIVE
+        emailVerified: true
+        phoneVerified: true
+
+    AuthTokens:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
+        refreshToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
+
+    LoginResponseData:
+      allOf:
+        - $ref: '#/components/schemas/AuthTokens'
+        - type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+      example:
+        token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
+        refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
+        user:
+          id: 2
+          name: Abdo Khalil
+          email: abdo.khalil@booklyx.com
+          phone: "01000000001"
+          role: client
+          status: ACTIVE
+          emailVerified: true
+          phoneVerified: true
+
+    RegisterRequest:
+      type: object
+      required: [name, email, password, phone]
+      properties:
+        name:
+          type: string
+          example: Abdo Khalil
+        email:
+          type: string
+          format: email
+          example: khalil@booklyx.com
+        password:
+          type: string
+          minLength: 8
+          example: "12345678"
+        phone:
+          type: string
+          pattern: '^\\d{10}$'
+          example: "01000000009"
+      example:
+        name: Nour Hassan
+        email: nour.hassan@booklyx.com
+        password: "12345678"
+        phone: "01000000009"
+
+    LoginRequest:
+      type: object
+      required: [email, password, role]
+      properties:
+        email:
+          type: string
+          format: email
+          example: abdo.khalil@booklyx.com
+        password:
+          type: string
+          example: "12345678"
+        role:
+          type: string
+          enum: [client, staff, branch_admin, super_admin]
+          example: client
+      example:
+        email: abdo.khalil@booklyx.com
+        password: "12345678"
+        role: client
+
+    VerifyCodeRequest:
+      type: object
+      required: [email, code]
+      properties:
+        email:
+          type: string
+          format: email
+          example: abdo.khalil@booklyx.com
+        code:
+          type: string
+          example: "333333"
+      example:
+        email: abdo.khalil@booklyx.com
+        code: "333333"
+
+    ResendCodeRequest:
+      type: object
+      required: [email, type]
+      properties:
+        email:
+          type: string
+          format: email
+          example: abdo.khalil@booklyx.com
+        phone:
+          type: string
+          pattern: '^\\d{10}$'
+          example: "01000000001"
+        type:
+          type: string
+          enum: [EMAIL, PHONE, PASSWORD_RESET]
+          example: EMAIL
+      example:
+        email: abdo.khalil@booklyx.com
+        phone: "01000000001"
+        type: EMAIL
+
+    RequestPasswordResetRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          example: abdo.khalil@booklyx.com
+      example:
+        email: abdo.khalil@booklyx.com
+
+    VerifyPasswordResetResponseData:
+      type: object
+      properties:
+        resetToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.password-reset-token
+      example:
+        resetToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.password-reset-token
+
+    ResetPasswordRequest:
+      type: object
+      required: [resetToken, newPassword]
+      properties:
+        resetToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.password-reset-token
+        newPassword:
+          type: string
+          minLength: 8
+          example: "NewPass123"
+      example:
+        resetToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.password-reset-token
+        newPassword: "NewPass123"
+
+    RefreshTokenRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
+      example:
+        refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
+
+    BranchAdminApplyRequestJson:
+      type: object
+      required:
+        - ownerName
+        - email
+        - phone
+        - password
+        - businessName
+        - category
+        - description
+        - city
+        - district
+        - address
+        - taxId
+        - commercialRegisterNumber
+        - latitude
+        - longitude
+      properties:
+        ownerName:
+          type: string
+          example: Mona Adel
+        email:
+          type: string
+          format: email
+          example: mona.adel@booklyx.com
+        phone:
+          type: string
+          pattern: '^\\d{10}$'
+          example: "0101234567"
+        password:
+          type: string
+          minLength: 8
+          example: "12345678"
+        businessName:
+          type: string
+          example: Glow Beauty Lounge
+        category:
+          type: string
+          enum: [SPA, CLINIC, BARBER]
+          example: SPA
+        description:
+          type: string
+          example: Premium beauty and skincare services for women.
+        city:
+          type: string
+          example: Cairo
+        district:
+          type: string
+          example: Nasr City
+        address:
+          type: string
+          example: 12 Makram Ebeid Street
+        taxId:
+          type: string
+          example: TAX-2026-010
+        commercialRegisterNumber:
+          type: string
+          example: CR-2026-010
+        latitude:
+          type: number
+          format: double
+          example: 30.0626
+        longitude:
+          type: number
+          format: double
+          example: 31.3368
+      example:
+        ownerName: Mona Adel
+        email: mona.adel@booklyx.com
+        phone: "0101234567"
+        password: "12345678"
+        businessName: Glow Beauty Lounge
+        category: SPA
+        description: Premium beauty and skincare services for women.
+        commercialRegisterNumber: CR-2026-010
+        taxId: TAX-2026-010
+        city: Cairo
+        district: Nasr City
+        address: 12 Makram Ebeid Street
+        latitude: 30.0626
+        longitude: 31.3368
+        logoUrl: https://cdn.booklyx.com/branches/glow-lounge-logo.png
+
+    BranchAdminApplyRequestMultipart:
+      allOf:
+        - $ref: '#/components/schemas/BranchAdminApplyRequestJson'
+        - type: object
+          properties:
+            logo:
+              type: string
+              format: binary
+            taxCertificate:
+              type: string
+              format: binary
+            commercialRegister:
+              type: string
+              format: binary
+            nationalId:
+              type: string
+              format: binary
+            facilityLicense:
+              type: string
+              format: binary
+
+    BranchResendCodeRequest:
+      type: object
+      required: [email, type]
+      properties:
+        email:
+          type: string
+          format: email
+          example: mona.adel@booklyx.com
+        type:
+          type: string
+          enum: [EMAIL, PHONE]
+          example: PHONE
+      example:
+        email: mona.adel@booklyx.com
+        type: PHONE
+
+    CreateStaffRequest:
+      type: object
+      required: [name, email, phone, password, staffRole, commissionPercentage]
+      properties:
+        name:
+          type: string
+          example: Eslam Wael
+        email:
+          type: string
+          format: email
+          example: eslam.wael.staff@booklyx.com
+        phone:
+          type: string
+          pattern: '^\\d{10}$'
+          example: "01000000021"
+        password:
+          type: string
+          minLength: 8
+          example: "12345678"
+        staffRole:
+          type: string
+          enum: [DOCTOR, BARBER, SPA_SPECIALIST]
+          example: BARBER
+        commissionPercentage:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 15
+      example:
+        name: Eslam Wael
+        email: eslam.wael.staff@booklyx.com
+        phone: "01000000021"
+        password: "12345678"
+        staffRole: BARBER
+        commissionPercentage: 15
+
+    AddServiceCategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          example: Hair Care
+      example:
+        name: Hair Care
+
+    ServiceCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Hair Care
+        branchId:
+          type: integer
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-04-09T10:00:00.000Z
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2026-04-09T10:00:00.000Z
+      example:
+        id: 1
+        name: Hair Care
+        branchId: 1
+        createdAt: 2026-04-09T10:00:00.000Z
+        updatedAt: 2026-04-09T10:00:00.000Z
+
+    CreateServiceRequestJson:
+      type: object
+      required: [name, description, price, durationMinutes]
+      properties:
+        name:
+          type: string
+          example: Haircut
+        description:
+          type: string
+          example: Professional haircut with styling
+        price:
+          type: number
+          minimum: 0.01
+          example: 150
+        durationMinutes:
+          type: integer
+          minimum: 1
+          example: 30
+        categoryId:
+          type: integer
+          minimum: 1
+          example: 1
+        categoryName:
+          type: string
+          example: Hair Care
+        imageUrl:
+          type: string
+          format: uri
+          example: https://cdn.booklyx.com/services/haircut.png
+      example:
+        name: Haircut
+        description: Professional haircut with styling
+        price: 150
+        durationMinutes: 30
+        categoryName: Hair Care
+        imageUrl: https://cdn.booklyx.com/services/haircut.png
+
+    CreateServiceRequestMultipart:
+      allOf:
+        - $ref: '#/components/schemas/CreateServiceRequestJson'
+        - type: object
+          properties:
+            image:
+              type: string
+              format: binary
+
+    UpdateServiceRequestJson:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          example: 1
+        name:
+          type: string
+          example: Premium Haircut
+        description:
+          type: string
+          example: Professional haircut with wash and styling
+        price:
+          type: number
+          minimum: 0.01
+          example: 180
+        durationMinutes:
+          type: integer
+          minimum: 1
+          example: 40
+        categoryId:
+          type: integer
+          minimum: 1
+          example: 1
+        categoryName:
+          type: string
+          example: Hair Care
+        imageUrl:
+          type: string
+          format: uri
+          example: https://cdn.booklyx.com/services/premium-haircut.png
+      example:
+        id: 1
+        name: Premium Haircut
+        description: Professional haircut with wash and styling
+        price: 180
+        durationMinutes: 40
+        categoryId: 1
+        imageUrl: https://cdn.booklyx.com/services/premium-haircut.png
+
+    UpdateServiceRequestMultipart:
+      allOf:
+        - $ref: '#/components/schemas/UpdateServiceRequestJson'
+        - type: object
+          properties:
+            image:
+              type: string
+              format: binary
+
+    Service:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        branchId:
+          type: integer
+          example: 1
+        serviceCategoryId:
+          type: integer
+          nullable: true
+          example: 1
+        name:
+          type: string
+          example: Haircut
+        description:
+          type: string
+          example: Professional haircut with styling
+        price:
+          type: number
+          example: 150
+        durationMinutes:
+          type: integer
+          example: 30
+        imageUrl:
+          type: string
+          nullable: true
+          example: https://cdn.booklyx.com/services/haircut.png
+        status:
+          type: string
+          enum: [PENDING_APPROVAL, APPROVED, REJECTED]
+          example: APPROVED
+        rejectionReason:
+          type: string
+          nullable: true
+          example: null
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-04-09T10:15:00.000Z
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2026-04-09T10:15:00.000Z
+        category:
+          allOf:
+            - $ref: '#/components/schemas/ServiceCategory'
+          nullable: true
+        branch:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+              example: 1
+            businessName:
+              type: string
+              example: Hassan Beauty Salon
+            ownerName:
+              type: string
+              example: Mahmoud Ibrahim
+            userId:
+              type: integer
+              example: 5
+            status:
+              type: string
+              enum: [PENDING_VERIFICATION, PENDING_APPROVAL, APPROVED, REJECTED]
+              example: APPROVED
+      example:
+        id: 1
+        branchId: 1
+        serviceCategoryId: 1
+        name: Haircut
+        description: Professional haircut with styling
+        price: 150
+        durationMinutes: 30
+        imageUrl: https://cdn.booklyx.com/services/haircut.png
+        status: APPROVED
+        rejectionReason: null
+        createdAt: 2026-04-09T10:15:00.000Z
+        updatedAt: 2026-04-09T10:15:00.000Z
+        category:
+          id: 1
+          name: Hair Care
+          branchId: 1
+          createdAt: 2026-04-09T10:00:00.000Z
+          updatedAt: 2026-04-09T10:00:00.000Z
+
+    RejectReasonRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          example: Missing required documents.
+      example:
+        reason: Missing required documents.
+
+    ApplicationDocument:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        type:
+          type: string
+          enum: [TAX_CERTIFICATE, COMMERCIAL_REGISTER, NATIONAL_ID, FACILITY_LICENSE]
+          example: COMMERCIAL_REGISTER
+        fileUrl:
+          type: string
+          format: uri
+          example: https://booklyxbackend-production.up.railway.app/files/download/commercial-register.pdf
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-04-09T09:50:00.000Z
+
+    ApplicationVerificationCodeSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12
+        type:
+          type: string
+          enum: [EMAIL, PHONE, PASSWORD_RESET]
+          example: EMAIL
+        expiresAt:
+          type: string
+          format: date-time
+          example: 2026-04-09T10:10:00.000Z
+        used:
+          type: boolean
+          example: true
+        attempts:
+          type: integer
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-04-09T10:00:00.000Z
+
+    BranchApplication:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          nullable: true
+          example: 5
+        ownerName:
+          type: string
+          example: Mahmoud Ibrahim
+        businessName:
+          type: string
+          example: Hassan Beauty Salon
+        email:
+          type: string
+          format: email
+          example: mahmoud.ibrahim@booklyx.com
+        phone:
+          type: string
+          example: "01000000011"
+        category:
+          type: string
+          enum: [SPA, CLINIC, BARBER]
+          example: SPA
+        description:
+          type: string
+          nullable: true
+          example: Premium beauty and skincare services.
+        commercialRegisterNumber:
+          type: string
+          example: CR-2026-001
+        taxId:
+          type: string
+          example: TAX-2026-001
+        logoUrl:
+          type: string
+          nullable: true
+          example: https://booklyxbackend-production.up.railway.app/files/download/glow-logo.png
+        taxCertificateUrl:
+          type: string
+          nullable: true
+          example: https://booklyxbackend-production.up.railway.app/files/download/tax-certificate.pdf
+        commercialRegisterUrl:
+          type: string
+          nullable: true
+          example: https://booklyxbackend-production.up.railway.app/files/download/commercial-register.pdf
+        nationalIdUrl:
+          type: string
+          nullable: true
+          example: https://booklyxbackend-production.up.railway.app/files/download/national-id.pdf
+        facilityLicenseUrl:
+          type: string
+          nullable: true
+          example: https://booklyxbackend-production.up.railway.app/files/download/facility-license.pdf
+        city:
+          type: string
+          example: Cairo
+        district:
+          type: string
+          example: Nasr City
+        address:
+          type: string
+          example: 12 Makram Ebeid Street
+        latitude:
+          type: number
+          example: 30.0626
+        longitude:
+          type: number
+          example: 31.3368
+        status:
+          type: string
+          enum: [PENDING_VERIFICATION, PENDING_APPROVAL, APPROVED, REJECTED]
+          example: APPROVED
+        emailVerified:
+          type: boolean
+          example: true
+        phoneVerified:
+          type: boolean
+          example: true
+        rejectionReason:
+          type: string
+          nullable: true
+          example: null
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-04-09T09:45:00.000Z
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2026-04-09T10:20:00.000Z
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApplicationDocument'
+        verificationCodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApplicationVerificationCodeSummary'
+      example:
+        id: 1
+        userId: 5
+        ownerName: Mahmoud Ibrahim
+        businessName: Hassan Beauty Salon
+        email: mahmoud.ibrahim@booklyx.com
+        phone: "01000000011"
+        category: SPA
+        description: Premium beauty and skincare services.
+        commercialRegisterNumber: CR-2026-001
+        taxId: TAX-2026-001
+        city: Cairo
+        district: Nasr City
+        address: 12 Makram Ebeid Street
+        latitude: 30.0626
+        longitude: 31.3368
+        status: APPROVED
+        emailVerified: true
+        phoneVerified: true
+        rejectionReason: null
+        createdAt: 2026-04-09T09:45:00.000Z
+        updatedAt: 2026-04-09T10:20:00.000Z
+
+  examples:
+    RegisterClientRequest:
+      value:
+        name: Nour Hassan
+        email: nour.hassan@booklyx.com
+        password: "12345678"
+        phone: "01000000009"
+    LoginClientRequest:
+      value:
+        email: abdo.khalil@booklyx.com
+        password: "12345678"
+        role: client
+    LoginSuperAdminRequest:
+      value:
+        email: admin@booklyx.com
+        password: "12345678"
+        role: super_admin
+    VerifyClientCodeRequest:
+      value:
+        email: abdo.khalil@booklyx.com
+        code: "333333"
+    VerifyBranchApplicationCodeRequest:
+      value:
+        email: mona.adel@booklyx.com
+        code: "333333"
+    ResendEmailCodeRequest:
+      value:
+        email: abdo.khalil@booklyx.com
+        phone: "01000000001"
+        type: EMAIL
+    PasswordResetRequest:
+      value:
+        email: abdo.khalil@booklyx.com
+    PasswordResetVerifyRequest:
+      value:
+        email: abdo.khalil@booklyx.com
+        code: "333333"
+    ResetPasswordRequest:
+      value:
+        resetToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.password-reset-token
+        newPassword: "NewPass123"
+    RefreshTokenRequest:
+      value:
+        refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
+    BranchAdminApplyRequest:
+      value:
+        ownerName: Mona Adel
+        email: mona.adel@booklyx.com
+        phone: "0101234567"
+        password: "12345678"
+        businessName: Glow Beauty Lounge
+        category: SPA
+        description: Premium beauty and skincare services for women.
+        commercialRegisterNumber: CR-2026-010
+        taxId: TAX-2026-010
+        city: Cairo
+        district: Nasr City
+        address: 12 Makram Ebeid Street
+        latitude: 30.0626
+        longitude: 31.3368
+        logoUrl: https://cdn.booklyx.com/branches/glow-lounge-logo.png
+    BranchAdminResendRequest:
+      value:
+        email: mona.adel@booklyx.com
+        type: PHONE
+    CreateStaffRequest:
+      value:
+        name: Eslam Wael
+        email: eslam.wael.staff@booklyx.com
+        phone: "01000000021"
+        password: "12345678"
+        staffRole: BARBER
+        commissionPercentage: 15
+    AddServiceCategoryRequest:
+      value:
+        name: Hair Care
+    CreateServiceRequest:
+      value:
+        name: Haircut
+        description: Professional haircut with styling
+        price: 150
+        durationMinutes: 30
+        categoryName: Hair Care
+        imageUrl: https://cdn.booklyx.com/services/haircut.png
+    UpdateServiceRequest:
+      value:
+        id: 1
+        name: Premium Haircut
+        description: Professional haircut with wash and styling
+        price: 180
+        durationMinutes: 40
+        categoryId: 1
+        imageUrl: https://cdn.booklyx.com/services/premium-haircut.png
+    RejectReasonRequest:
+      value:
+        reason: Missing required documents.
+    RegisterSuccessResponse:
+      value:
+        status: 201
+        error: false
+        message: Registration successful.
+        data: null
+    LoginClientSuccessResponse:
+      value:
+        status: 200
+        error: false
+        message: Login successful.
+        data:
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
+          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
+          user:
+            id: 2
+            name: Abdo Khalil
+            email: abdo.khalil@booklyx.com
+            phone: "01000000001"
+            role: client
+            status: ACTIVE
+            emailVerified: true
+            phoneVerified: true
+    LoginSuperAdminSuccessResponse:
+      value:
+        status: 200
+        error: false
+        message: Login successful.
+        data:
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin-access-token
+          user:
+            id: 1
+            name: Super Admin
+            email: admin@booklyx.com
+            phone: "01000000000"
+            role: super_admin
+            status: ACTIVE
+            emailVerified: true
+            phoneVerified: true
+    SimpleSuccessResponse:
+      value:
+        status: 200
+        error: false
+        message: Request successful.
+        data: null
+    VerifyPhoneSuccessResponse:
+      value:
+        status: 200
+        error: false
+        message: Phone verified successfully.
+        data:
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
+          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
+          user:
+            id: 9
+            name: Nour Hassan
+            email: nour.hassan@booklyx.com
+            phone: "01000000009"
+            role: client
+            status: ACTIVE
+            emailVerified: true
+            phoneVerified: true
+    VerifyPasswordResetSuccessResponse:
+      value:
+        status: 200
+        error: false
+        message: Code verified. You can now reset your password.
+        data:
+          resetToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.password-reset-token
+    RefreshSuccessResponse:
+      value:
+        status: 200
+        error: false
+        message: Login successful.
+        data:
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token-next
+          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token-next
+          role: client
+    BranchApplicationSubmittedResponse:
+      value:
+        status: 201
+        error: false
+        message: Your application has been submitted successfully. Please verify your email.
+        data: null
+    StaffCreatedResponse:
+      value:
+        status: 201
+        error: false
+        message: Staff created successfully.
+        data:
+          id: 7
+          name: Eslam Wael
+          email: eslam.wael.staff@booklyx.com
+          phone: "01000000021"
+          role: staff
+          status: ACTIVE
+          emailVerified: false
+          phoneVerified: false
+          staff:
+            id: 7
+            branchId: 1
+            staffRole: BARBER
+            commissionPercentage: 15
+            isActive: true
+    ServiceCategoryCreatedResponse:
+      value:
+        status: 201
+        error: false
+        message: Category added successfully.
+        data:
+          id: 1
+          name: Hair Care
+          branchId: 1
+          createdAt: 2026-04-09T10:00:00.000Z
+          updatedAt: 2026-04-09T10:00:00.000Z
+    ServiceCategoriesListResponse:
+      value:
+        status: 200
+        error: false
+        message: Categories retrieved successfully.
+        data:
+          - id: 1
+            name: Hair Care
+            branchId: 1
+            createdAt: 2026-04-09T10:00:00.000Z
+            updatedAt: 2026-04-09T10:00:00.000Z
+          - id: 2
+            name: Facial Treatments
+            branchId: 1
+            createdAt: 2026-04-09T10:01:00.000Z
+            updatedAt: 2026-04-09T10:01:00.000Z
+    ServiceCreatedResponse:
+      value:
+        status: 201
+        error: false
+        message: Service created successfully.
+        data:
+          id: 1
+          branchId: 1
+          serviceCategoryId: 1
+          name: Haircut
+          description: Professional haircut with styling
+          price: 150
+          durationMinutes: 30
+          imageUrl: https://cdn.booklyx.com/services/haircut.png
+          status: PENDING_APPROVAL
+          rejectionReason: null
+          createdAt: 2026-04-09T10:15:00.000Z
+          updatedAt: 2026-04-09T10:15:00.000Z
+          category:
+            id: 1
+            name: Hair Care
+            branchId: 1
+            createdAt: 2026-04-09T10:00:00.000Z
+            updatedAt: 2026-04-09T10:00:00.000Z
+    ServicesListResponse:
+      value:
+        status: 200
+        error: false
+        message: Services retrieved successfully.
+        data:
+          - id: 1
+            branchId: 1
+            serviceCategoryId: 1
+            name: Haircut
+            description: Professional haircut with styling
+            price: 150
+            durationMinutes: 30
+            imageUrl: https://cdn.booklyx.com/services/haircut.png
+            status: APPROVED
+            rejectionReason: null
+            createdAt: 2026-04-09T10:15:00.000Z
+            updatedAt: 2026-04-09T10:15:00.000Z
+            category:
+              id: 1
+              name: Hair Care
+              branchId: 1
+              createdAt: 2026-04-09T10:00:00.000Z
+              updatedAt: 2026-04-09T10:00:00.000Z
+    ServiceUpdatedResponse:
+      value:
+        status: 200
+        error: false
+        message: Service updated successfully.
+        data:
+          id: 1
+          branchId: 1
+          serviceCategoryId: 1
+          name: Premium Haircut
+          description: Professional haircut with wash and styling
+          price: 180
+          durationMinutes: 40
+          imageUrl: https://cdn.booklyx.com/services/premium-haircut.png
+          status: PENDING_APPROVAL
+          rejectionReason: null
+          createdAt: 2026-04-09T10:15:00.000Z
+          updatedAt: 2026-04-09T10:25:00.000Z
+          category:
+            id: 1
+            name: Hair Care
+            branchId: 1
+            createdAt: 2026-04-09T10:00:00.000Z
+            updatedAt: 2026-04-09T10:00:00.000Z
+    ApplicationsListResponse:
+      value:
+        status: 200
+        error: false
+        message: Applications retrieved successfully.
+        data:
+          - id: 1
+            userId: 5
+            ownerName: Mahmoud Ibrahim
+            businessName: Hassan Beauty Salon
+            email: mahmoud.ibrahim@booklyx.com
+            phone: "01000000011"
+            category: SPA
+            description: Premium beauty and skincare services.
+            commercialRegisterNumber: CR-2026-001
+            taxId: TAX-2026-001
+            city: Cairo
+            district: Nasr City
+            address: 12 Makram Ebeid Street
+            latitude: 30.0626
+            longitude: 31.3368
+            status: APPROVED
+            emailVerified: true
+            phoneVerified: true
+            rejectionReason: null
+            createdAt: 2026-04-09T09:45:00.000Z
+            updatedAt: 2026-04-09T10:20:00.000Z
+    ApplicationDetailResponse:
+      value:
+        status: 200
+        error: false
+        message: Applications retrieved successfully.
+        data:
+          id: 1
+          userId: 5
+          ownerName: Mahmoud Ibrahim
+          businessName: Hassan Beauty Salon
+          email: mahmoud.ibrahim@booklyx.com
+          phone: "01000000011"
+          category: SPA
+          description: Premium beauty and skincare services.
+          commercialRegisterNumber: CR-2026-001
+          taxId: TAX-2026-001
+          city: Cairo
+          district: Nasr City
+          address: 12 Makram Ebeid Street
+          latitude: 30.0626
+          longitude: 31.3368
+          status: APPROVED
+          emailVerified: true
+          phoneVerified: true
+          rejectionReason: null
+          createdAt: 2026-04-09T09:45:00.000Z
+          updatedAt: 2026-04-09T10:20:00.000Z
+          documents:
+            - id: 1
+              type: COMMERCIAL_REGISTER
+              fileUrl: https://booklyxbackend-production.up.railway.app/files/download/commercial-register.pdf
+              createdAt: 2026-04-09T09:50:00.000Z
+          verificationCodes:
+            - id: 12
+              type: EMAIL
+              expiresAt: 2026-04-09T10:10:00.000Z
+              used: true
+              attempts: 1
+              createdAt: 2026-04-09T10:00:00.000Z
+    ApplicationApprovedResponse:
+      value:
+        status: 200
+        error: false
+        message: Application approved successfully.
+        data:
+          id: 5
+          name: Mahmoud Ibrahim
+          email: mahmoud.ibrahim@booklyx.com
+          phone: "01000000011"
+          role: branch_admin
+          status: ACTIVE
+          emailVerified: true
+          phoneVerified: true
+    ApplicationRejectedResponse:
+      value:
+        status: 200
+        error: false
+        message: Application rejected successfully.
+        data: null
+    PendingServicesResponse:
+      value:
+        status: 200
+        error: false
+        message: Services retrieved successfully.
+        data:
+          - id: 8
+            branchId: 1
+            serviceCategoryId: 1
+            name: Hair Coloring
+            description: Premium hair coloring service
+            price: 300
+            durationMinutes: 60
+            imageUrl: https://cdn.booklyx.com/services/hair-coloring.png
+            status: PENDING_APPROVAL
+            rejectionReason: null
+            createdAt: 2026-04-09T10:30:00.000Z
+            updatedAt: 2026-04-09T10:30:00.000Z
+            category:
+              id: 1
+              name: Hair Care
+              branchId: 1
+              createdAt: 2026-04-09T10:00:00.000Z
+              updatedAt: 2026-04-09T10:00:00.000Z
+            branch:
+              id: 1
+              businessName: Hassan Beauty Salon
+              ownerName: Mahmoud Ibrahim
+              userId: 5
+              status: APPROVED
+    ServiceApprovedResponse:
+      value:
+        status: 200
+        error: false
+        message: Service approved successfully.
+        data:
+          id: 8
+          branchId: 1
+          serviceCategoryId: 1
+          name: Hair Coloring
+          description: Premium hair coloring service
+          price: 300
+          durationMinutes: 60
+          imageUrl: https://cdn.booklyx.com/services/hair-coloring.png
+          status: APPROVED
+          rejectionReason: null
+          createdAt: 2026-04-09T10:30:00.000Z
+          updatedAt: 2026-04-09T10:35:00.000Z
+          category:
+            id: 1
+            name: Hair Care
+            branchId: 1
+            createdAt: 2026-04-09T10:00:00.000Z
+            updatedAt: 2026-04-09T10:00:00.000Z
+    ServiceRejectedResponse:
+      value:
+        status: 200
+        error: false
+        message: Service rejected successfully.
+        data:
+          id: 8
+          branchId: 1
+          serviceCategoryId: 1
+          name: Hair Coloring
+          description: Premium hair coloring service
+          price: 300
+          durationMinutes: 60
+          imageUrl: https://cdn.booklyx.com/services/hair-coloring.png
+          status: REJECTED
+          rejectionReason: Price not aligned with branch policy.
+          createdAt: 2026-04-09T10:30:00.000Z
+          updatedAt: 2026-04-09T10:36:00.000Z
+          category:
+            id: 1
+            name: Hair Care
+            branchId: 1
+            createdAt: 2026-04-09T10:00:00.000Z
+            updatedAt: 2026-04-09T10:00:00.000Z
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+    TooManyRequests:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register client account
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/RegisterClientRequest'
+      responses:
+        '201':
+          description: Registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              examples:
+                default:
+                  $ref: '#/components/examples/RegisterSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              client:
+                $ref: '#/components/examples/LoginClientRequest'
+              superAdmin:
+                $ref: '#/components/examples/LoginSuperAdminRequest'
+      responses:
+        '200':
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponseData'
+              examples:
+                clientApp:
+                  $ref: '#/components/examples/LoginClientSuccessResponse'
+                superAdminWeb:
+                  $ref: '#/components/examples/LoginSuperAdminSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/verify-email:
+    post:
+      tags: [Auth]
+      summary: Verify email OTP
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyCodeRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/VerifyClientCodeRequest'
+      responses:
+        '200':
+          description: Email verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              examples:
+                default:
+                  $ref: '#/components/examples/SimpleSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/verify-phone:
+    post:
+      tags: [Auth]
+      summary: Verify phone OTP and login
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyCodeRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/VerifyClientCodeRequest'
+      responses:
+        '200':
+          description: Phone verified and token returned
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponseData'
+              examples:
+                default:
+                  $ref: '#/components/examples/VerifyPhoneSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/resend-code:
+    post:
+      tags: [Auth]
+      summary: Resend verification/reset code
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendCodeRequest'
+            examples:
+              email:
+                $ref: '#/components/examples/ResendEmailCodeRequest'
+      responses:
+        '200':
+          description: Code sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              examples:
+                default:
+                  $ref: '#/components/examples/SimpleSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/request-password-reset:
+    post:
+      tags: [Auth]
+      summary: Request password reset
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestPasswordResetRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/PasswordResetRequest'
+      responses:
+        '200':
+          description: Password reset code sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              examples:
+                default:
+                  $ref: '#/components/examples/SimpleSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/verify-password-reset:
+    post:
+      tags: [Auth]
+      summary: Verify password reset OTP
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyCodeRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/PasswordResetVerifyRequest'
+      responses:
+        '200':
+          description: OTP verified and reset token issued
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/VerifyPasswordResetResponseData'
+              examples:
+                default:
+                  $ref: '#/components/examples/VerifyPasswordResetSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password using reset token
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              examples:
+                default:
+                  $ref: '#/components/examples/SimpleSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+            examples:
+              app:
+                $ref: '#/components/examples/RefreshTokenRequest'
+      responses:
+        '200':
+          description: New access token issued
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthTokens'
+              examples:
+                default:
+                  $ref: '#/components/examples/RefreshSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /branch-admin/apply:
+    post:
+      tags: [Branch Admin]
+      summary: Submit branch admin application
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchAdminApplyRequestJson'
+            examples:
+              default:
+                $ref: '#/components/examples/BranchAdminApplyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BranchAdminApplyRequestMultipart'
+      responses:
+        '201':
+          description: Application submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              examples:
+                default:
+                  $ref: '#/components/examples/BranchApplicationSubmittedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /branch-admin/verify-email:
+    post:
+      tags: [Branch Admin]
+      summary: Verify application email OTP
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyCodeRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/VerifyBranchApplicationCodeRequest'
+      responses:
+        '200':
+          description: Email verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              examples:
+                default:
+                  $ref: '#/components/examples/SimpleSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /branch-admin/verify-phone:
+    post:
+      tags: [Branch Admin]
+      summary: Verify application phone OTP
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyCodeRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/VerifyBranchApplicationCodeRequest'
+      responses:
+        '200':
+          description: Phone verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              examples:
+                default:
+                  $ref: '#/components/examples/SimpleSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /branch-admin/resend-code:
+    post:
+      tags: [Branch Admin]
+      summary: Resend branch admin application OTP
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchResendCodeRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/BranchAdminResendRequest'
+      responses:
+        '200':
+          description: Code resent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              examples:
+                default:
+                  $ref: '#/components/examples/SimpleSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /branch-admin/create-staff:
+    post:
+      tags: [Branch Admin]
+      summary: Create staff user
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStaffRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/CreateStaffRequest'
+      responses:
+        '201':
+          description: Staff created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+              examples:
+                default:
+                  $ref: '#/components/examples/StaffCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /branch-admin/services/categories:
+    post:
+      tags: [Branch Admin]
+      summary: Add service category
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddServiceCategoryRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/AddServiceCategoryRequest'
+      responses:
+        '201':
+          description: Category added
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ServiceCategory'
+              examples:
+                default:
+                  $ref: '#/components/examples/ServiceCategoryCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    get:
+      tags: [Branch Admin]
+      summary: List service categories for current branch admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      responses:
+        '200':
+          description: Categories fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ServiceCategory'
+              examples:
+                default:
+                  $ref: '#/components/examples/ServiceCategoriesListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /branch-admin/services/create-service:
+    post:
+      tags: [Branch Admin]
+      summary: Create service (pending approval)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateServiceRequestJson'
+            examples:
+              default:
+                $ref: '#/components/examples/CreateServiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateServiceRequestMultipart'
+      responses:
+        '201':
+          description: Service created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Service'
+              examples:
+                default:
+                  $ref: '#/components/examples/ServiceCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /branch-admin/services/my-services:
+    get:
+      tags: [Branch Admin]
+      summary: List current branch admin services
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+        - $ref: '#/components/parameters/ServiceStatusQuery'
+      responses:
+        '200':
+          description: Services fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Service'
+              examples:
+                default:
+                  $ref: '#/components/examples/ServicesListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /branch-admin/services/{id}:
+    put:
+      tags: [Branch Admin]
+      summary: Update service by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateServiceRequestJson'
+            examples:
+              default:
+                $ref: '#/components/examples/UpdateServiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateServiceRequestMultipart'
+      responses:
+        '200':
+          description: Service updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Service'
+              examples:
+                default:
+                  $ref: '#/components/examples/ServiceUpdatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Branch Admin]
+      summary: Delete service by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      responses:
+        '200':
+          description: Service deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              examples:
+                default:
+                  $ref: '#/components/examples/SimpleSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/applications:
+    get:
+      tags: [Admin]
+      summary: List branch applications
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+        - $ref: '#/components/parameters/ApplicationStatusQuery'
+      responses:
+        '200':
+          description: Applications fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/BranchApplication'
+              examples:
+                default:
+                  $ref: '#/components/examples/ApplicationsListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/applications/{id}:
+    get:
+      tags: [Admin]
+      summary: Get application details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      responses:
+        '200':
+          description: Application details fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BranchApplication'
+              examples:
+                default:
+                  $ref: '#/components/examples/ApplicationDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/applications/{id}/approve:
+    post:
+      tags: [Admin]
+      summary: Approve branch application
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      responses:
+        '200':
+          description: Application approved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+              examples:
+                default:
+                  $ref: '#/components/examples/ApplicationApprovedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/applications/{id}/reject:
+    post:
+      tags: [Admin]
+      summary: Reject branch application
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectReasonRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/RejectReasonRequest'
+      responses:
+        '200':
+          description: Application rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              examples:
+                default:
+                  $ref: '#/components/examples/ApplicationRejectedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/services/pending:
+    get:
+      tags: [Admin]
+      summary: List pending services
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      responses:
+        '200':
+          description: Pending services fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Service'
+              examples:
+                default:
+                  $ref: '#/components/examples/PendingServicesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/services/{id}/approve:
+    post:
+      tags: [Admin]
+      summary: Approve pending service
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      responses:
+        '200':
+          description: Service approved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Service'
+              examples:
+                default:
+                  $ref: '#/components/examples/ServiceApprovedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/services/{id}/reject:
+    post:
+      tags: [Admin]
+      summary: Reject pending service
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectReasonRequest'
+            examples:
+              default:
+                $ref: '#/components/examples/RejectReasonRequest'
+      responses:
+        '200':
+          description: Service rejected
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Service'
+              examples:
+                default:
+                  $ref: '#/components/examples/ServiceRejectedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /files/download/{filename}:
+    get:
+      tags: [Files]
+      summary: Download uploaded file (authenticated)
+      description: Download file by stored filename. Access control is enforced server-side.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 100
+          description: Stored upload filename.
+        - $ref: '#/components/parameters/AcceptLanguageHeader'
+        - $ref: '#/components/parameters/PlatformHeader'
+      responses:
+        '200':
+          description: File stream
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
