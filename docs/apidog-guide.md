@@ -71,7 +71,15 @@ APIDOG_PROJECT_ID=""
 APIDOG_LOCALE="en-US"
 APIDOG_API_VERSION="2024-03-28"
 OPENAPI_SPEC_FILE="openapi.yaml"
+APIDOG_ENDPOINT_OVERWRITE_BEHAVIOR="AUTO_MERGE"
+APIDOG_SCHEMA_OVERWRITE_BEHAVIOR="AUTO_MERGE"
 ```
+
+Sync behavior notes:
+
+- The sync script defaults to `AUTO_MERGE` for endpoints and schemas to reduce losing manual Apidog request settings.
+- If you intentionally want full replacement, set both behaviors to `OVERWRITE_EXISTING` before running sync.
+- Other supported values from Apidog API: `KEEP_EXISTING`, `CREATE_NEW`.
 
 ## Recommended Apidog environment variables
 
@@ -87,6 +95,76 @@ OPENAPI_SPEC_FILE="openapi.yaml"
 - `refreshStaffToken`
 - `refreshAdminToken`
 - `resetToken`
+
+## Auth post-response script (Apidog/Postman compatible)
+
+Important:
+
+- OpenAPI sync updates endpoint definitions and examples, but Post Processors may still appear empty in Apidog UI.
+- Add this script once as a Public Script, then attach it in Post Processors for each auth endpoint.
+
+Quick setup in Apidog:
+
+1. Go to `Settings > Public Scripts` and create a script named `Auth Token Extractor`.
+2. Paste the script below and save.
+3. Open each endpoint: `/auth/login`, `/auth/verify-phone`, `/auth/verify-password-reset`, `/auth/refresh`.
+4. In `Post Processors`, click `Add PostProcessor` and reference `Auth Token Extractor`.
+
+Use this script in the Post Processor for these endpoints:
+
+- `/auth/login`
+- `/auth/verify-phone`
+- `/auth/verify-password-reset`
+- `/auth/refresh`
+
+```javascript
+let json;
+try {
+  json = pm.response.json();
+} catch (error) {
+  pm.console.log("Response is not JSON; skipping token extraction.");
+}
+
+if (json && typeof json === "object") {
+  const data = json.data || {};
+  const roleToAccessVar = {
+    client: "clientToken",
+    staff: "staffToken",
+    branch_admin: "branchAdminToken",
+    super_admin: "adminToken",
+  };
+  const roleToRefreshVar = {
+    client: "refreshClientToken",
+    staff: "refreshStaffToken",
+    branch_admin: "refreshBranchAdminToken",
+    super_admin: "refreshAdminToken",
+  };
+
+  const role =
+    (data.user && data.user.role) ||
+    data.role ||
+    pm.environment.get("authRole") ||
+    "client";
+
+  pm.environment.set("authRole", role);
+
+  if (data.token) {
+    pm.environment.set("authToken", data.token);
+    const accessVar = roleToAccessVar[role];
+    if (accessVar) pm.environment.set(accessVar, data.token);
+  }
+
+  if (data.refreshToken) {
+    pm.environment.set("refreshToken", data.refreshToken);
+    const refreshVar = roleToRefreshVar[role];
+    if (refreshVar) pm.environment.set(refreshVar, data.refreshToken);
+  }
+
+  if (data.resetToken) {
+    pm.environment.set("resetToken", data.resetToken);
+  }
+}
+```
 
 ## Notes
 

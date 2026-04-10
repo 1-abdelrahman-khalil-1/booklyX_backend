@@ -8,6 +8,10 @@ const projectId = process.env.APIDOG_PROJECT_ID;
 const locale = process.env.APIDOG_LOCALE || "en-US";
 const apiVersion = process.env.APIDOG_API_VERSION || "2024-03-28";
 const specFile = process.env.OPENAPI_SPEC_FILE || "openapi.yaml";
+const endpointOverwriteBehavior =
+  process.env.APIDOG_ENDPOINT_OVERWRITE_BEHAVIOR || "AUTO_MERGE";
+const schemaOverwriteBehavior =
+  process.env.APIDOG_SCHEMA_OVERWRITE_BEHAVIOR || "AUTO_MERGE";
 
 if (!token) {
   console.error("Missing APIDOG_ACCESS_TOKEN");
@@ -29,8 +33,8 @@ const payload = {
   options: {
     targetEndpointFolderId: 0,
     targetSchemaFolderId: 0,
-    endpointOverwriteBehavior: "OVERWRITE_EXISTING",
-    schemaOverwriteBehavior: "OVERWRITE_EXISTING",
+    endpointOverwriteBehavior,
+    schemaOverwriteBehavior,
     updateFolderOfChangedEndpoint: false,
     prependBasePath: false,
   },
@@ -56,6 +60,9 @@ if (!response.ok) {
 
 const counters = result?.data?.counters;
 console.log("Apidog OpenAPI sync completed.");
+console.log(
+  `Import behavior: endpoint=${endpointOverwriteBehavior}, schema=${schemaOverwriteBehavior}`,
+);
 if (counters) {
   console.log(JSON.stringify(counters, null, 2));
 } else {
