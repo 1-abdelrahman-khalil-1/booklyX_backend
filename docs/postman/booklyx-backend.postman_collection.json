@@ -1,0 +1,506 @@
+{
+  "info": {
+    "name": "BooklyX Backend",
+    "description": "BooklyX backend API collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "description": "Enum parameters:\n- Header `platform`: APP | WEB\n- Header `Accept-Language`: en | ar",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "{{platform}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Abdo Khalil\",\n  \"email\": \"khalil@booklyx.com\",\n  \"password\": \"12345678\",\n  \"phone\": \"0123456789\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register"
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "description": "Enum parameters:\n- Header `platform`: APP | WEB\n- Header `Accept-Language`: en | ar",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "{{platform}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"password\": \"12345678\",\n  \"role\": \"client\" // \"client\", \"branch_admin\", \"super_admin\", \"staff\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data) {",
+                  "  const role = json.data.user ? json.data.user.role : json.data.role;",
+                  "  const token = json.data.token;",
+                  "  const refreshToken = json.data.refreshToken;",
+                  "  ",
+                  "  if (token) {",
+                  "    if (role === 'client') pm.environment.set('clientToken', token);",
+                  "    if (role === 'branch_admin') pm.environment.set('branchAdminToken', token);",
+                  "    if (role === 'staff') pm.environment.set('staffToken', token);",
+                  "    if (role === 'super_admin') pm.environment.set('adminToken', token);",
+                  "  }",
+                  "  ",
+                  "  if (refreshToken) {",
+                  "    if (role === 'client') pm.environment.set('refreshClientToken', refreshToken);",
+                  "    if (role === 'branch_admin') pm.environment.set('refreshBranchAdminToken', refreshToken);",
+                  "    if (role === 'staff') pm.environment.set('refreshStaffToken', refreshToken);",
+                  "    if (role === 'super_admin') pm.environment.set('refreshAdminToken', refreshToken);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "description": "Enum parameters:\n- Header `platform`: APP | WEB (this request uses WEB)\n- Header `Accept-Language`: en | ar",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "en" },
+              { "key": "platform", "value": "WEB" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@booklyx.com\",\n  \"password\": \"12345678\",\n  \"role\": \"super_admin\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data) {",
+                  "  const token = json.data.token;",
+                  "  const refreshToken = json.data.refreshToken;",
+                  "  if (token) {",
+                  "    pm.environment.set('adminToken', token);",
+                  "  }",
+                  "  if (refreshToken) {",
+                  "    pm.environment.set('refreshAdminToken', refreshToken);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"code\": \"333333\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/verify-email"
+          }
+        },
+        {
+          "name": "Verify Phone",
+          "request": {
+            "method": "POST",
+            "description": "Enum parameters:\n- Header `platform`: APP | WEB\n- Header `Accept-Language`: en | ar",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "{{platform}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"code\": \"333333\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/verify-phone"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.token) {",
+                  "  pm.environment.set('clientToken', json.data.token);",
+                  "}",
+                  "if (json && json.data && json.data.refreshToken) {",
+                  "  pm.environment.set('refreshClientToken', json.data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resend Code",
+          "request": {
+            "method": "POST",
+            "description": "Enum parameters:\n- Body `type`: EMAIL | PHONE | PASSWORD_RESET\n- Header `Accept-Language`: en | ar",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"phone\": \"0123456789\",\n  \"type\": \"EMAIL\" // \"PHONE\", \"PASSWORD_RESET\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/resend-code"
+          }
+        },
+        {
+          "name": "Request Password Reset",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khalil@booklyx.com\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/request-password-reset"
+          }
+        },
+        {
+          "name": "Verify Password Reset",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"code\": \"333333\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/verify-password-reset"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.resetToken) {",
+                  "  pm.environment.set('resetToken', json.data.resetToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resetToken\": \"{{resetToken}}\",\n  \"newPassword\": \"12345678\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/reset-password"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "{{platform}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshClientToken}}\" // or refreshBranchAdminToken, refreshStaffToken, refreshAdminToken\n}"
+            },
+            "url": "{{baseUrl}}/auth/refresh"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data) {",
+                  "  const role = json.data.role;",
+                  "  const token = json.data.token;",
+                  "  const refreshToken = json.data.refreshToken;",
+                  "  ",
+                  "  if (token) {",
+                  "    pm.environment.set('token', token);",
+                  "    if (role === 'client') pm.environment.set('clientToken', token);",
+                  "    if (role === 'branch_admin') pm.environment.set('branchAdminToken', token);",
+                  "    if (role === 'staff') pm.environment.set('staffToken', token);",
+                  "    if (role === 'super_admin') pm.environment.set('adminToken', token);",
+                  "  }",
+                  "  ",
+                  "  if (refreshToken) {",
+                  "    if (role === 'client') pm.environment.set('refreshClientToken', refreshToken);",
+                  "    if (role === 'branch_admin') pm.environment.set('refreshBranchAdminToken', refreshToken);",
+                  "    if (role === 'staff') pm.environment.set('refreshStaffToken', refreshToken);",
+                  "    if (role === 'super_admin') pm.environment.set('refreshAdminToken', refreshToken);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Branch Admin",
+      "item": [
+        {
+          "name": "Apply",
+          "request": {
+            "method": "POST",
+            "description": "Enum parameters:\n- Body `category`: SPA | CLINIC | BARBER\n- Header `platform`: APP | WEB (this request uses WEB)\n- Header `Accept-Language`: en | ar",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "WEB" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ownerName\": \"Abdo Khalil\",\n  \"email\": \"branch@example.com\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\",\n  \"businessName\": \"Khalil Spa\",\n  \"category\": \"SPA\" /* \"CLINIC\", \"BARBER\" */,\n  \"description\": \"Premium spa services\",\n  \"city\": \"Cairo\",\n  \"district\": \"Tahrir Square\",\n  \"address\": \"Tahrir Square\",\n  \"taxId\": \"123456789\",\n  \"commercialRegisterNumber\": \"123456789\",\n  \"latitude\": 30.0444,\n  \"longitude\": 31.2357\n}"
+            },
+            "url": "{{baseUrl}}/branch-admin/apply"
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"branch@example.com\",\n  \"code\": \"333333\"\n}"
+            },
+            "url": "{{baseUrl}}/branch-admin/verify-email"
+          }
+        },
+        {
+          "name": "Verify Phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"branch@example.com\",\n  \"code\": \"333333\"\n}"
+            },
+            "url": "{{baseUrl}}/branch-admin/verify-phone"
+          }
+        },
+        {
+          "name": "Resend Code",
+          "request": {
+            "method": "POST",
+            "description": "Enum parameters:\n- Body `type`: EMAIL | PHONE\n- Header `Accept-Language`: en | ar",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"branch@example.com\",\n  \"type\": \"EMAIL\" // \"PHONE\"\n}"
+            },
+            "url": "{{baseUrl}}/branch-admin/resend-code"
+          }
+        },
+        {
+          "name": "Create Staff",
+          "request": {
+            "method": "POST",
+            "description": "Creates staff profile and assigns approved branch services.\nNotes:\n- `startDate` must be ISO string\n- `serviceIds` must contain approved services from same branch.",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{branchAdminToken}}"
+              },
+              { "key": "platform", "value": "{{platform}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sara Ali\",\n  \"email\": \"staff@example.com\",\n  \"age\": 28,\n  \"startDate\": \"2026-03-01T00:00:00.000Z\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\",\n  \"staffRole\": \"SPA_SPECIALIST\",\n  \"commissionPercentage\": 20.5,\n  \"serviceIds\": [1, 2]\n}"
+            },
+            "url": "{{baseUrl}}/branch-admin/create-staff"
+          }
+        },
+        {
+          "name": "Create Service",
+          "request": {
+            "method": "POST",
+            "description": "Branch admin creates a service. Status will be PENDING_APPROVAL until super admin approves it.",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{branchAdminToken}}"
+              },
+              { "key": "platform", "value": "{{platform}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Haircut\",\n  \"description\": \"Classic haircut service\",\n  \"price\": 80,\n  \"duration\": 45\n}"
+            },
+            "url": "{{baseUrl}}/branch-admin/services"
+          }
+        },
+        {
+          "name": "Get My Services",
+          "request": {
+            "method": "GET",
+            "description": "Get all services of the branch admin, including pending, approved, and rejected services.",
+            "header": [
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{branchAdminToken}}"
+              },
+              { "key": "platform", "value": "{{platform}}" }
+            ],
+            "url": "{{baseUrl}}/branch-admin/my-services"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List Applications",
+          "request": {
+            "method": "GET",
+            "description": "Enum parameters:\n- Query `status`: PENDING_VERIFICATION | PENDING_APPROVAL | APPROVED | REJECTED\n- Header `platform`: APP | WEB (this request uses WEB)\n- Header `Accept-Language`: en | ar",
+            "header": [
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "WEB" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/applications?status=PENDING_APPROVAL",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "applications"],
+              "query": [{ "key": "status", "value": "PENDING_APPROVAL" }]
+            }
+          }
+        },
+        {
+          "name": "Get Application Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "WEB" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": "{{baseUrl}}/admin/applications/1"
+          }
+        },
+        {
+          "name": "Approve Application",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "WEB" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": "{{baseUrl}}/admin/applications/1/approve"
+          }
+        },
+        {
+          "name": "Reject Application",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "WEB" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Incomplete data\"\n}"
+            },
+            "url": "{{baseUrl}}/admin/applications/1/reject"
+          }
+        },
+        {
+          "name": "Approve Service",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "WEB" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": "{{baseUrl}}/admin/services/1/approve"
+          }
+        },
+        {
+          "name": "Reject Service",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "platform", "value": "WEB" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Pricing policy mismatch\"\n}"
+            },
+            "url": "{{baseUrl}}/admin/services/1/reject"
+          }
+        }
+      ]
+    }
+  ]
+}

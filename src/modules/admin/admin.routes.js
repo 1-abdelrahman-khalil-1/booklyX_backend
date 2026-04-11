@@ -26,8 +26,11 @@ adminRouter.post("/applications/:id/approve", approveApplicationHandler);
 
 adminRouter.post("/applications/:id/reject", rejectApplicationHandler);
 
+<<<<<<< Updated upstream
 adminRouter.get("/services/pending", listPendingServicesHandler);
 
+=======
+>>>>>>> Stashed changes
 adminRouter.post("/services/:id/approve", approveServiceHandler);
 
 adminRouter.post("/services/:id/reject", rejectServiceHandler);

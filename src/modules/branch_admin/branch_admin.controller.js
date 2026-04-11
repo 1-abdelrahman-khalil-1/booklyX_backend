@@ -2,6 +2,7 @@ import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
+<<<<<<< Updated upstream
     addServiceCategory,
     createService,
     createStaff,
@@ -12,6 +13,15 @@ import {
     submitApplication,
     updateService,
     verifyApplicationEmail, verifyApplicationPhone,
+=======
+  createService,
+  createStaff,
+  getMyServices,
+  resendApplicationCode,
+  submitApplication,
+  verifyApplicationEmail,
+  verifyApplicationPhone,
+>>>>>>> Stashed changes
 } from "./branch_admin.service.js";
 
 function firstUploadedFile(req, fieldName) {
@@ -64,8 +74,13 @@ function buildServicePayload(req) {
 
 export const applyHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
+<<<<<<< Updated upstream
   const result = await submitApplication(buildApplicationPayload(req));
   successResponse(res, 201, t(result.message, lang));
+=======
+  const result = await submitApplication(req.body);
+  successResponse(res, 201, t(result.message, lang), result);
+>>>>>>> Stashed changes
 });
 
 // ─── Verify Email Handler ─────────────────────────────────────────────────────
@@ -103,6 +118,7 @@ export const createStaffHandler = asyncHandler(async (req, res) => {
   successResponse(res, 201, t(tr.STAFF_CREATED, lang), result);
 });
 
+<<<<<<< Updated upstream
 export const addServiceCategoryHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const result = await addServiceCategory(req.body, req.user.sub);
@@ -119,10 +135,17 @@ export const createServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const result = await createService(buildServicePayload(req), req.user.sub);
   successResponse(res, 201, t(tr.SERVICE_CREATED, lang), result);
+=======
+export const createServiceHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const result = await createService(req.body, req.user.sub);
+  successResponse(res, 201, t(result.message, lang), result.service);
+>>>>>>> Stashed changes
 });
 
 export const getMyServicesHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
+<<<<<<< Updated upstream
   const result = await getMyServices(req.user.sub, req.query);
   successResponse(res, 200, t(tr.SERVICES_RETRIEVED_SUCCESSFULLY, lang), result);
 });
@@ -144,3 +167,9 @@ export const deleteServiceHandler = asyncHandler(async (req, res) => {
   const result = await deleteService({ id: parseInt(req.params.id) }, req.user.sub);
   successResponse(res, 200, t(result.message, lang));
 });
+=======
+  const { status } = req.query;
+  const result = await getMyServices(status, req.user.sub);
+  successResponse(res, 200, t(tr.SERVICES_FETCHED, lang), result);
+});
+>>>>>>> Stashed changes

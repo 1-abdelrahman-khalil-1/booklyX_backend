@@ -20,6 +20,7 @@ const ar = {
   PHONE_REQUIRED: "رقم الهاتف مطلوب.",
   PHONE_INVALID: "يجب أن يكون رقم الهاتف مكونًا من 10 أرقام.",
   PHONE_MUST_BE_STRING: "يجب أن يكون رقم الهاتف نصًا.",
+  INVALID_ENUM_VALUE: "يجب أن تكون القيمة واحدة من: {{values}}.",
   PLATFORM_HEADER_REQUIRED: "عنوان المنصة مطلوب.",
   PLATFORM_MUST_BE_ONE_OF: "يجب أن تكون المنصة واحدة من: {{values}}.",
   ROLE_REQUIRED: "الدور مطلوب.",
@@ -85,6 +86,7 @@ const ar = {
   DISTRICT_REQUIRED: "المنطقة مطلوبة.",
   APPLICATION_RETRIEVED_SUCCESSFULLY: "تم استرجاع الطلب بنجاح.",
   STAFF_CREATED: "تم إنشاء الموظف بنجاح.",
+<<<<<<< Updated upstream
   SERVICE_CREATED: "تم إنشاء الخدمة بنجاح وإرسالها لموافقة الإدارة.",
   SERVICES_RETRIEVED_SUCCESSFULLY: "تم استرجاع الخدمات بنجاح.",
   SERVICE_APPROVED: "تمت الموافقة على الخدمة بنجاح.",
@@ -100,5 +102,30 @@ const ar = {
   INVALID_FILE_TYPE: "نوع الملف غير مدعوم. المسموح فقط الصور وملفات PDF.",
   FILE_TOO_LARGE: "حجم الملف كبير جدا.",
 };
+=======
+  STAFF_SERVICES_REQUIRED: "يجب اختيار خدمة واحدة على الأقل للموظف.",
+  INVALID_STAFF_SERVICE_SELECTION: "بعض الخدمات المختارة غير صالحة أو غير معتمدة لهذا الفرع.",
+  SERVICE_SUBMITTED: "تم إرسال الخدمة وهي الآن بانتظار موافقة الإدارة.",
+  SERVICE_APPROVED: "تمت الموافقة على الخدمة بنجاح.",
+  SERVICE_REJECTED: "تم رفض الخدمة بنجاح.",
+  SERVICE_NOT_FOUND: "لم يتم العثور على الخدمة.",
+  SERVICE_NOT_PENDING_APPROVAL: "الخدمة ليست في حالة انتظار الموافقة.",
+  SERVICE_NAME_REQUIRED: "اسم الخدمة مطلوب.",
+  SERVICE_PRICE_REQUIRED: "سعر الخدمة يجب أن يكون أكبر من صفر.",
+  SERVICE_DURATION_REQUIRED: "مدة الخدمة يجب أن تكون رقمًا صحيحًا موجبًا بالدقائق.",
+  AGE_REQUIRED: "العمر مطلوب.",
+  AGE_MUST_BE_INTEGER: "العمر يجب أن يكون رقمًا صحيحًا.",
+  AGE_MINIMUM: "عمر الموظف يجب ألا يقل عن 18 سنة.",
+  START_DATE_REQUIRED: "تاريخ البدء مطلوب.",
+  COMMISSION_OUT_OF_RANGE: "نسبة العمولة يجب أن تكون بين 0 و100.",
+  INVALID_ID: "معرف غير صالح.",
+  STAFF_ROLE_INVALID: "دور الموظف غير صالح.",
+  RATE_LIMIT_GENERAL: "عدد الطلبات من هذا العنوان مرتفع جدًا. حاول مرة أخرى بعد 15 دقيقة.",
+  RATE_LIMIT_AUTH: "عدد محاولات المصادقة مرتفع جدًا. حاول مرة أخرى لاحقًا.",
+  INVALID_DATE_FORMAT_USE_ISO_STRING: "تنسيق التاريخ غير صحيح. استخدم سلسلة ISO.",
+  REVIEWS_FETCHED_SUCCESSFULLY: "تم جلب التقييمات بنجاح.",
+  MY_REVIEWS_FETCHED_SUCCESSFULLY: "تم جلب تقييماتي بنجاح.",
+ };
+>>>>>>> Stashed changes
 
 export default ar;

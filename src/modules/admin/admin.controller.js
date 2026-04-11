@@ -1,6 +1,6 @@
 import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-import { errorResponse, successResponse } from "../../utils/response.js";
+import { successResponse } from "../../utils/response.js";
 import {
     approveApplication,
     approveService,
@@ -10,6 +10,7 @@ import {
     rejectApplication,
     rejectService,
 } from "./admin.service.js";
+import { applicationParamSchema, validateAdminInput } from "./admin.validation.js";
 
 // ─── List Applications Handler ──────────────────────────────────────────────
 
@@ -29,8 +30,9 @@ export const listApplicationsHandler = asyncHandler(async (req, res) => {
 
 export const getApplicationDetailHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const id = parseInt(req.params.id);
-  const result = await getApplicationDetail(id);
+  const { id } = validateAdminInput(applicationParamSchema, req.params);
+  const includeCodes = req.query.includeCodes === "true";
+  const result = await getApplicationDetail(id, includeCodes);
   successResponse(
     res,
     200,
@@ -43,7 +45,7 @@ export const getApplicationDetailHandler = asyncHandler(async (req, res) => {
 
 export const approveApplicationHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const id = parseInt(req.params.id);
+  const { id } = validateAdminInput(applicationParamSchema, req.params);
   const result = await approveApplication(id);
   successResponse(res, 200, t(result.message, lang), result.user);
 });
@@ -52,15 +54,13 @@ export const approveApplicationHandler = asyncHandler(async (req, res) => {
 
 export const rejectApplicationHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const id = parseInt(req.params.id);
+  const { id } = validateAdminInput(applicationParamSchema, req.params);
   const { reason } = req.body;
-  if (!reason) {
-    return void errorResponse(res, 400, t(tr.REJECTION_REASON_REQUIRED, lang));
-  }
   const result = await rejectApplication(id, reason);
   successResponse(res, 200, t(result.message, lang));
 });
 
+<<<<<<< Updated upstream
 export const listPendingServicesHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const result = await listPendingServices();
@@ -70,18 +70,28 @@ export const listPendingServicesHandler = asyncHandler(async (req, res) => {
 export const approveServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const id = parseInt(req.params.id);
+=======
+export const approveServiceHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { id } = validateAdminInput(applicationParamSchema, req.params);
+>>>>>>> Stashed changes
   const result = await approveService(id);
   successResponse(res, 200, t(result.message, lang), result.service);
 });
 
 export const rejectServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
+<<<<<<< Updated upstream
   const id = parseInt(req.params.id);
   const { reason } = req.body;
   if (!reason) {
     return void errorResponse(res, 400, t(tr.REJECTION_REASON_REQUIRED, lang));
   }
 
+=======
+  const { id } = validateAdminInput(applicationParamSchema, req.params);
+  const { reason } = req.body;
+>>>>>>> Stashed changes
   const result = await rejectService(id, reason);
   successResponse(res, 200, t(result.message, lang), result.service);
 });

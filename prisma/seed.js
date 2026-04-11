@@ -1,6 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcrypt";
 import {
+<<<<<<< Updated upstream
   ApplicationStatus,
   BusinessCategory,
   PrismaClient,
@@ -8,6 +9,13 @@ import {
   ServiceApprovalStatus,
   StaffRole,
   UserStatus,
+=======
+    ApplicationStatus,
+    BusinessCategory,
+    PrismaClient,
+    Role,
+    UserStatus,
+>>>>>>> Stashed changes
 } from "../src/generated/prisma/client.js";
 
 const SUPER_ADMIN_EMAIL = "admin@booklyx.com";
@@ -19,15 +27,32 @@ const SALT_ROUNDS = 10;
 const SEED_USERS = [
   {
     name: "Abdo Khalil",
+<<<<<<< Updated upstream
     email: "abdo.khalil@booklyx.com",
+=======
+    email: "abdo@booklyx.com",
+>>>>>>> Stashed changes
     password: "12345678",
     phone: "01000000001",
     role: Role.client,
     status: UserStatus.ACTIVE,
   },
   {
+<<<<<<< Updated upstream
     name: "Mazen Tamer",
     email: "mazen.tamer@booklyx.com",
+=======
+    name: "Abdo Badr",
+    email: "badr@booklyx.com",
+    password: "12345678",
+    phone: "01000000002",
+    role: Role.client,
+    status: UserStatus.ACTIVE,
+  },
+  {
+    name: "Mazen Tamer",
+    email: "mazen@booklyx.com",
+>>>>>>> Stashed changes
     password: "12345678",
     phone: "01000000003",
     role: Role.client,
@@ -54,8 +79,13 @@ const SEED_STAFF = [
 ];
 const SEED_BRANCH_APPLICATIONS = [
   {
+<<<<<<< Updated upstream
     ownerName: "Mahmoud Ibrahim",
     email: "mahmoud.Ibrahim@booklyx.com",
+=======
+    ownerName: "Muhammad Hassan",
+    email: "mona.branch@booklyx.com",
+>>>>>>> Stashed changes
     phone: "01000000011",
     password: "12345678",
     businessName: "Hassan Beauty Salon",
@@ -198,6 +228,48 @@ const STAFF_BRANCH_MAPPING = [
     branchEmail: "ahmed.samir@booklyx.com",
     staffRole: StaffRole.DOCTOR,
     commissionPercentage: 20,
+  },
+];
+
+const SEED_APPROVED_BRANCH_ADMINS = [
+  {
+    ownerName: "Eslam Wael",
+    email: "eslam.branch@booklyx.com",
+    phone: "01000000020",
+    password: "12345678",
+    businessName: "Eslam Premium Spa",
+    category: BusinessCategory.SPA,
+    description: "Luxury spa and wellness center",
+    commercialRegisterNumber: "CR-2026-APX-001",
+    taxId: "TAX-2026-APX-001",
+    city: "Cairo",
+    district: "Maadi",
+    address: "5 Road 9, Maadi",
+    latitude: 29.9699,
+    longitude: 31.2675,
+  },
+];
+
+const SEED_STAFF = [
+  {
+    name: "Mahmoud Ibrahim",
+    email: "mahmoud.staff@booklyx.com",
+    phone: "01000000030",
+    password: "12345678",
+    age: 26,
+    startDate: new Date("2026-01-15"),
+    staffRole: "SPA_SPECIALIST",
+    commissionPercentage: 25,
+  },
+  {
+    name: "Karim Ahmed",
+    email: "karim.staff@booklyx.com",
+    phone: "01000000031",
+    password: "12345678",
+    age: 28,
+    startDate: new Date("2026-02-01"),
+    staffRole: "SPA_SPECIALIST",
+    commissionPercentage: 22.5,
   },
 ];
 
@@ -547,8 +619,182 @@ async function main() {
     }
   }
 
+  // Seed approved branch admins
+  console.log("\n📝 Seeding approved branch admins...\n");
+
+  for (const branchAdminData of SEED_APPROVED_BRANCH_ADMINS) {
+    const ownerPasswordHash = await bcrypt.hash(
+      branchAdminData.password,
+      SALT_ROUNDS,
+    );
+
+    // Find existing branch admin by email
+    let branchAdmin = await prisma.branchAdmin.findFirst({
+      where: { email: branchAdminData.email },
+    });
+
+    if (branchAdmin) {
+      // Update existing
+      branchAdmin = await prisma.branchAdmin.update({
+        where: { id: branchAdmin.id },
+        data: {
+          ownerName: branchAdminData.ownerName,
+          passwordHash: ownerPasswordHash,
+          phone: branchAdminData.phone,
+          businessName: branchAdminData.businessName,
+          category: branchAdminData.category,
+          description: branchAdminData.description,
+          commercialRegisterNumber: branchAdminData.commercialRegisterNumber,
+          taxId: branchAdminData.taxId,
+          city: branchAdminData.city,
+          district: branchAdminData.district,
+          address: branchAdminData.address,
+          latitude: branchAdminData.latitude,
+          longitude: branchAdminData.longitude,
+          status: ApplicationStatus.APPROVED,
+          emailVerified: true,
+          phoneVerified: true,
+        },
+      });
+    } else {
+      // Create new
+      branchAdmin = await prisma.branchAdmin.create({
+        data: {
+          ownerName: branchAdminData.ownerName,
+          email: branchAdminData.email,
+          phone: branchAdminData.phone,
+          passwordHash: ownerPasswordHash,
+          businessName: branchAdminData.businessName,
+          category: branchAdminData.category,
+          description: branchAdminData.description,
+          commercialRegisterNumber: branchAdminData.commercialRegisterNumber,
+          taxId: branchAdminData.taxId,
+          city: branchAdminData.city,
+          district: branchAdminData.district,
+          address: branchAdminData.address,
+          latitude: branchAdminData.latitude,
+          longitude: branchAdminData.longitude,
+          status: ApplicationStatus.APPROVED,
+          emailVerified: true,
+          phoneVerified: true,
+        },
+      });
+    }
+
+    // Create corresponding User record if not exists
+    const branchAdminUser = await prisma.user.upsert({
+      where: { email: branchAdminData.email },
+      update: {
+        name: branchAdminData.ownerName,
+        password: ownerPasswordHash,
+        phone: branchAdminData.phone,
+        role: Role.branch_admin,
+        status: UserStatus.ACTIVE,
+        emailVerified: true,
+        phoneVerified: true,
+      },
+      create: {
+        name: branchAdminData.ownerName,
+        email: branchAdminData.email,
+        password: ownerPasswordHash,
+        phone: branchAdminData.phone,
+        role: Role.branch_admin,
+        status: UserStatus.ACTIVE,
+        emailVerified: true,
+        phoneVerified: true,
+      },
+    });
+
+    // Link User to BranchAdmin if not already linked
+    if (!branchAdmin.userId) {
+      await prisma.branchAdmin.update({
+        where: { id: branchAdmin.id },
+        data: { userId: branchAdminUser.id },
+      });
+    }
+
+    console.log(
+      `✅ Seeded branch admin: ${branchAdminData.businessName} (APPROVED)`,
+    );
+    console.log(`   Email: ${branchAdminData.email}`);
+    console.log(`   Password: ${branchAdminData.password}\n`);
+  }
+
+  // Seed staff users
+  console.log("📝 Seeding staff users...\n");
+
+  // Get the first approved branch admin to assign staff to
+  const approvedBranch = await prisma.branchAdmin.findFirst({
+    where: { status: ApplicationStatus.APPROVED },
+  });
+
+  if (!approvedBranch) {
+    console.log(
+      "⚠️  No approved branch found. Skipping staff seeding. Please approve a branch first.\n",
+    );
+  } else {
+    for (const staffData of SEED_STAFF) {
+      const staffPasswordHash = await bcrypt.hash(staffData.password, SALT_ROUNDS);
+
+      // Create staff user
+      const staffUser = await prisma.user.upsert({
+        where: { email: staffData.email },
+        update: {
+          name: staffData.name,
+          password: staffPasswordHash,
+          phone: staffData.phone,
+          role: Role.staff,
+          status: UserStatus.ACTIVE,
+          emailVerified: true,
+          phoneVerified: true,
+        },
+        create: {
+          name: staffData.name,
+          email: staffData.email,
+          password: staffPasswordHash,
+          phone: staffData.phone,
+          role: Role.staff,
+          status: UserStatus.ACTIVE,
+          emailVerified: true,
+          phoneVerified: true,
+        },
+      });
+
+      // Create staff record
+      await prisma.staff.upsert({
+        where: { userId: staffUser.id },
+        update: {
+          age: staffData.age,
+          startDate: staffData.startDate,
+          staffRole: staffData.staffRole,
+          commissionPercentage: staffData.commissionPercentage,
+        },
+        create: {
+          userId: staffUser.id,
+          branchId: approvedBranch.id,
+          age: staffData.age,
+          startDate: staffData.startDate,
+          staffRole: staffData.staffRole,
+          commissionPercentage: staffData.commissionPercentage,
+        },
+      });
+
+      console.log(
+        `✅ Seeded staff: ${staffData.name} (${staffData.staffRole})`,
+      );
+      console.log(`   Email: ${staffData.email}`);
+      console.log(`   Password: ${staffData.password}`);
+      console.log(`   Branch: ${approvedBranch.businessName}\n`);
+    }
+  }
+
+  console.log("🔐 Use seeded credentials to login as users/admin when testing.");
   console.log(
+<<<<<<< Updated upstream
     "\n✅ All entities linked successfully!\n",
+=======
+    "⏳ Pending branch applications are under review until admin approval.\n",
+>>>>>>> Stashed changes
   );
 
   console.log("────────────────────────────────────────────────────────────");

@@ -12,7 +12,7 @@ export const loginSchema = z.object({
   role: z.enum([Role.client, Role.branch_admin, Role.super_admin, Role.staff], {
     error: (issue) => {
       if (issue.input === undefined) return tr.ROLE_REQUIRED;
-      return tr.ROLE_MUST_BE_ONE_OF;
+      return tr.INVALID_ENUM_VALUE;
     },
   }),
   password: z.string({ error: tr.PASSWORD_REQUIRED }),
@@ -37,7 +37,7 @@ export const registerSchema = z.object({
 export const platformSchema = z.enum([Platform.APP, Platform.WEB], {
   error: (issue) => {
     if (issue.input === undefined) return tr.PLATFORM_REQUIRED;
-    return tr.PLATFORM_MUST_BE_ONE_OF;
+    return tr.INVALID_ENUM_VALUE;
   },
 });
 
@@ -129,17 +129,10 @@ export function validateAuthInput(schema, data) {
 
   const firstIssue = result.error.issues[0];
 
-  // Attach dynamic enum values for the platform error
-  if (firstIssue.message === tr.PLATFORM_MUST_BE_ONE_OF) {
-    throw new AuthValidationError(firstIssue.message, {
-      values: Object.values(Platform).join(", "),
-    });
-  }
-
-  // Attach dynamic enum values for the role error
-  if (firstIssue.message === tr.ROLE_MUST_BE_ONE_OF) {
-    throw new AuthValidationError(firstIssue.message, {
-      values: Object.values(Role).join(", "),
+  if (firstIssue.code === "invalid_enum_value" || firstIssue.code === "invalid_value") {
+    const enumValues = firstIssue.options ?? firstIssue.values;
+    throw new AuthValidationError(tr.INVALID_ENUM_VALUE, {
+      values: Array.isArray(enumValues) ? enumValues.join(", ") : "",
     });
   }
 

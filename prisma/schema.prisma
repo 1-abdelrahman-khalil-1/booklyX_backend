@@ -20,6 +20,12 @@ enum StaffRole {
   SPA_SPECIALIST
 }
 
+enum ServiceStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -36,8 +42,6 @@ enum VerificationType {
   PHONE
   PASSWORD_RESET
 }
-
-// ─── Business Application Enums ───────────────────────────────────────────────
 
 enum ApplicationStatus {
   PENDING_VERIFICATION
@@ -100,6 +104,7 @@ model User {
   staff             Staff?
   branchAdmin       BranchAdmin?
   client            Client?
+  reviewsGiven      Review[] @relation("UserReviewsGiven")
 }
 
 model Client {
@@ -218,6 +223,8 @@ model Staff {
   id                   Int                       @id @default(autoincrement())
   userId               Int                       @unique
   branchId             Int
+  age                  Int
+  startDate            DateTime
   staffRole            StaffRole
   commissionPercentage Float
   isActive             Boolean                   @default(true)
@@ -227,8 +234,12 @@ model Staff {
   certificates         StaffCertificate[]
   availabilities       StaffAvailability[]
   appointments         Appointment[]
+  services             StaffService[]
   user                 User                      @relation(fields: [userId], references: [id])
   branch               BranchAdmin               @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  reviews              Review[]
+  averageRating        Float                     @default(0)
+  reviewCount          Int                       @default(0)
 
   @@index([userId])
   @@index([branchId])
@@ -278,47 +289,76 @@ model ServiceCategory {
   @@index([branchId])
 }
 
+model StaffService {
+  staffId   Int
+  serviceId Int
+  createdAt DateTime @default(now())
+
+  staff   Staff   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([staffId, serviceId])
+  @@index([serviceId])
+  @@map("StaffService")
+}
+
 model Service {
   id                Int                   @id @default(autoincrement())
   branchId          Int
-  serviceCategoryId Int
+  serviceCategoryId Int?
   name              String
-  description       String
+  description       String?
   price             Float
   durationMinutes   Int
+  duration          Int?
   imageUrl          String?
   status            ServiceApprovalStatus @default(PENDING_APPROVAL)
   rejectionReason   String?
+  approvedAt        DateTime?
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
 
-  branch   BranchAdmin     @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  category ServiceCategory @relation(fields: [serviceCategoryId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
-  reviews      Review[]
+  branch        BranchAdmin     @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  category      ServiceCategory? @relation(fields: [serviceCategoryId], references: [id], onDelete: Cascade)
+  appointments  Appointment[]
+  reviews       Review[]
+  staffLinks    StaffService[]
 
   @@index([branchId])
   @@index([status])
   @@index([branchId, status])
+  @@map("Service")
 }
 
 model Review {
   id            String   @id @default(uuid())
-  clientId      Int
+  clientId      Int?
+  reviewerId    Int
   serviceId     Int
   branchId      Int
-  appointmentId String   @unique
-  rating        Int // 1 to 5
+  staffId       Int
+  appointmentId String?  @unique
+  rating        Int
   comment       String?
   isVisible     Boolean  @default(true)
+  reviewerRole  Role?
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  client      Client      @relation(fields: [clientId], references: [id])
+  client      Client?     @relation(fields: [clientId], references: [id])
+  reviewer    User        @relation("UserReviewsGiven", fields: [reviewerId], references: [id], onDelete: Cascade)
   service     Service     @relation(fields: [serviceId], references: [id])
   branch      BranchAdmin @relation(fields: [branchId], references: [id])
-  appointment Appointment @relation(fields: [appointmentId], references: [id])
+  staff       Staff       @relation(fields: [staffId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
 
   @@index([clientId])
+  @@index([reviewerId])
+  @@index([reviewerRole])
+  @@index([serviceId])
+  @@index([staffId])
+  @@index([createdAt])
+  @@map("Review")
 }
 
 model Appointment {
@@ -350,9 +390,9 @@ model Appointment {
 model StaffAvailability {
   id        Int                @id @default(autoincrement())
   staffId   Int
-  dayOfWeek Int // 0 = Sunday ... 6 = Saturday
-  startTime String // "09:00"
-  endTime   String // "17:00"
+  dayOfWeek Int
+  startTime String
+  endTime   String
   status    AvailabilityStatus @default(AVAILABLE)
 
   staff Staff @relation(fields: [staffId], references: [id])

@@ -3,6 +3,7 @@ import { Role } from "../../generated/prisma/client.js";
 import { authenticate, authorize } from "../../middleware/authenticate.js";
 import { documentsUpload, imageOnlyUpload } from "../../middleware/upload.js";
 import {
+<<<<<<< Updated upstream
     addServiceCategoryHandler,
     applyHandler,
     createServiceHandler,
@@ -14,6 +15,15 @@ import {
     updateServiceHandler,
     verifyEmailHandler,
     verifyPhoneHandler,
+=======
+  applyHandler,
+  createServiceHandler,
+  createStaffHandler,
+  getMyServicesHandler,
+  resendCodeHandler,
+  verifyEmailHandler,
+  verifyPhoneHandler,
+>>>>>>> Stashed changes
 } from "./branch_admin.controller.js";
 
 const branchAdminRouter = Router();
@@ -37,12 +47,20 @@ branchAdminRouter.post("/verify-phone", verifyPhoneHandler);
 branchAdminRouter.post("/resend-code", resendCodeHandler);
 
 branchAdminRouter.post(
+  "/services",
+  authenticate,
+  authorize(Role.branch_admin),
+  createServiceHandler,
+);
+
+branchAdminRouter.post(
   "/create-staff",
   authenticate,
   authorize(Role.branch_admin),
   createStaffHandler,
 );
 
+<<<<<<< Updated upstream
 branchAdminRouter.post(
   "/services/categories",
   authenticate,
@@ -67,10 +85,15 @@ branchAdminRouter.post(
 
 branchAdminRouter.get(
   "/services/my-services",
+=======
+branchAdminRouter.get(
+  "/my-services",
+>>>>>>> Stashed changes
   authenticate,
   authorize(Role.branch_admin),
   getMyServicesHandler,
 );
+<<<<<<< Updated upstream
 
 branchAdminRouter.put(
   "/services/:id",
@@ -86,4 +109,6 @@ branchAdminRouter.delete(
   authorize(Role.branch_admin),
   deleteServiceHandler,
 );
+=======
+>>>>>>> Stashed changes
 export default branchAdminRouter;

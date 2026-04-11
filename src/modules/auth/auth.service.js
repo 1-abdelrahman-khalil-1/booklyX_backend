@@ -31,6 +31,8 @@ import {
 } from "./auth.validation.js";
 
 const SALT_ROUNDS = 10;
+const FIXED_OTP_CODE = process.env.FIXED_OTP_CODE || "333333";
+const PASSWORD_RESET_PURPOSE = "PASSWORD_RESET";
 
 const CODE_EXPIRES_MINUTES = parseInt(
   process.env.VERIFICATION_CODE_EXPIRES_MINUTES || "10",
@@ -146,10 +148,8 @@ export class PhoneNotVerifiedError extends AppError {
 // ─── OTP Helpers ─────────────────────────────────────────────────────────────
 
 function generateOtpCode() {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("Hardcoded OTP not allowed in production.");
-  }
-  return "333333";
+  // TODO: Replace with secure random OTP generation once verification providers are finalized.
+  return FIXED_OTP_CODE;
 }
 
 async function createVerificationCode(userId, type) {
@@ -480,7 +480,7 @@ export async function verifyPasswordReset(email, code) {
   if (!jwtSecret) throw new Error("JWT_SECRET is not set.");
 
   const resetToken = jwt.sign(
-    { sub: user.id, purpose: "PASSWORD_RESET" },
+    { sub: user.id, purpose: PASSWORD_RESET_PURPOSE },
     jwtSecret,
     { expiresIn: "15m" },
   );
@@ -510,7 +510,7 @@ export async function resetPassword(resetToken, newPassword) {
     throw new InvalidTokenError();
   }
 
-  if (payload.purpose !== "PASSWORD_RESET") throw new InvalidTokenError();
+  if (payload.purpose !== PASSWORD_RESET_PURPOSE) throw new InvalidTokenError();
 
   const hashedPassword = await bcrypt.hash(data.newPassword, SALT_ROUNDS);
   await prisma.user.update({

@@ -1,18 +1,31 @@
 import {
+<<<<<<< Updated upstream
     ApplicationStatus,
     Role,
     ServiceApprovalStatus,
     UserStatus,
+=======
+  ApplicationStatus,
+  Role,
+  ServiceStatus,
+  UserStatus,
+>>>>>>> Stashed changes
 } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import {
+<<<<<<< Updated upstream
     approveApplicationSchema,
     approveServiceSchema,
     rejectApplicationSchema,
     rejectServiceSchema,
     validateAdminInput,
+=======
+  approveApplicationSchema,
+  rejectApplicationSchema,
+  validateAdminInput,
+>>>>>>> Stashed changes
 } from "./admin.validation.js";
 
 // ─── Domain Error Classes ─────────────────────────────────────────────────────
@@ -45,43 +58,110 @@ export class ServiceNotFound extends AppError {
   }
 }
 
+<<<<<<< Updated upstream
 export class ServiceNotPendingError extends AppError {
   constructor() {
     super(tr.SERVICE_IS_NOT_PENDING_APPROVAL, 400);
     this.name = "ServiceNotPendingError";
+=======
+export class ServiceNotPendingApproval extends AppError {
+  constructor() {
+    super(tr.SERVICE_NOT_PENDING_APPROVAL, 400);
+    this.name = "ServiceNotPendingApproval";
+>>>>>>> Stashed changes
   }
 }
 
 export async function listApplications(status) {
   const applications = await prisma.branchAdmin.findMany({
     where: status ? { status } : { status: ApplicationStatus.PENDING_APPROVAL },
-    include: {
-      documents: true,
+    select: {
+      id: true,
+      ownerName: true,
+      email: true,
+      phone: true,
+      businessName: true,
+      category: true,
+      city: true,
+      district: true,
+      address: true,
+      status: true,
+      emailVerified: true,
+      phoneVerified: true,
+      rejectionReason: true,
+      createdAt: true,
+      documents: {
+        select: {
+          id: true,
+          type: true,
+          fileUrl: true,
+          createdAt: true,
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
 
-  return applications.map((app) => {
-    const { passwordHash: _passwordHash, ...safeApp } = app;
-    return safeApp;
-  });
+  return applications;
 }
 
-export async function getApplicationDetail(id) {
+export async function getApplicationDetail(id, includeCodes = false) {
   const application = await prisma.branchAdmin.findUnique({
     where: { id },
-    include: {
-      documents: true,
-      verificationCodes: {
-        take: 5,
-        orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      ownerName: true,
+      email: true,
+      phone: true,
+      businessName: true,
+      category: true,
+      description: true,
+      commercialRegisterNumber: true,
+      taxId: true,
+      logoUrl: true,
+      taxCertificateUrl: true,
+      commercialRegisterUrl: true,
+      nationalIdUrl: true,
+      facilityLicenseUrl: true,
+      city: true,
+      district: true,
+      address: true,
+      latitude: true,
+      longitude: true,
+      status: true,
+      emailVerified: true,
+      phoneVerified: true,
+      rejectionReason: true,
+      userId: true,
+      createdAt: true,
+      updatedAt: true,
+      documents: {
+        select: {
+          id: true,
+          type: true,
+          fileUrl: true,
+          createdAt: true,
+        },
       },
+      verificationCodes: includeCodes
+        ? {
+            take: 5,
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              type: true,
+              expiresAt: true,
+              used: true,
+              attempts: true,
+              createdAt: true,
+            },
+          }
+        : false,
     },
   });
 
   if (!application) throw new ApplicationNotFound();
-  const { passwordHash: _passwordHash, ...safeApplication } = application;
-  return safeApplication;
+  return application;
 }
 
 export async function approveApplication(id) {
@@ -138,13 +218,14 @@ export async function rejectApplication(id, reason) {
     where: { id: application.id },
     data: {
       status: ApplicationStatus.REJECTED,
-      rejectionReason: reason,
+      rejectionReason: parsed.reason,
     },
   });
 
   return { message: tr.APPLICATION_REJECTED };
 }
 
+<<<<<<< Updated upstream
 export async function listPendingServices() {
   return prisma.service.findMany({
     where: { status: ServiceApprovalStatus.PENDING_APPROVAL },
@@ -214,4 +295,73 @@ export async function rejectService(id, reason) {
   });
 
   return { message: tr.SERVICE_REJECTED, service: updatedService };
+=======
+export async function approveService(id) {
+  const service = await prisma.service.findUnique({
+    where: { id },
+    select: { id: true, status: true },
+  });
+
+  if (!service) throw new ServiceNotFound();
+  if (service.status !== ServiceStatus.PENDING_APPROVAL) {
+    throw new ServiceNotPendingApproval();
+  }
+
+  const updated = await prisma.service.update({
+    where: { id: service.id },
+    data: {
+      status: ServiceStatus.APPROVED,
+      rejectionReason: null,
+      approvedAt: new Date(),
+    },
+    select: {
+      id: true,
+      branchId: true,
+      name: true,
+      description: true,
+      price: true,
+      duration: true,
+      status: true,
+      approvedAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return { message: tr.SERVICE_APPROVED, service: updated };
+}
+
+export async function rejectService(id, reason) {
+  const parsed = validateAdminInput(rejectApplicationSchema, { id, reason });
+  const service = await prisma.service.findUnique({
+    where: { id: parsed.id },
+    select: { id: true, status: true },
+  });
+
+  if (!service) throw new ServiceNotFound();
+  if (service.status !== ServiceStatus.PENDING_APPROVAL) {
+    throw new ServiceNotPendingApproval();
+  }
+
+  const updated = await prisma.service.update({
+    where: { id: service.id },
+    data: {
+      status: ServiceStatus.REJECTED,
+      rejectionReason: parsed.reason,
+      approvedAt: null,
+    },
+    select: {
+      id: true,
+      branchId: true,
+      name: true,
+      description: true,
+      price: true,
+      duration: true,
+      status: true,
+      rejectionReason: true,
+      updatedAt: true,
+    },
+  });
+
+  return { message: tr.SERVICE_REJECTED, service: updated };
+>>>>>>> Stashed changes
 }

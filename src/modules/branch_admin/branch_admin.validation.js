@@ -1,7 +1,11 @@
 import { z } from "zod";
 import {
   BusinessCategory,
+<<<<<<< Updated upstream
   ServiceApprovalStatus,
+=======
+  ServiceStatus,
+>>>>>>> Stashed changes
   StaffRole,
   VerificationType,
 } from "../../generated/prisma/client.js";
@@ -27,7 +31,10 @@ export const applySchema = z.object({
   // Business Info
   businessName: z.string({ error: tr.BUSINESS_NAME_REQUIRED }),
   category: z.enum(Object.values(BusinessCategory), {
-    errorMap: () => ({ message: tr.CATEGORY_MUST_BE_ONE_OF }),
+    error: (issue) => {
+      if (issue.input === undefined) return tr.CATEGORY_REQUIRED;
+      return tr.INVALID_ENUM_VALUE;
+    },
   }),
   description: z.string({ error: tr.DESCRIPTION_REQUIRED }),
   commercialRegisterNumber: z.string({
@@ -61,6 +68,13 @@ export const verifyPhoneSchema = z.object({
 export const createStaffSchema = z.object({
   name: z.string({ error: tr.NAME_REQUIRED }),
   email: z.email({ error: tr.EMAIL_INVALID }),
+  age: z
+    .number({ error: tr.AGE_REQUIRED })
+    .int({ message: tr.AGE_MUST_BE_INTEGER })
+    .min(18, tr.AGE_MINIMUM),
+  startDate: z.string({ error: tr.START_DATE_REQUIRED }).refine((date) => !isNaN(Date.parse(date)), {
+    message: tr.INVALID_DATE_FORMAT_USE_ISO_STRING,
+  }),
   phone: z
     .string({ error: tr.PHONE_REQUIRED })
     .regex(/^\d{10}$/, tr.PHONE_INVALID),
@@ -68,9 +82,24 @@ export const createStaffSchema = z.object({
     .string({ error: tr.PASSWORD_REQUIRED })
     .min(8, tr.PASSWORD_MIN_LENGTH),
   staffRole: z.enum(Object.values(StaffRole), {
-    errorMap: () => ({ message: "Invalid staff role" }),
+    error: tr.INVALID_ENUM_VALUE,
   }),
-  commissionPercentage: z.number().min(0).max(100),
+  commissionPercentage: z.number().min(0, tr.COMMISSION_OUT_OF_RANGE).max(100, tr.COMMISSION_OUT_OF_RANGE),
+  serviceIds: z
+    .array(z.number().int().positive({ message: tr.INVALID_ID }), {
+      error: tr.STAFF_SERVICES_REQUIRED,
+    })
+    .min(1, tr.STAFF_SERVICES_REQUIRED),
+});
+
+export const createServiceSchema = z.object({
+  name: z.string({ error: tr.SERVICE_NAME_REQUIRED }),
+  description: z.string().optional(),
+  price: z.number({ error: tr.SERVICE_PRICE_REQUIRED }).positive(tr.SERVICE_PRICE_REQUIRED),
+  duration: z
+    .number({ error: tr.SERVICE_DURATION_REQUIRED })
+    .int({ message: tr.SERVICE_DURATION_REQUIRED })
+    .positive(tr.SERVICE_DURATION_REQUIRED),
 });
 
 export const resendCodeSchema = z.object({
@@ -142,21 +171,25 @@ export const rejectApplicationSchema = z.object({
   reason: z.string({ error: tr.REJECTION_REASON_REQUIRED }),
 });
 
+export const getMyServicesSchema = z.object({
+  status: z.enum(Object.values(ServiceStatus), {
+    error: tr.INVALID_ENUM_VALUE,
+  }).optional(),
+});
+
 export function validateBranchAdminInput(schema, data) {
   const result = schema.safeParse(data);
   if (result.success) return result.data;
 
   const firstIssue = result.error.issues[0];
 
-  if (firstIssue.message === tr.CATEGORY_MUST_BE_ONE_OF) {
-    throw new BranchAdminValidationError(firstIssue.message, {
-      values: Object.values(BusinessCategory).join(", "),
+  if (firstIssue.code === "invalid_enum_value" || firstIssue.code === "invalid_value") {
+    const enumValues = firstIssue.options ?? firstIssue.values;
+    throw new BranchAdminValidationError(tr.INVALID_ENUM_VALUE, {
+      values: Array.isArray(enumValues) ? enumValues.join(", ") : "",
     });
   }
 
   throw new BranchAdminValidationError(firstIssue.message);
 }
 
-export function validateCreateStaffSchema(data) {
-  return validateBranchAdminInput(createStaffSchema, data);
-}

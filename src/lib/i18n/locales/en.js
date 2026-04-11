@@ -29,6 +29,7 @@ const en = {
   PHONE_REQUIRED: "Phone is required.",
   PHONE_INVALID: "Phone must be a valid 10-digit number.",
   PHONE_MUST_BE_STRING: "Phone must be a string.",
+  INVALID_ENUM_VALUE: "Enum must be one of: {{values}}.",
   PLATFORM_HEADER_REQUIRED: "Platform header is required.",
   PLATFORM_MUST_BE_ONE_OF: "Platform must be one of: {{values}}.",
   ROLE_REQUIRED: "Role is required.",
@@ -94,6 +95,7 @@ const en = {
   DISTRICT_REQUIRED: "District is required.",
   APPLICATION_RETRIEVED_SUCCESSFULLY: "Application retrieved successfully.",
   STAFF_CREATED: "Staff created successfully.",
+<<<<<<< Updated upstream
   SERVICE_CREATED: "Service created successfully and sent for admin approval.",
   SERVICES_RETRIEVED_SUCCESSFULLY: "Services retrieved successfully.",
   SERVICE_APPROVED: "Service approved successfully.",
@@ -108,6 +110,31 @@ const en = {
   CATEGORIES_RETRIEVED_SUCCESSFULLY: "Categories retrieved successfully.",
   INVALID_FILE_TYPE: "Invalid file type. Only images and PDF files are allowed.",
   FILE_TOO_LARGE: "File size is too large.",
+=======
+  STAFF_SERVICES_REQUIRED: "At least one service must be selected for the staff member.",
+  INVALID_STAFF_SERVICE_SELECTION: "Some selected services are invalid or not approved for this branch.",
+  SERVICE_SUBMITTED: "Service submitted and waiting for admin approval.",
+  SERVICE_APPROVED: "Service approved successfully.",
+  SERVICE_REJECTED: "Service rejected successfully.",
+  SERVICE_NOT_FOUND: "Service not found.",
+  SERVICE_NOT_PENDING_APPROVAL: "Service is not pending approval.",
+  SERVICE_NAME_REQUIRED: "Service name is required.",
+  SERVICE_PRICE_REQUIRED: "Service price must be greater than zero.",
+  SERVICE_DURATION_REQUIRED: "Service duration must be a positive integer in minutes.",
+  AGE_REQUIRED: "Age is required.",
+  AGE_MUST_BE_INTEGER: "Age must be an integer.",
+  AGE_MINIMUM: "Staff age must be at least 18.",
+  START_DATE_REQUIRED: "Start date is required.",
+  COMMISSION_OUT_OF_RANGE: "Commission percentage must be between 0 and 100.",
+  INVALID_ID: "Invalid id.",
+  STAFF_ROLE_INVALID: "Invalid staff role.",
+  RATE_LIMIT_GENERAL: "Too many requests from this IP, please try again after 15 minutes.",
+  RATE_LIMIT_AUTH: "Too many authentication requests, please try again later.",
+  INVALID_DATE_FORMAT_USE_ISO_STRING: "Invalid date format. Use ISO string.",
+  REVIEWS_FETCHED_SUCCESSFULLY: "Reviews fetched successfully.",
+  MY_REVIEWS_FETCHED_SUCCESSFULLY: "My reviews fetched successfully.",
+
+>>>>>>> Stashed changes
 };
 
 export default en;

@@ -1,22 +1,22 @@
 import {
-    beforeEach,
-    describe,
-    expect,
-    it,
-    jest
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest
 } from "@jest/globals";
 import bcrypt from "bcrypt";
 import {
-    ApplicationStatus,
-    Role,
-    StaffRole,
-    UserStatus,
+  ApplicationStatus,
+  Role,
+  StaffRole,
+  UserStatus,
 } from "../../../generated/prisma/client.js";
 import prisma from "../../../lib/prisma.js";
 import {
-    ApplicationNotFound,
-    BranchAdminValidationError,
-    createStaff,
+  ApplicationNotFound,
+  BranchAdminValidationError,
+  createStaff,
 } from "../branch_admin.service.js";
 
 // Mock dependencies
@@ -25,7 +25,11 @@ jest.mock("../../../lib/prisma.js", () => ({
     findUnique: jest.fn(),
   },
   user: {
+    findFirst: jest.fn(),
     create: jest.fn(),
+  },
+  service: {
+    findMany: jest.fn(),
   },
 }));
 
@@ -41,10 +45,13 @@ describe("Branch Admin Service - createStaff", () => {
   const validStaffData = {
     name: "Test Staff",
     email: "staff@example.com",
+    age: 28,
+    startDate: "2026-03-01T00:00:00.000Z",
     phone: "0123456789",
     password: "password123",
     staffRole: StaffRole.DOCTOR,
     commissionPercentage: 10,
+    serviceIds: [100, 101],
   };
 
   const branchAdminUserId = 1;
@@ -94,12 +101,36 @@ describe("Branch Admin Service - createStaff", () => {
       staff: {
         id: 1,
         branchId: mockBranchAdmin.id,
+        age: validStaffData.age,
+        startDate: validStaffData.startDate,
         staffRole: validStaffData.staffRole,
         commissionPercentage: validStaffData.commissionPercentage,
+        services: [
+          {
+            service: {
+              id: 100,
+              name: "Haircut",
+              price: 50,
+              duration: 30,
+              status: "APPROVED",
+            },
+          },
+          {
+            service: {
+              id: 101,
+              name: "Shave",
+              price: 30,
+              duration: 20,
+              status: "APPROVED",
+            },
+          },
+        ],
       },
     };
 
     prisma.branchAdmin.findUnique.mockResolvedValue(mockBranchAdmin);
+    prisma.user.findFirst.mockResolvedValue(null);
+    prisma.service.findMany.mockResolvedValue([{ id: 100 }, { id: 101 }]);
     bcrypt.hash.mockResolvedValue("hashed-password");
     prisma.user.create.mockResolvedValue(mockCreatedUser);
 
@@ -116,12 +147,38 @@ describe("Branch Admin Service - createStaff", () => {
         staff: {
           create: {
             branchId: mockBranchAdmin.id,
+            age: validStaffData.age,
+            startDate: new Date(validStaffData.startDate),
             staffRole: validStaffData.staffRole,
             commissionPercentage: validStaffData.commissionPercentage,
+            services: {
+              create: [
+                { service: { connect: { id: 100 } } },
+                { service: { connect: { id: 101 } } },
+              ],
+            },
           },
         },
       },
-      include: { staff: true },
+      include: {
+        staff: {
+          include: {
+            services: {
+              include: {
+                service: {
+                  select: {
+                    id: true,
+                    name: true,
+                    price: true,
+                    duration: true,
+                    status: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     expect(result).not.toHaveProperty("password");

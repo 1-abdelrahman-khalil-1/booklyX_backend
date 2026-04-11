@@ -1,10 +1,19 @@
 import bcrypt from "bcrypt";
 import {
+<<<<<<< Updated upstream
     ApplicationStatus,
     Role,
     ServiceApprovalStatus,
     UserStatus,
     VerificationType,
+=======
+  ApplicationStatus,
+  Prisma,
+  Role,
+  ServiceStatus,
+  UserStatus,
+  VerificationType,
+>>>>>>> Stashed changes
 } from "../../generated/prisma/client.js";
 import {
     sendEmailVerification,
@@ -14,6 +23,7 @@ import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import {
+<<<<<<< Updated upstream
     addServiceCategorySchema,
     applySchema,
     createServiceSchema,
@@ -25,9 +35,20 @@ import {
     validateBranchAdminInput,
     verifyEmailSchema,
     verifyPhoneSchema,
+=======
+  applySchema,
+  createServiceSchema,
+  createStaffSchema,
+  getMyServicesSchema,
+  resendCodeSchema,
+  validateBranchAdminInput,
+  verifyEmailSchema,
+  verifyPhoneSchema,
+>>>>>>> Stashed changes
 } from "./branch_admin.validation.js";
 
 const SALT_ROUNDS = 10;
+const FIXED_OTP_CODE = process.env.FIXED_OTP_CODE || "333333";
 const CODE_EXPIRES_MINUTES = parseInt(
   process.env.VERIFICATION_CODE_EXPIRES_MINUTES || "10",
 );
@@ -82,18 +103,31 @@ export class MaxAttemptsExceededError extends AppError {
   }
 }
 
+<<<<<<< Updated upstream
 export class ServiceCategoryNotFoundError extends AppError {
   constructor() {
     super(tr.CATEGORY_REQUIRED, 404);
     this.name = "ServiceCategoryNotFoundError";
   }
+=======
+async function findLatestApplicationByEmail(email) {
+  return prisma.branchAdmin.findFirst({
+    where: { email },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      email: true,
+      status: true,
+      emailVerified: true,
+      phoneVerified: true,
+    },
+  });
+>>>>>>> Stashed changes
 }
 
 function generateOtpCode() {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("Hardcoded OTP not allowed in production.");
-  }
-  return "333333";
+  // TODO: Replace with secure random OTP generation when SMS/email provider is fully enabled.
+  return FIXED_OTP_CODE;
 }
 
 async function createApplicationOtp(applicationId, type) {
@@ -141,86 +175,101 @@ async function consumeApplicationOtp(applicationId, type, code) {
 export async function submitApplication(body) {
   const data = validateBranchAdminInput(applySchema, body);
 
-  const [existingUser, existingApplication] = await Promise.all([
-    prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: data.email },
-          { phone: data.phone },
-          { role: Role.branch_admin },
-        ],
-      },
-    }),
-    prisma.branchAdmin.findFirst({
-      where: { OR: [{ email: data.email }, { phone: data.phone }] },
-    }),
-  ]);
-
-  if (existingUser) {
-    throw new DuplicateBranchAdminUserError();
-  }
-
-  if (existingApplication) {
-    if (existingApplication.status === ApplicationStatus.REJECTED) {
-      await prisma.branchAdmin.delete({
-        where: { id: existingApplication.id },
-      });
-    } else {
-      throw new DuplicateBranchAdminUserError();
-    }
-  }
-
   const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
 
-  const application = await prisma.branchAdmin.create({
-    data: {
-      ownerName: data.ownerName,
-      email: data.email,
-      phone: data.phone,
-      passwordHash,
-      businessName: data.businessName,
-      category: data.category,
-      description: data.description,
-      commercialRegisterNumber: data.commercialRegisterNumber,
-      taxId: data.taxId,
-      logoUrl: data.logoUrl,
-      taxCertificateUrl: data.taxCertificateUrl,
-      commercialRegisterUrl: data.commercialRegisterUrl,
-      nationalIdUrl: data.nationalIdUrl,
-      facilityLicenseUrl: data.facilityLicenseUrl,
-      city: data.city,
-      district: data.district,
-      address: data.address,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      userId: null,
-      status: ApplicationStatus.PENDING_VERIFICATION,
-    },
-  });
+  let application;
+  try {
+    application = await prisma.$transaction(async (tx) => {
+      const [existingUser, existingApplications] = await Promise.all([
+        tx.user.findFirst({
+          where: {
+            OR: [{ email: data.email }, { phone: data.phone }],
+          },
+          select: { id: true },
+        }),
+        tx.branchAdmin.findMany({
+          where: { OR: [{ email: data.email }, { phone: data.phone }] },
+          select: { id: true, status: true },
+        }),
+      ]);
+
+      if (existingUser) {
+        throw new DuplicateBranchAdminUserError();
+      }
+
+      if (existingApplications.length > 0) {
+        const hasActiveApplication = existingApplications.some(
+          (application) => application.status !== ApplicationStatus.REJECTED,
+        );
+
+        if (hasActiveApplication) {
+          throw new DuplicateBranchAdminUserError();
+        }
+
+        await tx.branchAdmin.deleteMany({
+          where: {
+            id: { in: existingApplications.map((application) => application.id) },
+          },
+        });
+      }
+
+      return tx.branchAdmin.create({
+        data: {
+          ownerName: data.ownerName,
+          email: data.email,
+          phone: data.phone,
+          passwordHash,
+          businessName: data.businessName,
+          category: data.category,
+          description: data.description,
+          commercialRegisterNumber: data.commercialRegisterNumber,
+          taxId: data.taxId,
+          logoUrl: data.logoUrl,
+          taxCertificateUrl: data.taxCertificateUrl,
+          commercialRegisterUrl: data.commercialRegisterUrl,
+          nationalIdUrl: data.nationalIdUrl,
+          facilityLicenseUrl: data.facilityLicenseUrl,
+          city: data.city,
+          district: data.district,
+          address: data.address,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          userId: null,
+          status: ApplicationStatus.PENDING_VERIFICATION,
+        },
+      });
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      throw new DuplicateBranchAdminUserError();
+    }
+    throw error;
+  }
 
   const code = await createApplicationOtp(
     application.id,
     VerificationType.EMAIL,
   );
   await sendEmailVerification(application.email, code);
-
-  return { message: tr.APPLICATION_SUBMITTED, applicationId: application.id };
+  const { passwordHash: _passwordHash, ...rest } = application;
+  return { application: rest };
 }
 
 export async function verifyApplicationEmail(email, code) {
   const data = validateBranchAdminInput(verifyEmailSchema, { email, code });
 
-  const application = await prisma.branchAdmin.findFirst({
-    where: { email: data.email },
-  });
+  const application = await findLatestApplicationByEmail(data.email);
   if (!application) throw new ApplicationNotFound();
+
+  if (application.emailVerified) return { message: tr.EMAIL_ALREADY_VERIFIED };
 
   // Only allow verification when the application is actually pending verification
   if (application.status !== ApplicationStatus.PENDING_VERIFICATION) {
     throw new ApplicationNotPendingError();
   }
-
-  if (application.emailVerified) return { message: tr.EMAIL_ALREADY_VERIFIED };
 
   await consumeApplicationOtp(
     application.id,
@@ -228,10 +277,18 @@ export async function verifyApplicationEmail(email, code) {
     data.code,
   );
 
-  await prisma.branchAdmin.update({
-    where: { id: application.id },
+  const updatedRows = await prisma.branchAdmin.updateMany({
+    where: {
+      id: application.id,
+      status: ApplicationStatus.PENDING_VERIFICATION,
+      emailVerified: false,
+    },
     data: { emailVerified: true },
   });
+
+  if (updatedRows.count === 0) {
+    throw new ApplicationNotPendingError();
+  }
 
   const phoneCode = await createApplicationOtp(
     application.id,
@@ -245,16 +302,18 @@ export async function verifyApplicationEmail(email, code) {
 export async function verifyApplicationPhone(email, code) {
   const data = validateBranchAdminInput(verifyPhoneSchema, { email, code });
 
-  const application = await prisma.branchAdmin.findFirst({
-    where: { email: data.email },
-  });
+  const application = await findLatestApplicationByEmail(data.email);
   if (!application) throw new ApplicationNotFound();
+
+  if (application.phoneVerified) return { message: tr.PHONE_ALREADY_VERIFIED };
+
+  if (!application.emailVerified) {
+    throw new BranchAdminValidationError(tr.EMAIL_NOT_VERIFIED);
+  }
+
   if (application.status !== ApplicationStatus.PENDING_VERIFICATION) {
     throw new ApplicationNotPendingError();
   }
-  if (!application.emailVerified)
-    throw new BranchAdminValidationError(tr.EMAIL_NOT_VERIFIED);
-  if (application.phoneVerified) return { message: tr.PHONE_ALREADY_VERIFIED };
 
   await consumeApplicationOtp(
     application.id,
@@ -262,10 +321,19 @@ export async function verifyApplicationPhone(email, code) {
     data.code,
   );
 
-  await prisma.branchAdmin.update({
-    where: { id: application.id },
+  const updatedRows = await prisma.branchAdmin.updateMany({
+    where: {
+      id: application.id,
+      status: ApplicationStatus.PENDING_VERIFICATION,
+      emailVerified: true,
+      phoneVerified: false,
+    },
     data: { phoneVerified: true, status: ApplicationStatus.PENDING_APPROVAL },
   });
+
+  if (updatedRows.count === 0) {
+    throw new ApplicationNotPendingError();
+  }
 
   return { message: tr.APPLICATION_UNDER_REVIEW };
 }
@@ -273,13 +341,19 @@ export async function verifyApplicationPhone(email, code) {
 export async function resendApplicationCode(email, type) {
   const data = validateBranchAdminInput(resendCodeSchema, { email, type });
 
-  const application = await prisma.branchAdmin.findFirst({
-    where: { email: data.email },
-  });
+  const application = await findLatestApplicationByEmail(data.email);
   if (!application) throw new ApplicationNotFound();
+
+  if (application.status !== ApplicationStatus.PENDING_VERIFICATION) {
+    throw new ApplicationNotPendingError();
+  }
 
   if (data.type === VerificationType.EMAIL && application.emailVerified) {
     throw new BranchAdminValidationError(tr.EMAIL_ALREADY_VERIFIED);
+  }
+
+  if (data.type === VerificationType.PHONE && !application.emailVerified) {
+    throw new BranchAdminValidationError(tr.EMAIL_NOT_VERIFIED);
   }
 
   if (data.type === VerificationType.PHONE && application.phoneVerified) {
@@ -312,31 +386,96 @@ export async function createStaff(body, branchAdminUserId) {
     throw new BranchAdminValidationError(tr.APPLICATION_IS_UNDER_REVIEW);
   }
 
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [{ email: data.email }, { phone: data.phone }],
+    },
+    select: { email: true, phone: true },
+  });
+
+  if (existingUser) {
+    if (existingUser.email === data.email) {
+      throw new BranchAdminValidationError(tr.DUPLICATE_EMAIL);
+    }
+    throw new BranchAdminValidationError(tr.DUPLICATE_PHONE);
+  }
+
+  const uniqueServiceIds = [...new Set(data.serviceIds)];
+  const approvedServices = await prisma.service.findMany({
+    where: {
+      id: { in: uniqueServiceIds },
+      branchId: branchAdmin.id,
+      status: ServiceStatus.APPROVED,
+    },
+    select: { id: true },
+  });
+
+  if (approvedServices.length !== uniqueServiceIds.length) {
+    throw new BranchAdminValidationError(tr.INVALID_STAFF_SERVICE_SELECTION);
+  }
+
   const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
 
-  const user = await prisma.user.create({
-    data: {
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      password: hashedPassword,
-      role: Role.staff,
-      status: UserStatus.ACTIVE,
-      staff: {
-        create: {
-          branchId: branchAdmin.id,
-          staffRole: data.staffRole,
-          commissionPercentage: data.commissionPercentage,
+  let user;
+  try {
+    user = await prisma.user.create({
+      data: {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        password: hashedPassword,
+        role: Role.staff,
+        status: UserStatus.ACTIVE,
+        staff: {
+          create: {
+            branchId: branchAdmin.id,
+            age: data.age,
+            startDate: new Date(data.startDate),
+            staffRole: data.staffRole,
+            commissionPercentage: data.commissionPercentage,
+            services: {
+              create: uniqueServiceIds.map((serviceId) => ({
+                service: { connect: { id: serviceId } },
+              })),
+            },
+          },
         },
       },
-    },
-    include: { staff: true },
-  });
+      include: {
+        staff: {
+          include: {
+            services: {
+              include: {
+                service: {
+                  select: {
+                    id: true,
+                    name: true,
+                    price: true,
+                    duration: true,
+                    status: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      throw new BranchAdminValidationError(tr.DUPLICATE_ACCOUNT);
+    }
+    throw error;
+  }
 
   const { password: _password, ...safeUser } = user;
   return safeUser;
 }
 
+<<<<<<< Updated upstream
 export async function addServiceCategory(body, branchAdminUserId) {
   const data = validateBranchAdminInput(addServiceCategorySchema, body);
 
@@ -386,11 +525,17 @@ export async function getMyServiceCategories(branchAdminUserId) {
   });
 }
 
+=======
+>>>>>>> Stashed changes
 export async function createService(body, branchAdminUserId) {
   const data = validateBranchAdminInput(createServiceSchema, body);
 
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
+<<<<<<< Updated upstream
+=======
+    select: { id: true, status: true },
+>>>>>>> Stashed changes
   });
 
   if (!branchAdmin) {
@@ -401,6 +546,7 @@ export async function createService(body, branchAdminUserId) {
     throw new BranchAdminValidationError(tr.APPLICATION_IS_UNDER_REVIEW);
   }
 
+<<<<<<< Updated upstream
   let categoryId = data.categoryId;
 
   if (data.categoryName) {
@@ -458,12 +604,51 @@ export async function getMyServices(branchAdminUserId, query) {
 
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
+=======
+  const service = await prisma.service.create({
+    data: {
+      branchId: branchAdmin.id,
+      name: data.name,
+      description: data.description,
+      price: data.price,
+      duration: data.duration,
+      status: ServiceStatus.PENDING_APPROVAL,
+    },
+    select: {
+      id: true,
+      branchId: true,
+      name: true,
+      description: true,
+      price: true,
+      duration: true,
+      status: true,
+      createdAt: true,
+    },
+  });
+
+  return {
+    message: tr.SERVICE_SUBMITTED,
+    service,
+  };
+}
+
+export async function getMyServices(status, branchAdminUserId) {
+  const data = validateBranchAdminInput(
+    getMyServicesSchema,
+    status ? { status } : {},
+  );
+
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId},
+    select: { id: true },
+>>>>>>> Stashed changes
   });
 
   if (!branchAdmin) {
     throw new ApplicationNotFound();
   }
 
+<<<<<<< Updated upstream
   return prisma.service.findMany({
     where: {
       branchId: branchAdmin.id,
@@ -590,3 +775,23 @@ export async function deleteService(body, branchAdminUserId) {
   return { message: tr.SERVICE_DELETED };
 }
 
+=======
+  const services = await prisma.service.findMany({
+    where: {
+      branchId: branchAdmin.id,
+      ...(data.status ? { status: data.status } : {}),
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      price: true,
+      duration: true,
+      status: true,
+      createdAt: true,
+    },
+  });
+
+  return services;
+}
+>>>>>>> Stashed changes
