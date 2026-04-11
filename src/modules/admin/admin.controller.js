@@ -60,7 +60,6 @@ export const rejectApplicationHandler = asyncHandler(async (req, res) => {
   successResponse(res, 200, t(result.message, lang));
 });
 
-<<<<<<< Updated upstream
 export const listPendingServicesHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const result = await listPendingServices();
@@ -69,29 +68,15 @@ export const listPendingServicesHandler = asyncHandler(async (req, res) => {
 
 export const approveServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const id = parseInt(req.params.id);
-=======
-export const approveServiceHandler = asyncHandler(async (req, res) => {
-  const lang = getLanguage(req);
   const { id } = validateAdminInput(applicationParamSchema, req.params);
->>>>>>> Stashed changes
   const result = await approveService(id);
   successResponse(res, 200, t(result.message, lang), result.service);
 });
 
 export const rejectServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-<<<<<<< Updated upstream
-  const id = parseInt(req.params.id);
-  const { reason } = req.body;
-  if (!reason) {
-    return void errorResponse(res, 400, t(tr.REJECTION_REASON_REQUIRED, lang));
-  }
-
-=======
   const { id } = validateAdminInput(applicationParamSchema, req.params);
   const { reason } = req.body;
->>>>>>> Stashed changes
   const result = await rejectService(id, reason);
   successResponse(res, 200, t(result.message, lang), result.service);
 });

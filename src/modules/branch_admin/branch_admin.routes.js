@@ -3,27 +3,17 @@ import { Role } from "../../generated/prisma/client.js";
 import { authenticate, authorize } from "../../middleware/authenticate.js";
 import { documentsUpload, imageOnlyUpload } from "../../middleware/upload.js";
 import {
-<<<<<<< Updated upstream
-    addServiceCategoryHandler,
-    applyHandler,
-    createServiceHandler,
-    createStaffHandler,
-    deleteServiceHandler,
-    getMyServiceCategoriesHandler,
-    getMyServicesHandler,
-    resendCodeHandler,
-    updateServiceHandler,
-    verifyEmailHandler,
-    verifyPhoneHandler,
-=======
+  addServiceCategoryHandler,
   applyHandler,
   createServiceHandler,
   createStaffHandler,
+  deleteServiceHandler,
+  getMyServiceCategoriesHandler,
   getMyServicesHandler,
   resendCodeHandler,
+  updateServiceHandler,
   verifyEmailHandler,
   verifyPhoneHandler,
->>>>>>> Stashed changes
 } from "./branch_admin.controller.js";
 
 const branchAdminRouter = Router();
@@ -50,6 +40,7 @@ branchAdminRouter.post(
   "/services",
   authenticate,
   authorize(Role.branch_admin),
+  serviceUploadField,
   createServiceHandler,
 );
 
@@ -60,7 +51,6 @@ branchAdminRouter.post(
   createStaffHandler,
 );
 
-<<<<<<< Updated upstream
 branchAdminRouter.post(
   "/services/categories",
   authenticate,
@@ -85,15 +75,18 @@ branchAdminRouter.post(
 
 branchAdminRouter.get(
   "/services/my-services",
-=======
-branchAdminRouter.get(
-  "/my-services",
->>>>>>> Stashed changes
   authenticate,
   authorize(Role.branch_admin),
   getMyServicesHandler,
 );
-<<<<<<< Updated upstream
+
+// Backward-compatible alias.
+branchAdminRouter.get(
+  "/my-services",
+  authenticate,
+  authorize(Role.branch_admin),
+  getMyServicesHandler,
+);
 
 branchAdminRouter.put(
   "/services/:id",
@@ -109,6 +102,5 @@ branchAdminRouter.delete(
   authorize(Role.branch_admin),
   deleteServiceHandler,
 );
-=======
->>>>>>> Stashed changes
+
 export default branchAdminRouter;

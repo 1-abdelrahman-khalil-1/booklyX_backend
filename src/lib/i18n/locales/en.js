@@ -95,29 +95,22 @@ const en = {
   DISTRICT_REQUIRED: "District is required.",
   APPLICATION_RETRIEVED_SUCCESSFULLY: "Application retrieved successfully.",
   STAFF_CREATED: "Staff created successfully.",
-<<<<<<< Updated upstream
   SERVICE_CREATED: "Service created successfully and sent for admin approval.",
   SERVICES_RETRIEVED_SUCCESSFULLY: "Services retrieved successfully.",
+  SERVICE_SUBMITTED: "Service submitted and waiting for admin approval.",
   SERVICE_APPROVED: "Service approved successfully.",
-  SERVICE_REJECTED: "Service rejected.",
+  SERVICE_REJECTED: "Service rejected successfully.",
   SERVICE_NOT_FOUND: "Service not found.",
   SERVICE_IS_NOT_PENDING_APPROVAL: "This service is not pending approval.",
+  SERVICE_NOT_PENDING_APPROVAL: "Service is not pending approval.",
   SERVICE_UPDATED: "Service updated successfully.",
   SERVICE_DELETED: "Service deleted successfully.",
   SERVICE_CANNOT_EDIT_AFTER_APPROVAL: "Services can only be edited while pending approval.",
   SERVICE_CANNOT_DELETE_AFTER_APPROVAL: "Services can only be deleted while pending approval.",
   CATEGORY_ADDED_SUCCESSFULLY: "Category added successfully.",
   CATEGORIES_RETRIEVED_SUCCESSFULLY: "Categories retrieved successfully.",
-  INVALID_FILE_TYPE: "Invalid file type. Only images and PDF files are allowed.",
-  FILE_TOO_LARGE: "File size is too large.",
-=======
   STAFF_SERVICES_REQUIRED: "At least one service must be selected for the staff member.",
   INVALID_STAFF_SERVICE_SELECTION: "Some selected services are invalid or not approved for this branch.",
-  SERVICE_SUBMITTED: "Service submitted and waiting for admin approval.",
-  SERVICE_APPROVED: "Service approved successfully.",
-  SERVICE_REJECTED: "Service rejected successfully.",
-  SERVICE_NOT_FOUND: "Service not found.",
-  SERVICE_NOT_PENDING_APPROVAL: "Service is not pending approval.",
   SERVICE_NAME_REQUIRED: "Service name is required.",
   SERVICE_PRICE_REQUIRED: "Service price must be greater than zero.",
   SERVICE_DURATION_REQUIRED: "Service duration must be a positive integer in minutes.",
@@ -133,8 +126,8 @@ const en = {
   INVALID_DATE_FORMAT_USE_ISO_STRING: "Invalid date format. Use ISO string.",
   REVIEWS_FETCHED_SUCCESSFULLY: "Reviews fetched successfully.",
   MY_REVIEWS_FETCHED_SUCCESSFULLY: "My reviews fetched successfully.",
-
->>>>>>> Stashed changes
+  INVALID_FILE_TYPE: "Invalid file type. Only images and PDF files are allowed.",
+  FILE_TOO_LARGE: "File size is too large.",
 };
 
 export default en;

@@ -1,7 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcrypt";
 import {
-<<<<<<< Updated upstream
   ApplicationStatus,
   BusinessCategory,
   PrismaClient,
@@ -9,13 +8,6 @@ import {
   ServiceApprovalStatus,
   StaffRole,
   UserStatus,
-=======
-    ApplicationStatus,
-    BusinessCategory,
-    PrismaClient,
-    Role,
-    UserStatus,
->>>>>>> Stashed changes
 } from "../src/generated/prisma/client.js";
 
 const SUPER_ADMIN_EMAIL = "admin@booklyx.com";
@@ -27,39 +19,22 @@ const SALT_ROUNDS = 10;
 const SEED_USERS = [
   {
     name: "Abdo Khalil",
-<<<<<<< Updated upstream
     email: "abdo.khalil@booklyx.com",
-=======
-    email: "abdo@booklyx.com",
->>>>>>> Stashed changes
     password: "12345678",
     phone: "01000000001",
     role: Role.client,
     status: UserStatus.ACTIVE,
   },
   {
-<<<<<<< Updated upstream
     name: "Mazen Tamer",
     email: "mazen.tamer@booklyx.com",
-=======
-    name: "Abdo Badr",
-    email: "badr@booklyx.com",
-    password: "12345678",
-    phone: "01000000002",
-    role: Role.client,
-    status: UserStatus.ACTIVE,
-  },
-  {
-    name: "Mazen Tamer",
-    email: "mazen@booklyx.com",
->>>>>>> Stashed changes
     password: "12345678",
     phone: "01000000003",
     role: Role.client,
     status: UserStatus.ACTIVE,
   },
 ];
-const SEED_STAFF = [
+const SEED_INITIAL_STAFF_USERS = [
   {
     name: "Eslam Wael",
     email: "eslam.wael.staff@booklyx.com",
@@ -79,13 +54,8 @@ const SEED_STAFF = [
 ];
 const SEED_BRANCH_APPLICATIONS = [
   {
-<<<<<<< Updated upstream
     ownerName: "Mahmoud Ibrahim",
     email: "mahmoud.Ibrahim@booklyx.com",
-=======
-    ownerName: "Muhammad Hassan",
-    email: "mona.branch@booklyx.com",
->>>>>>> Stashed changes
     phone: "01000000011",
     password: "12345678",
     businessName: "Hassan Beauty Salon",
@@ -348,7 +318,7 @@ async function main() {
 
   console.log("\n");
 
-  for (const staff of SEED_STAFF) {
+  for (const staff of SEED_INITIAL_STAFF_USERS) {
     const staffPasswordHash = await bcrypt.hash(staff.password, SALT_ROUNDS);
     await prisma.user.upsert({
       where: { email: staff.email },
@@ -790,11 +760,7 @@ async function main() {
 
   console.log("🔐 Use seeded credentials to login as users/admin when testing.");
   console.log(
-<<<<<<< Updated upstream
     "\n✅ All entities linked successfully!\n",
-=======
-    "⏳ Pending branch applications are under review until admin approval.\n",
->>>>>>> Stashed changes
   );
 
   console.log("────────────────────────────────────────────────────────────");

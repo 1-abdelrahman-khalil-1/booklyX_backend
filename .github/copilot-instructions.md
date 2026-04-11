@@ -226,11 +226,10 @@ export const exampleHandler = asyncHandler(async (req, res) => {
 - Use `asyncHandler` + `successResponse` in controller
 - Register routes in `src/routes/index.js`
 - Add/update service-layer Jest tests in `__tests__`
-- If API surface changed: update Postman docs and run `npm run postman:sync`
+- If API surface changed: update OpenAPI docs and run `npm run apidog:sync`
 
 ## 18. FINAL RULE (MANDATORY)
 
-<<<<<<< Updated upstream
 - Write unit tests for core logical functions and services using `Jest`.
 - Store tests inside the module directory in a `__tests__` folder (e.g., `src/modules/auth/__tests__/auth.service.test.js`).
 - Mock database interactions (Prisma) and third-party dependencies when writing unit tests. Use `npm test` to run them.
@@ -242,11 +241,9 @@ export const exampleHandler = asyncHandler(async (req, res) => {
 - Sync to Apidog using: `npm run apidog:sync`
 - Requires valid Apidog credentials in `.env` (`APIDOG_ACCESS_TOKEN`, `APIDOG_PROJECT_ID`).
 
-look at project workflow in `.github/ai_workflow.md` for more details on how to use AI tools effectively in this project.
-=======
 - This file is the single source of truth for AI development flow in this repository
 - Follow `.github/ai_workflow.md` for the execution cycle and phase gates
 - For quick daily checklists: `.github/ai_workflow.strict.md`
 - Do NOT skip steps
 - Do NOT change flow order
->>>>>>> Stashed changes
+- See `.github/ai_workflow.md` for full workflow details.

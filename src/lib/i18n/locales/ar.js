@@ -86,30 +86,22 @@ const ar = {
   DISTRICT_REQUIRED: "المنطقة مطلوبة.",
   APPLICATION_RETRIEVED_SUCCESSFULLY: "تم استرجاع الطلب بنجاح.",
   STAFF_CREATED: "تم إنشاء الموظف بنجاح.",
-<<<<<<< Updated upstream
   SERVICE_CREATED: "تم إنشاء الخدمة بنجاح وإرسالها لموافقة الإدارة.",
   SERVICES_RETRIEVED_SUCCESSFULLY: "تم استرجاع الخدمات بنجاح.",
+  SERVICE_SUBMITTED: "تم إرسال الخدمة وهي الآن بانتظار موافقة الإدارة.",
   SERVICE_APPROVED: "تمت الموافقة على الخدمة بنجاح.",
-  SERVICE_REJECTED: "تم رفض الخدمة.",
-  SERVICE_NOT_FOUND: "الخدمة غير موجودة.",
+  SERVICE_REJECTED: "تم رفض الخدمة بنجاح.",
+  SERVICE_NOT_FOUND: "لم يتم العثور على الخدمة.",
   SERVICE_IS_NOT_PENDING_APPROVAL: "هذه الخدمة ليست قيد المراجعة.",
+  SERVICE_NOT_PENDING_APPROVAL: "الخدمة ليست في حالة انتظار الموافقة.",
   SERVICE_UPDATED: "تم تحديث الخدمة بنجاح.",
   SERVICE_DELETED: "تم حذف الخدمة بنجاح.",
   SERVICE_CANNOT_EDIT_AFTER_APPROVAL: "يمكن تعديل الخدمات فقط أثناء انتظار الموافقة.",
   SERVICE_CANNOT_DELETE_AFTER_APPROVAL: "يمكن حذف الخدمات فقط أثناء انتظار الموافقة.",
   CATEGORY_ADDED_SUCCESSFULLY: "تمت إضافة الفئة بنجاح.",
   CATEGORIES_RETRIEVED_SUCCESSFULLY: "تم استرجاع الفئات بنجاح.",
-  INVALID_FILE_TYPE: "نوع الملف غير مدعوم. المسموح فقط الصور وملفات PDF.",
-  FILE_TOO_LARGE: "حجم الملف كبير جدا.",
-};
-=======
   STAFF_SERVICES_REQUIRED: "يجب اختيار خدمة واحدة على الأقل للموظف.",
   INVALID_STAFF_SERVICE_SELECTION: "بعض الخدمات المختارة غير صالحة أو غير معتمدة لهذا الفرع.",
-  SERVICE_SUBMITTED: "تم إرسال الخدمة وهي الآن بانتظار موافقة الإدارة.",
-  SERVICE_APPROVED: "تمت الموافقة على الخدمة بنجاح.",
-  SERVICE_REJECTED: "تم رفض الخدمة بنجاح.",
-  SERVICE_NOT_FOUND: "لم يتم العثور على الخدمة.",
-  SERVICE_NOT_PENDING_APPROVAL: "الخدمة ليست في حالة انتظار الموافقة.",
   SERVICE_NAME_REQUIRED: "اسم الخدمة مطلوب.",
   SERVICE_PRICE_REQUIRED: "سعر الخدمة يجب أن يكون أكبر من صفر.",
   SERVICE_DURATION_REQUIRED: "مدة الخدمة يجب أن تكون رقمًا صحيحًا موجبًا بالدقائق.",
@@ -125,7 +117,8 @@ const ar = {
   INVALID_DATE_FORMAT_USE_ISO_STRING: "تنسيق التاريخ غير صحيح. استخدم سلسلة ISO.",
   REVIEWS_FETCHED_SUCCESSFULLY: "تم جلب التقييمات بنجاح.",
   MY_REVIEWS_FETCHED_SUCCESSFULLY: "تم جلب تقييماتي بنجاح.",
- };
->>>>>>> Stashed changes
+  INVALID_FILE_TYPE: "نوع الملف غير مدعوم. المسموح فقط الصور وملفات PDF.",
+  FILE_TOO_LARGE: "حجم الملف كبير جدا.",
+};
 
 export default ar;

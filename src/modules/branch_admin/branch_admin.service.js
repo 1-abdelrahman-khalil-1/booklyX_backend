@@ -1,56 +1,38 @@
 import bcrypt from "bcrypt";
 import {
-<<<<<<< Updated upstream
-    ApplicationStatus,
-    Role,
-    ServiceApprovalStatus,
-    UserStatus,
-    VerificationType,
-=======
   ApplicationStatus,
   Prisma,
   Role,
-  ServiceStatus,
+  ServiceApprovalStatus,
   UserStatus,
   VerificationType,
->>>>>>> Stashed changes
 } from "../../generated/prisma/client.js";
 import {
-    sendEmailVerification,
-    sendPhoneVerificationCode,
+  sendEmailVerification,
+  sendPhoneVerificationCode,
 } from "../../lib/email.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import {
-<<<<<<< Updated upstream
-    addServiceCategorySchema,
-    applySchema,
-    createServiceSchema,
-    createStaffSchema,
-    deleteServiceSchema,
-    myServicesQuerySchema,
-    resendCodeSchema,
-    updateServiceSchema,
-    validateBranchAdminInput,
-    verifyEmailSchema,
-    verifyPhoneSchema,
-=======
+  addServiceCategorySchema,
   applySchema,
   createServiceSchema,
   createStaffSchema,
-  getMyServicesSchema,
+  deleteServiceSchema,
+  myServicesQuerySchema,
   resendCodeSchema,
+  updateServiceSchema,
   validateBranchAdminInput,
   verifyEmailSchema,
   verifyPhoneSchema,
->>>>>>> Stashed changes
 } from "./branch_admin.validation.js";
 
 const SALT_ROUNDS = 10;
 const FIXED_OTP_CODE = process.env.FIXED_OTP_CODE || "333333";
 const CODE_EXPIRES_MINUTES = parseInt(
   process.env.VERIFICATION_CODE_EXPIRES_MINUTES || "10",
+  10,
 );
 const MAX_ATTEMPTS = 5;
 
@@ -103,13 +85,13 @@ export class MaxAttemptsExceededError extends AppError {
   }
 }
 
-<<<<<<< Updated upstream
 export class ServiceCategoryNotFoundError extends AppError {
   constructor() {
     super(tr.CATEGORY_REQUIRED, 404);
     this.name = "ServiceCategoryNotFoundError";
   }
-=======
+}
+
 async function findLatestApplicationByEmail(email) {
   return prisma.branchAdmin.findFirst({
     where: { email },
@@ -122,7 +104,6 @@ async function findLatestApplicationByEmail(email) {
       phoneVerified: true,
     },
   });
->>>>>>> Stashed changes
 }
 
 function generateOtpCode() {
@@ -199,7 +180,8 @@ export async function submitApplication(body) {
 
       if (existingApplications.length > 0) {
         const hasActiveApplication = existingApplications.some(
-          (application) => application.status !== ApplicationStatus.REJECTED,
+          (existingApplication) =>
+            existingApplication.status !== ApplicationStatus.REJECTED,
         );
 
         if (hasActiveApplication) {
@@ -208,7 +190,7 @@ export async function submitApplication(body) {
 
         await tx.branchAdmin.deleteMany({
           where: {
-            id: { in: existingApplications.map((application) => application.id) },
+            id: { in: existingApplications.map((existingApplication) => existingApplication.id) },
           },
         });
       }
@@ -255,7 +237,7 @@ export async function submitApplication(body) {
   );
   await sendEmailVerification(application.email, code);
   const { passwordHash: _passwordHash, ...rest } = application;
-  return { application: rest };
+  return { message: tr.APPLICATION_SUBMITTED, application: rest };
 }
 
 export async function verifyApplicationEmail(email, code) {
@@ -405,7 +387,7 @@ export async function createStaff(body, branchAdminUserId) {
     where: {
       id: { in: uniqueServiceIds },
       branchId: branchAdmin.id,
-      status: ServiceStatus.APPROVED,
+      status: ServiceApprovalStatus.APPROVED,
     },
     select: { id: true },
   });
@@ -451,7 +433,7 @@ export async function createStaff(body, branchAdminUserId) {
                     id: true,
                     name: true,
                     price: true,
-                    duration: true,
+                    durationMinutes: true,
                     status: true,
                   },
                 },
@@ -475,7 +457,6 @@ export async function createStaff(body, branchAdminUserId) {
   return safeUser;
 }
 
-<<<<<<< Updated upstream
 export async function addServiceCategory(body, branchAdminUserId) {
   const data = validateBranchAdminInput(addServiceCategorySchema, body);
 
@@ -525,17 +506,12 @@ export async function getMyServiceCategories(branchAdminUserId) {
   });
 }
 
-=======
->>>>>>> Stashed changes
 export async function createService(body, branchAdminUserId) {
   const data = validateBranchAdminInput(createServiceSchema, body);
 
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
-<<<<<<< Updated upstream
-=======
     select: { id: true, status: true },
->>>>>>> Stashed changes
   });
 
   if (!branchAdmin) {
@@ -546,7 +522,6 @@ export async function createService(body, branchAdminUserId) {
     throw new BranchAdminValidationError(tr.APPLICATION_IS_UNDER_REVIEW);
   }
 
-<<<<<<< Updated upstream
   let categoryId = data.categoryId;
 
   if (data.categoryName) {
@@ -588,6 +563,7 @@ export async function createService(body, branchAdminUserId) {
       description: data.description,
       price: data.price,
       durationMinutes: data.durationMinutes,
+      duration: data.durationMinutes,
       imageUrl: data.imageUrl,
       status: ServiceApprovalStatus.PENDING_APPROVAL,
     },
@@ -604,51 +580,12 @@ export async function getMyServices(branchAdminUserId, query) {
 
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
-=======
-  const service = await prisma.service.create({
-    data: {
-      branchId: branchAdmin.id,
-      name: data.name,
-      description: data.description,
-      price: data.price,
-      duration: data.duration,
-      status: ServiceStatus.PENDING_APPROVAL,
-    },
-    select: {
-      id: true,
-      branchId: true,
-      name: true,
-      description: true,
-      price: true,
-      duration: true,
-      status: true,
-      createdAt: true,
-    },
-  });
-
-  return {
-    message: tr.SERVICE_SUBMITTED,
-    service,
-  };
-}
-
-export async function getMyServices(status, branchAdminUserId) {
-  const data = validateBranchAdminInput(
-    getMyServicesSchema,
-    status ? { status } : {},
-  );
-
-  const branchAdmin = await prisma.branchAdmin.findUnique({
-    where: { userId: branchAdminUserId},
-    select: { id: true },
->>>>>>> Stashed changes
   });
 
   if (!branchAdmin) {
     throw new ApplicationNotFound();
   }
 
-<<<<<<< Updated upstream
   return prisma.service.findMany({
     where: {
       branchId: branchAdmin.id,
@@ -685,7 +622,7 @@ export async function updateService(body, branchAdminUserId) {
 
   if (service.status !== ServiceApprovalStatus.PENDING_APPROVAL) {
     throw new BranchAdminValidationError(
-      tr.SERVICE_CANNOT_EDIT_AFTER_APPROVAL
+      tr.SERVICE_CANNOT_EDIT_AFTER_APPROVAL,
     );
   }
 
@@ -729,6 +666,10 @@ export async function updateService(body, branchAdminUserId) {
       description: data.description ?? service.description,
       price: data.price ?? service.price,
       durationMinutes: data.durationMinutes ?? service.durationMinutes,
+      duration:
+        data.durationMinutes ??
+        service.duration ??
+        service.durationMinutes,
       imageUrl: data.imageUrl ?? service.imageUrl,
       serviceCategoryId: categoryId,
     },
@@ -764,7 +705,7 @@ export async function deleteService(body, branchAdminUserId) {
 
   if (service.status !== ServiceApprovalStatus.PENDING_APPROVAL) {
     throw new BranchAdminValidationError(
-      tr.SERVICE_CANNOT_DELETE_AFTER_APPROVAL
+      tr.SERVICE_CANNOT_DELETE_AFTER_APPROVAL,
     );
   }
 
@@ -774,24 +715,3 @@ export async function deleteService(body, branchAdminUserId) {
 
   return { message: tr.SERVICE_DELETED };
 }
-
-=======
-  const services = await prisma.service.findMany({
-    where: {
-      branchId: branchAdmin.id,
-      ...(data.status ? { status: data.status } : {}),
-    },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      price: true,
-      duration: true,
-      status: true,
-      createdAt: true,
-    },
-  });
-
-  return services;
-}
->>>>>>> Stashed changes

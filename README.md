@@ -8,31 +8,7 @@
 
 Backend API for BooklyX, built with Node.js, Express 5, Prisma, Zod, and PostgreSQL.
 
-<<<<<<< Updated upstream
 ## Table of Contents
-=======
-## Default Accounts (All Roles)
-
-Run seed first:
-
-```bash
-npx prisma db seed
-```
-
-Available test users after seed:
-
-| Role           | Email                     | Password | Phone       | Platform | Notes                               |
-| -------------- | ------------------------- | -------- | ----------- | -------- | ----------------------------------- |
-| `super_admin`  | admin@booklyx.com         | 12345678 | 01000000000 | WEB      | Full admin access                   |
-| `client`       | abdo@booklyx.com          | 12345678 | 01000000001 | WEB      | Abdo Khalil                         |
-| `client`       | badr@booklyx.com          | 12345678 | 01000000002 | WEB      | Abdo Badr                           |
-| `client`       | mazen@booklyx.com         | 12345678 | 01000000003 | WEB      | Mazen Tamer                         |
-| `branch_admin` | eslam.branch@booklyx.com  | 12345678 | 01000000020 | WEB      | Eslam Wael (Eslam Premium Spa)      |
-| `staff`        | mahmoud.staff@booklyx.com | 12345678 | 01000000030 | WEB      | Mahmoud Ibrahim (Eslam Premium Spa) |
-| `staff`        | karim.staff@booklyx.com   | 12345678 | 01000000031 | WEB      | Karim Ahmed (Eslam Premium Spa)     |
-
-## Base Setup
->>>>>>> Stashed changes
 
 - [Overview](#overview)
 - [Tech Stack](#tech-stack)
@@ -49,7 +25,6 @@ Available test users after seed:
 
 ## Overview
 
-<<<<<<< Updated upstream
 - Runtime: Node.js 18+
 - Dev server: `http://localhost:3000`
 - Production: `https://booklyxbackend-production.up.railway.app`
@@ -127,13 +102,12 @@ npx prisma db seed
 ```
 
 ### 5. Start the server
-=======
-For testing admin-only endpoints (like `GET /admin/applications`), use the `super_admin` account from the "Default Accounts (All Roles)" section above.
->>>>>>> Stashed changes
 
 ```bash
 npm run dev
 ```
+
+For testing admin-only endpoints (like `GET /admin/applications`), use the seeded `super_admin` account from the "Seeded Accounts" section below.
 
 ## Common Headers
 

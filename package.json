@@ -8,7 +8,6 @@
     "dev": "node --watch src/server.js",
     "postinstall": "prisma generate",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-<<<<<<< Updated upstream
     "openapi:validate": "npm exec swagger-cli validate openapi.yaml",
     "api:login": "node scripts/api-session.mjs login",
     "api:refresh": "node scripts/api-session.mjs refresh",
@@ -16,11 +15,8 @@
     "api:logout": "node scripts/api-session.mjs clear",
     "api:export:apidog": "node scripts/api-session.mjs export-apidog",
     "api:export:env": "node scripts/api-session.mjs export-env",
-    "apidog:sync": "node scripts/push-apidog-openapi.mjs"
-=======
-    "postman:sync": "node scripts/push-postman-collection.mjs",
+    "apidog:sync": "node scripts/push-apidog-openapi.mjs",
     "translate:deepl": "node scripts/translate-deepl.mjs"
->>>>>>> Stashed changes
   },
   "prisma": {
     "seed": "node prisma/seed.js"

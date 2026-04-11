@@ -1,11 +1,7 @@
 import { z } from "zod";
 import {
   BusinessCategory,
-<<<<<<< Updated upstream
   ServiceApprovalStatus,
-=======
-  ServiceStatus,
->>>>>>> Stashed changes
   StaffRole,
   VerificationType,
 } from "../../generated/prisma/client.js";
@@ -65,6 +61,11 @@ export const verifyPhoneSchema = z.object({
   code: z.string({ error: tr.OTP_REQUIRED }),
 });
 
+export const resendCodeSchema = z.object({
+  email: z.email({ error: tr.EMAIL_INVALID }),
+  type: z.enum(Object.values(VerificationType)),
+});
+
 export const createStaffSchema = z.object({
   name: z.string({ error: tr.NAME_REQUIRED }),
   email: z.email({ error: tr.EMAIL_INVALID }),
@@ -92,21 +93,6 @@ export const createStaffSchema = z.object({
     .min(1, tr.STAFF_SERVICES_REQUIRED),
 });
 
-export const createServiceSchema = z.object({
-  name: z.string({ error: tr.SERVICE_NAME_REQUIRED }),
-  description: z.string().optional(),
-  price: z.number({ error: tr.SERVICE_PRICE_REQUIRED }).positive(tr.SERVICE_PRICE_REQUIRED),
-  duration: z
-    .number({ error: tr.SERVICE_DURATION_REQUIRED })
-    .int({ message: tr.SERVICE_DURATION_REQUIRED })
-    .positive(tr.SERVICE_DURATION_REQUIRED),
-});
-
-export const resendCodeSchema = z.object({
-  email: z.email({ error: tr.EMAIL_INVALID }),
-  type: z.enum(Object.values(VerificationType)),
-});
-
 export const addServiceCategorySchema = z.object({
   name: z
     .string({ error: tr.CATEGORY_REQUIRED })
@@ -115,15 +101,19 @@ export const addServiceCategorySchema = z.object({
 });
 
 export const createServiceSchema = z.object({
-  name: z.string({ error: tr.NAME_REQUIRED }).trim().min(1, tr.NAME_REQUIRED),
+  name: z.string({ error: tr.SERVICE_NAME_REQUIRED }).trim().min(1, tr.SERVICE_NAME_REQUIRED),
   categoryId: z.coerce.number().int().positive().optional(),
   categoryName: z.string().trim().min(1, tr.CATEGORY_REQUIRED).optional(),
   description: z
     .string({ error: tr.DESCRIPTION_REQUIRED })
     .trim()
     .min(1, tr.DESCRIPTION_REQUIRED),
-  price: z.coerce.number().positive(),
-  durationMinutes: z.coerce.number().int().positive(),
+  price: z.coerce.number({ error: tr.SERVICE_PRICE_REQUIRED }).positive(tr.SERVICE_PRICE_REQUIRED),
+  durationMinutes: z
+    .coerce
+    .number({ error: tr.SERVICE_DURATION_REQUIRED })
+    .int({ message: tr.SERVICE_DURATION_REQUIRED })
+    .positive(tr.SERVICE_DURATION_REQUIRED),
   imageUrl: z.string().url().optional(),
 }).superRefine((data, ctx) => {
   if (!data.categoryId && !data.categoryName) {
@@ -141,7 +131,7 @@ export const myServicesQuerySchema = z.object({
 
 export const updateServiceSchema = z.object({
   id: z.coerce.number().int().positive(),
-  name: z.string({ error: tr.NAME_REQUIRED }).trim().min(1, tr.NAME_REQUIRED).optional(),
+  name: z.string({ error: tr.SERVICE_NAME_REQUIRED }).trim().min(1, tr.SERVICE_NAME_REQUIRED).optional(),
   categoryId: z.coerce.number().int().positive().optional(),
   categoryName: z.string().trim().min(1, tr.CATEGORY_REQUIRED).optional(),
   description: z
@@ -149,13 +139,18 @@ export const updateServiceSchema = z.object({
     .trim()
     .min(1, tr.DESCRIPTION_REQUIRED)
     .optional(),
-  price: z.coerce.number().positive().optional(),
-  durationMinutes: z.coerce.number().int().positive().optional(),
+  price: z.coerce.number({ error: tr.SERVICE_PRICE_REQUIRED }).positive().optional(),
+  durationMinutes: z
+    .coerce
+    .number({ error: tr.SERVICE_DURATION_REQUIRED })
+    .int({ message: tr.SERVICE_DURATION_REQUIRED })
+    .positive(tr.SERVICE_DURATION_REQUIRED)
+    .optional(),
   imageUrl: z.string().url().optional(),
 });
 
 export const deleteServiceSchema = z.object({
-  id: z.number().int().positive(),
+  id: z.coerce.number().int().positive(),
 });
 
 export const verifyApplicationSchema = z.object({
@@ -169,12 +164,6 @@ export const approveApplicationSchema = z.object({
 export const rejectApplicationSchema = z.object({
   id: z.number(),
   reason: z.string({ error: tr.REJECTION_REASON_REQUIRED }),
-});
-
-export const getMyServicesSchema = z.object({
-  status: z.enum(Object.values(ServiceStatus), {
-    error: tr.INVALID_ENUM_VALUE,
-  }).optional(),
 });
 
 export function validateBranchAdminInput(schema, data) {
@@ -192,4 +181,3 @@ export function validateBranchAdminInput(schema, data) {
 
   throw new BranchAdminValidationError(firstIssue.message);
 }
-
