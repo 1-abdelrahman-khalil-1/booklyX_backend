@@ -35,7 +35,7 @@ function getDocumentDownloadUrl(req, file) {
  */
 function getPublicImageUrl(req, file) {
   if (!file) return undefined;
-  return `${req.protocol}://${req.get("host")}/files/download/${file.filename}`;
+  return `${req.protocol}://${req.get("host")}/files/public/${file.filename}`;
 }
 
 function buildApplicationPayload(req) {

@@ -851,7 +851,7 @@ components:
         logoUrl:
           type: string
           nullable: true
-          example: https://booklyxbackend-production.up.railway.app/files/download/glow-logo.png
+          example: https://booklyxbackend-production.up.railway.app/files/public/glow-logo.png
         taxCertificateUrl:
           type: string
           nullable: true
@@ -2656,8 +2656,8 @@ paths:
   /files/download/{filename}:
     get:
       tags: [Files]
-      summary: Download uploaded file (authenticated)
-      description: Download file by stored filename. Access control is enforced server-side.
+      summary: Download sensitive file (requires authentication)
+      description: Download sensitive files (documents, certificates) by stored filename. Requires user authentication. Access control is enforced server-side.
       security:
         - bearerAuth: []
       parameters:
