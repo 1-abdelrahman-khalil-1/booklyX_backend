@@ -1,10 +1,12 @@
 {
   "name": "booklyx_backend",
   "version": "1.0.0",
-  "description": "Backend API for BooklyX (graduation project), built with **Node.js**, **Express 5**, **TypeScript**, **Prisma 7**, **Zod**, and **PostgreSQL**.",
+  "description": "Backend API for BooklyX (graduation project), built with **Node.js**, **Express 5**, **TypeScript**, **Prisma 6**, **Zod**, and **PostgreSQL**.",
   "main": "src/server.js",
   "scripts": {
-    "start": "prisma migrate deploy && node src/server.js",
+    "start": "node src/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:deploy": "prisma migrate deploy",
     "dev": "node --watch src/server.js",
     "postinstall": "prisma generate",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
@@ -25,11 +27,16 @@
   "author": "",
   "license": "ISC",
   "type": "module",
+  "engines": {
+    "node": ">=18 <19",
+    "npm": ">=9 <11"
+  },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.4.1",
-    "@prisma/client": "^7.4.1",
+    "@prisma/client": "^6.16.3",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dayjs": "^1.11.20",
     "deepl-node": "^1.24.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
@@ -38,7 +45,7 @@
     "multer": "^2.1.1",
     "nodemailer": "^8.0.1",
     "pg": "^8.18.0",
-    "prisma": "^7.4.1",
+    "prisma": "^6.16.3",
     "zod": "^4.3.6"
   },
   "devDependencies": {

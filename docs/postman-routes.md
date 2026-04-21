@@ -20,10 +20,13 @@ Available test users after seed:
 | Role           | Email                     | Password | Phone       | Platform | Notes                               |
 | -------------- | ------------------------- | -------- | ----------- | -------- | ----------------------------------- |
 | `super_admin`  | admin@booklyx.com         | 12345678 | 01000000000 | WEB      | Full admin access                   |
-| `client`       | abdo@booklyx.com          | 12345678 | 01000000001 | WEB      | Abdo Khalil                         |
-| `client`       | badr@booklyx.com          | 12345678 | 01000000002 | WEB      | Abdo Badr                           |
-| `client`       | mazen@booklyx.com         | 12345678 | 01000000003 | WEB      | Mazen Tamer                         |
-| `branch_admin` | eslam.branch@booklyx.com  | 12345678 | 01000000020 | WEB      | Eslam Wael (Eslam Premium Spa)      |
+| `client`       | abdo.khalil@booklyx.com   | 12345678 | 01000000001 | WEB      | Abdo Khalil                         |
+| `client`       | eslam.wael@booklyx.com    | 12345678 | 01000000002 | WEB      | Eslam Wael                          |
+| `branch_admin` | mahmoud.ibrahim@booklyx.com | 12345678 | 01000000011 | WEB      | Mahmoud Ibrahim (Hassan Beauty Salon) |
+| `branch_admin` | ahmed.samir@booklyx.com   | 12345678 | 01000000012 | WEB      | Ahmed Samir (Samir Health Clinic)   |
+| `branch_admin` | eslam.branch@booklyx.com  | 12345678 | 01000000020 | WEB      | Eslam Wael (Eslam Premium Spa)     |
+| `staff`        | mazen.tamer@booklyx.com   | 12345678 | 01000000021 | WEB      | Mazen Tamer                         |
+| `staff`        | abdo.badr@booklyx.com     | 12345678 | 01000000022 | WEB      | Abdo Badr                           |
 | `staff`        | mahmoud.staff@booklyx.com | 12345678 | 01000000030 | WEB      | Mahmoud Ibrahim (Eslam Premium Spa) |
 | `staff`        | karim.staff@booklyx.com   | 12345678 | 01000000031 | WEB      | Karim Ahmed (Eslam Premium Spa)     |
 
@@ -38,7 +41,7 @@ Available test users after seed:
 - Platform-aware endpoints need: `platform: APP` or `platform: WEB`
 - Protected endpoints need: `Authorization: Bearer <token>`
 
-### Default Admin Account (For Testing)
+### Default super_admin Account (For Testing)
 
 For admin-only endpoints, use the `super_admin` account listed in "Default Accounts (All Roles)" above.
 
@@ -58,9 +61,9 @@ Request body:
 ```json
 {
   "name": "Abdo Khalil",
-  "email": "khalil@booklyx.com",
+  "email": "abdo.khalil@booklyx.com",
   "password": "12345678",
-  "phone": "0123456789"
+  "phone": "01000000001"
 }
 ```
 
@@ -96,7 +99,7 @@ Request body:
 
 ```json
 {
-  "email": "khalil@booklyx.com",
+  "email": "abdo.khalil@booklyx.com",
   "password": "12345678",
   "role": "client" // "client", "branch_admin", "super_admin", "staff"
 }
@@ -110,11 +113,12 @@ Success example (`200`):
   "error": false,
   "message": "Login successful.",
   "data": {
-    "token": "<jwt>",
+    "clientToken": "<jwt>",
+    "refreshToken": "<jwt>",
     "user": {
       "id": 1,
-      "email": "client@example.com",
-      "phone": "0123456789",
+      "email": "abdo.khalil@booklyx.com",
+      "phone": "01000000001",
       "role": "client",
       "status": "ACTIVE",
       "emailVerified": true,
@@ -145,7 +149,7 @@ Request body:
 
 ```json
 {
-  "email": "client@example.com",
+  "email": "abdo.khalil@booklyx.com",
   "code": "333333"
 }
 ```
@@ -182,7 +186,7 @@ Request body:
 
 ```json
 {
-  "email": "client@example.com",
+  "email": "abdo.khalil@booklyx.com",
   "code": "333333"
 }
 ```
@@ -195,11 +199,12 @@ Success example (`200`):
   "error": false,
   "message": "Phone verified successfully.",
   "data": {
-    "token": "<jwt>",
+    "clientToken": "<jwt>",
+    "refreshToken": "<jwt>",
     "user": {
       "id": 1,
-      "email": "client@example.com",
-      "phone": "0123456789",
+      "email": "abdo.khalil@booklyx.com",
+      "phone": "01000000001",
       "role": "client",
       "status": "ACTIVE",
       "emailVerified": true,
@@ -230,8 +235,8 @@ Request body:
 
 ```json
 {
-  "email": "client@example.com",
-  "phone": "0123456789",
+  "email": "abdo.khalil@booklyx.com",
+  "phone": "01000000001",
   "type": "EMAIL" // "PHONE", "PASSWORD_RESET"
 }
 ```
@@ -409,7 +414,7 @@ Request body:
 
 ```json
 {
-  "email": "client@example.com"
+  "email": "abdo.khalil@booklyx.com"
 }
 ```
 
@@ -445,7 +450,7 @@ Request body:
 
 ```json
 {
-  "email": "client@example.com",
+  "email": "abdo.khalil@booklyx.com",
   "code": "333333"
 }
 ```
@@ -511,25 +516,25 @@ Error example (`400`):
 }
 ```
 
-## 4) Branch Admin Onboarding (`/branch-admin`)
+## 4) branch_admin Onboarding (`/branch-admin`)
 
 ### POST `/branch-admin/apply`
 
-Initial endpoint for Branch Admin application.
+Initial endpoint for branch_admin application.
 
 Request body:
 
 ```json
 {
-  "ownerName": "Abdo Khalil",
-  "email": "branch@example.com",
-  "phone": "0101234567",
+  "ownerName": "Mahmoud Ibrahim",
+  "email": "mahmoud.ibrahim@booklyx.com",
+  "phone": "01000000011",
   "password": "strongPassword123",
-  "businessName": "Khalil Spa",
+  "businessName": "Hassan Beauty Salon",
   "category": "SPA" // "CLINIC", "BARBER",
-  "description": "Premium spa services",
-  "commercialRegisterNumber": "123456789",
-  "taxId": "123456789",
+  "description": "Premium beauty and skincare services.",
+  "commercialRegisterNumber": "CR-2026-001",
+  "taxId": "TAX-2026-001",
   "city": "Cairo",
   "district": "Tahrir Square",
   "address": "Tahrir Square",
@@ -559,7 +564,7 @@ Request body:
 
 ```json
 {
-  "email": "branch@example.com",
+  "email": "mahmoud.ibrahim@booklyx.com",
   "code": "333333"
 }
 ```
@@ -585,7 +590,7 @@ Request body:
 
 ```json
 {
-  "email": "branch@example.com",
+  "email": "mahmoud.ibrahim@booklyx.com",
   "code": "333333"
 }
 ```
@@ -611,7 +616,7 @@ Request body:
 
 ```json
 {
-  "email": "branch@example.com",
+  "email": "mahmoud.ibrahim@booklyx.com",
   "type": "EMAIL" // "PHONE"
 }
 ```
@@ -620,18 +625,18 @@ Request body:
 
 ### POST `/branch-admin/create-staff`
 
-Creates a staff user account associated to the logged-in branch admin's branch.
+Creates a staff user account associated to the logged-in branch_admin's branch.
 Requires a Bearer token (`Authorization: Bearer <token>`) of a `branch_admin` and platform header.
 
 Request body:
 
 ```json
 {
-  "name": "Sara Ali",
-  "email": "staff@example.com",
+  "name": "Mazen Tamer",
+  "email": "mazen.tamer@booklyx.com",
   "age": 28,
   "startDate": "2026-03-01T00:00:00.000Z",
-  "phone": "0101234567",
+  "phone": "01000000021",
   "password": "12345678",
   "staffRole": "SPA_SPECIALIST", // "DOCTOR", "BARBER", "SPA_SPECIALIST"
   "commissionPercentage": 20.5,
@@ -653,9 +658,9 @@ Success example (`201`):
   "message": "Staff created successfully.",
   "data": {
     "id": 10,
-    "name": "Sara Ali",
-    "email": "staff@example.com",
-    "phone": "0101234567",
+    "name": "Mazen Tamer",
+    "email": "mazen.tamer@booklyx.com",
+    "phone": "01000000021",
     "role": "staff",
     "status": "ACTIVE"
   }
@@ -699,7 +704,7 @@ Success example (`201`):
 }
 ```
 
-## 5) Admin Management (`/admin`)
+## 5) super_admin Management (`/admin`)
 
 Requires `super_admin` role.
 
@@ -717,8 +722,8 @@ Success example (`200`):
   "data": [
     {
       "id": 1,
-      "ownerName": "Abdo Khalil",
-      "businessName": "Khalil Spa",
+      "ownerName": "Mahmoud Ibrahim",
+      "businessName": "Hassan Beauty Salon",
       "status": "PENDING_APPROVAL"
     }
   ]
@@ -740,8 +745,8 @@ Success example (`200`):
   "message": "Application retrieved successfully.",
   "data": {
     "id": 1,
-    "ownerName": "Abdo Khalil",
-    "email": "branch@example.com",
+    "ownerName": "Mahmoud Ibrahim",
+    "email": "mahmoud.ibrahim@booklyx.com",
     "status": "PENDING_APPROVAL"
   }
 }
@@ -762,7 +767,7 @@ Success example (`200`):
   "message": "Application approved successfully.",
   "data": {
     "id": 10,
-    "email": "branch@example.com",
+    "email": "mahmoud.ibrahim@booklyx.com",
     "role": "branch_admin"
   }
 }
@@ -841,7 +846,7 @@ Success example (`200`):
 3. `POST /auth/verify-phone` with code `333333`
 4. Use returned token in protected endpoints
 
-### For Admin Access
+### For super_admin Access
 
 1. Run `npx prisma db seed` (first time only)
 2. `POST /auth/login` with:

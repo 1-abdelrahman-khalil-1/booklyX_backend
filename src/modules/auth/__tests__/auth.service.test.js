@@ -1,48 +1,56 @@
 import {
-    afterEach,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    jest,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
 } from "@jest/globals";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { Role, UserStatus } from "../../../generated/prisma/client.js";
-import prisma from "../../../lib/prisma.js";
-import {
-    AuthValidationError,
-    EmailNotVerifiedError,
-    InactiveUserError,
-    InvalidCredentialsError,
-    login,
-    PhoneNotVerifiedError,
-    UserNotFound,
-} from "../auth.service.js";
-
-// Mock dependencies
-jest.mock("../../../lib/prisma.js", () => ({
-  user: {
-    findUnique: jest.fn(),
-  },
-  client: {
-    upsert: jest.fn(),
-  },
-  branchAdmin: {
-    findFirst: jest.fn(),
-  },
-  refreshToken: {
-    create: jest.fn(),
+jest.unstable_mockModule("../../../lib/prisma.js", () => ({
+  default: {
+    systemCounter: {
+      upsert: jest.fn(),
+    },
+    user: {
+      findUnique: jest.fn(),
+    },
+    client: {
+      upsert: jest.fn(),
+    },
+    branchAdmin: {
+      findFirst: jest.fn(),
+    },
+    refreshToken: {
+      create: jest.fn(),
+    },
   },
 }));
 
-jest.mock("bcrypt", () => ({
-  compare: jest.fn(),
+jest.unstable_mockModule("bcrypt", () => ({
+  default: {
+    compare: jest.fn(),
+  },
 }));
 
-jest.mock("jsonwebtoken", () => ({
-  sign: jest.fn(),
+jest.unstable_mockModule("jsonwebtoken", () => ({
+  default: {
+    sign: jest.fn(),
+  },
 }));
+
+const bcrypt = (await import("bcrypt")).default;
+const jwt = (await import("jsonwebtoken")).default;
+const prisma = (await import("../../../lib/prisma.js")).default;
+const {
+  AuthValidationError,
+  EmailNotVerifiedError,
+  InactiveUserError,
+  InvalidCredentialsError,
+  login,
+  PhoneNotVerifiedError,
+  UserNotFound,
+} = await import("../auth.service.js");
 
 // Mock process.env
 const originalEnv = process.env;
@@ -105,12 +113,18 @@ describe("Auth Service - login", () => {
       email: validLoginData.email,
       password: "hashed-password",
       status: UserStatus.INACTIVE,
+      emailVerified: false,
+      phoneVerified: true,
     });
     bcrypt.compare.mockResolvedValue(true);
 
-    await expect(login(validLoginData, validPlatform)).rejects.toThrow(
-      InactiveUserError,
-    );
+    await expect(login(validLoginData, validPlatform)).rejects.toMatchObject({
+      name: "InactiveUserError",
+      data: {
+        emailVerified: false,
+        phoneVerified: true,
+      },
+    });
   });
 
   it("should throw EmailNotVerifiedError if email is not verified", async () => {
@@ -121,12 +135,17 @@ describe("Auth Service - login", () => {
       status: UserStatus.ACTIVE,
       role: Role.client,
       emailVerified: false,
+      phoneVerified: false,
     });
     bcrypt.compare.mockResolvedValue(true);
 
-    await expect(login(validLoginData, validPlatform)).rejects.toThrow(
-      EmailNotVerifiedError,
-    );
+    await expect(login(validLoginData, validPlatform)).rejects.toMatchObject({
+      name: "EmailNotVerifiedError",
+      data: {
+        emailVerified: false,
+        phoneVerified: false,
+      },
+    });
   });
 
   it("should throw PhoneNotVerifiedError if phone is not verified", async () => {
@@ -141,9 +160,13 @@ describe("Auth Service - login", () => {
     });
     bcrypt.compare.mockResolvedValue(true);
 
-    await expect(login(validLoginData, validPlatform)).rejects.toThrow(
-      PhoneNotVerifiedError,
-    );
+    await expect(login(validLoginData, validPlatform)).rejects.toMatchObject({
+      name: "PhoneNotVerifiedError",
+      data: {
+        emailVerified: true,
+        phoneVerified: false,
+      },
+    });
   });
 
   it("should return tokens and user on successful login", async () => {
@@ -158,15 +181,23 @@ describe("Auth Service - login", () => {
     };
 
     prisma.user.findUnique.mockResolvedValue(mockUser);
+    prisma.systemCounter.upsert.mockResolvedValue({ value: 5 });
     bcrypt.compare.mockResolvedValue(true);
     jwt.sign.mockReturnValue("mock-jwt-token");
 
     const result = await login(validLoginData, validPlatform);
 
-    expect(result).toHaveProperty("token", "mock-jwt-token");
+    expect(result).toHaveProperty("token", "5|mock-jwt-token");
     expect(result).toHaveProperty("refreshToken");
     expect(result.user).not.toHaveProperty("password");
     expect(result.user.email).toBe(validLoginData.email);
-    expect(prisma.refreshToken.create).toHaveBeenCalled();
+    expect(prisma.refreshToken.create).toHaveBeenCalledWith({
+      data: {
+        userId: 1,
+        tokenHash: expect.any(String),
+        expiresAt: expect.any(Date),
+        loginSequence: 5,
+      },
+    });
   });
 });

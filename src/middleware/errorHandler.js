@@ -16,7 +16,8 @@ export const errorHandler = (
         return void errorResponse(
             res,
             err.statusCode,
-            t(err.message, lang, err.params) || err.message
+            t(err.message, lang, err.params) || err.message,
+            err.params
         );
     }
 

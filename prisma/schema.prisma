@@ -5,6 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -82,6 +83,11 @@ enum AvailabilityStatus {
   UNAVAILABLE
 }
 
+enum OfferDiscountType {
+  PERCENTAGE
+  FIXED
+}
+
 // ─── User & Verification ─────────────────────────────────────────────────────
 
 model User {
@@ -104,14 +110,15 @@ model User {
   staff             Staff?
   branchAdmin       BranchAdmin?
   client            Client?
-  reviewsGiven      Review[] @relation("UserReviewsGiven")
+  reviewsGiven      Review[]           @relation("UserReviewsGiven")
 }
 
 model Client {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique
+  profileImageUrl String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   appointments Appointment[]
@@ -120,34 +127,33 @@ model Client {
   @@index([userId])
 }
 
-model VerificationCode {
-  id        Int              @id @default(autoincrement())
-  userId    Int
-  type      VerificationType
-  codeHash  String
-  expiresAt DateTime
-  used      Boolean          @default(false)
-  attempts  Int              @default(0)
-  createdAt DateTime         @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@index([userId, type])
-}
-
-model RefreshToken {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  tokenHash String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Staff {
+  id                   Int                       @id @default(autoincrement())
+  userId               Int                       @unique
+  branchId             Int
+  profileImageUrl      String?
+  age                  Int
+  startDate            DateTime
+  staffRole            StaffRole
+  commissionPercentage Float
+  isActive             Boolean                   @default(true)
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+  professionalProfile  StaffProfessionalProfile?
+  certificates         StaffCertificate[]
+  availabilities       StaffAvailability[]
+  appointments         Appointment[]
+  services             StaffService[]
+  user                 User                      @relation(fields: [userId], references: [id])
+  branch               BranchAdmin               @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  reviews              Review[]
+  averageRating        Float                     @default(0)
+  reviewCount          Int                       @default(0)
 
   @@index([userId])
+  @@index([branchId])
+  @@map("Staff")
 }
-
-// ─── Business Application ─────────────────────────────────────────────────────
 
 model BranchAdmin {
   id                       Int                           @id @default(autoincrement())
@@ -169,6 +175,7 @@ model BranchAdmin {
   city                     String
   district                 String
   address                  String
+  operatingHours           String?
   latitude                 Float
   longitude                Float
   status                   ApplicationStatus             @default(PENDING_VERIFICATION)
@@ -181,6 +188,7 @@ model BranchAdmin {
   documents                ApplicationDocument[]
   serviceCategories        ServiceCategory[]
   services                 Service[]
+  offers                   Offer[]
   staffs                   Staff[]
   appointments             Appointment[]
   reviews                  Review[]
@@ -190,6 +198,34 @@ model BranchAdmin {
   @@index([email])
   @@index([phone])
   @@map("BranchAdmin")
+}
+
+model VerificationCode {
+  id        Int              @id @default(autoincrement())
+  userId    Int
+  type      VerificationType
+  codeHash  String
+  expiresAt DateTime
+  used      Boolean          @default(false)
+  attempts  Int              @default(0)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, type])
+}
+
+model RefreshToken {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  tokenHash     String   @unique
+  expiresAt     DateTime
+  loginSequence Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model ApplicationVerificationCode {
@@ -217,33 +253,6 @@ model ApplicationDocument {
   application BranchAdmin @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@index([applicationId])
-}
-
-model Staff {
-  id                   Int                       @id @default(autoincrement())
-  userId               Int                       @unique
-  branchId             Int
-  age                  Int
-  startDate            DateTime
-  staffRole            StaffRole
-  commissionPercentage Float
-  isActive             Boolean                   @default(true)
-  createdAt            DateTime                  @default(now())
-  updatedAt            DateTime                  @updatedAt
-  professionalProfile  StaffProfessionalProfile?
-  certificates         StaffCertificate[]
-  availabilities       StaffAvailability[]
-  appointments         Appointment[]
-  services             StaffService[]
-  user                 User                      @relation(fields: [userId], references: [id])
-  branch               BranchAdmin               @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  reviews              Review[]
-  averageRating        Float                     @default(0)
-  reviewCount          Int                       @default(0)
-
-  @@index([userId])
-  @@index([branchId])
-  @@map("Staff")
 }
 
 model StaffProfessionalProfile {
@@ -318,16 +327,52 @@ model Service {
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
 
-  branch        BranchAdmin     @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  category      ServiceCategory? @relation(fields: [serviceCategoryId], references: [id], onDelete: Cascade)
-  appointments  Appointment[]
-  reviews       Review[]
-  staffLinks    StaffService[]
+  branch       BranchAdmin      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  category     ServiceCategory? @relation(fields: [serviceCategoryId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  reviews      Review[]
+  staffLinks   StaffService[]
+  offerLinks   OfferService[]
 
   @@index([branchId])
   @@index([status])
   @@index([branchId, status])
   @@map("Service")
+}
+
+model Offer {
+  id            String            @id @default(uuid())
+  branchId      Int
+  title         String
+  description   String?
+  discountType  OfferDiscountType
+  discountValue Float
+  startDate     DateTime
+  endDate       DateTime
+  isActive      Boolean           @default(true)
+  usageLimit    Int?
+  usedCount     Int               @default(0)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  branch   BranchAdmin   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  services OfferService[]
+
+  @@index([branchId])
+  @@index([branchId, isActive])
+  @@index([startDate, endDate])
+}
+
+model OfferService {
+  offerId    String
+  serviceId  Int
+  createdAt  DateTime @default(now())
+
+  offer   Offer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([offerId, serviceId])
+  @@index([serviceId])
 }
 
 model Review {
@@ -345,11 +390,11 @@ model Review {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  client      Client?     @relation(fields: [clientId], references: [id])
-  reviewer    User        @relation("UserReviewsGiven", fields: [reviewerId], references: [id], onDelete: Cascade)
-  service     Service     @relation(fields: [serviceId], references: [id])
-  branch      BranchAdmin @relation(fields: [branchId], references: [id])
-  staff       Staff       @relation(fields: [staffId], references: [id])
+  client      Client?      @relation(fields: [clientId], references: [id])
+  reviewer    User         @relation("UserReviewsGiven", fields: [reviewerId], references: [id], onDelete: Cascade)
+  service     Service      @relation(fields: [serviceId], references: [id])
+  branch      BranchAdmin  @relation(fields: [branchId], references: [id])
+  staff       Staff        @relation(fields: [staffId], references: [id])
   appointment Appointment? @relation(fields: [appointmentId], references: [id])
 
   @@index([clientId])
@@ -372,11 +417,11 @@ model Appointment {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
-  client Client      @relation(fields: [clientId], references: [id])
-  staff  Staff       @relation(fields: [staffId], references: [id])
-  service Service    @relation(fields: [serviceId], references: [id])
-  branch BranchAdmin @relation(fields: [branchId], references: [id])
-  review Review?
+  client  Client      @relation(fields: [clientId], references: [id])
+  staff   Staff       @relation(fields: [staffId], references: [id])
+  service Service     @relation(fields: [serviceId], references: [id])
+  branch  BranchAdmin @relation(fields: [branchId], references: [id])
+  review  Review?
 
   @@index([clientId])
   @@index([staffId])
@@ -384,8 +429,6 @@ model Appointment {
   @@index([branchId])
   @@index([status])
 }
-
-// ─── STAFF AVAILABILITY ───────────────────────────────
 
 model StaffAvailability {
   id        Int                @id @default(autoincrement())
@@ -398,4 +441,12 @@ model StaffAvailability {
   staff Staff @relation(fields: [staffId], references: [id])
 
   @@unique([staffId, dayOfWeek])
+}
+
+model SystemCounter {
+  key   String @id
+  value Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

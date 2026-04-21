@@ -31,7 +31,7 @@ export const registerSchema = z.object({
     .min(8, tr.PASSWORD_MIN_LENGTH),
   phone: z
     .string({ error: tr.PHONE_REQUIRED })
-    .regex(/^\d{10}$/, tr.PHONE_INVALID),
+    .regex(/^\d{11}$/, tr.PHONE_INVALID),
 });
 
 export const platformSchema = z.enum([Platform.APP, Platform.WEB], {
@@ -99,8 +99,7 @@ export const resendCodeSchema = z
       .optional(),
     phone: z
       .string({ error: tr.PHONE_REQUIRED })
-      .regex(/^\d{10}$/, tr.PHONE_INVALID)
-      .optional(),
+      .regex(/^\d{11}$/, tr.PHONE_INVALID),
     type: z.enum([
       VerificationType.EMAIL,
       VerificationType.PHONE,

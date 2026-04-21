@@ -5,6 +5,7 @@ process.on("uncaughtException", (err) => {
 });
 
 import cookieParser from "cookie-parser";
+import cors from "cors";
 import "dotenv/config";
 import express from "express";
 import prisma from "./lib/prisma.js";
@@ -15,8 +16,52 @@ import routes from "./routes/index.js";
 const app = express();
 let server;
 
+const frontendUrl = process.env.FRONTEND_URL;
+const vercelProjectName = process.env.VERCEL_PROJECT_NAME;
+
+const allowedOrigins = new Set([frontendUrl].filter(Boolean));
+
+if (process.env.NODE_ENV !== "production") {
+  allowedOrigins.add("http://localhost:3000");
+  allowedOrigins.add("http://127.0.0.1:3000");
+  allowedOrigins.add("http://localhost:5173");
+  allowedOrigins.add("http://127.0.0.1:5173");
+}
+
+function isAllowedOrigin(origin) {
+  if (!origin) {
+    return true;
+  }
+
+  if (allowedOrigins.has(origin)) {
+    return true;
+  }
+
+  if (!vercelProjectName) {
+    return false;
+  }
+
+  try {
+    const parsedOrigin = new URL(origin);
+    return (
+      parsedOrigin.hostname.endsWith(".vercel.app") &&
+      parsedOrigin.hostname.startsWith(`${vercelProjectName}-`)
+    );
+  } catch {
+    return false;
+  }
+}
+
+const corsOptions = {
+  origin(origin, callback) {
+    callback(null, isAllowedOrigin(origin));
+  },
+  credentials: true,
+};
+
 app.use(express.json());
 app.use(cookieParser());
+app.use(cors(corsOptions));
 app.use(generalLimiter);
 
 app.use("/", routes);

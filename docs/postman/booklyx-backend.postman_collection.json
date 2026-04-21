@@ -20,7 +20,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Abdo Khalil\",\n  \"email\": \"khalil@booklyx.com\",\n  \"password\": \"12345678\",\n  \"phone\": \"0123456789\"\n}"
+              "raw": "{\n  \"name\": \"Abdo Khalil\",\n  \"email\": \"abdo.khalil@booklyx.com\",\n  \"password\": \"12345678\",\n  \"phone\": \"01000000001\"\n}"
             },
             "url": "{{baseUrl}}/auth/register"
           }
@@ -37,7 +37,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"password\": \"12345678\",\n  \"role\": \"client\" // \"client\", \"branch_admin\", \"super_admin\", \"staff\"\n}"
+              "raw": "{\n  \"email\": \"abdo.khalil@booklyx.com\",\n  \"password\": \"12345678\",\n  \"role\": \"client\" // \"client\", \"branch_admin\", \"super_admin\", \"staff\"\n}"
             },
             "url": "{{baseUrl}}/auth/login"
           },
@@ -47,24 +47,92 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const json = pm.response.json();",
-                  "if (json && json.data) {",
-                  "  const role = json.data.user ? json.data.user.role : json.data.role;",
-                  "  const token = json.data.token;",
-                  "  const refreshToken = json.data.refreshToken;",
-                  "  ",
-                  "  if (token) {",
-                  "    if (role === 'client') pm.environment.set('clientToken', token);",
-                  "    if (role === 'branch_admin') pm.environment.set('branchAdminToken', token);",
-                  "    if (role === 'staff') pm.environment.set('staffToken', token);",
-                  "    if (role === 'super_admin') pm.environment.set('adminToken', token);",
+                  "function setIfNotExists(key, value) {",
+                  "  if (!key || value === undefined || value === null) return;",
+                  "  const existing = pm.environment.get(key);",
+                  "  if (existing === undefined || existing === null) {",
+                  "    pm.environment.set(key, value);",
                   "  }",
-                  "  ",
+                  "}",
+                  "",
+                  "function getFirstString(values) {",
+                  "  for (const value of values) {",
+                  "    if (typeof value === 'string' && value.trim() !== '') return value.trim();",
+                  "  }",
+                  "  return undefined;",
+                  "}",
+                  "",
+                  "function getFirstValue(source, keys) {",
+                  "  if (!source || typeof source !== 'object') return undefined;",
+                  "  for (const key of keys) {",
+                  "    const value = source[key];",
+                  "    if (typeof value === 'string' && value.trim() !== '') return value.trim();",
+                  "  }",
+                  "  return undefined;",
+                  "}",
+                  "",
+                  "let json;",
+                  "try {",
+                  "  json = pm.response.json();",
+                  "} catch (error) {",
+                  "  if (pm.console && typeof pm.console.log === 'function') {",
+                  "    pm.console.log('Response is not JSON; skipping token extraction.');",
+                  "  }",
+                  "}",
+                  "",
+                  "if (json && typeof json === 'object') {",
+                  "  const data = json.data && typeof json.data === 'object' ? json.data : {};",
+                  "  const role = getFirstString([",
+                  "    data.user && typeof data.user === 'object' ? data.user.role : undefined,",
+                  "    data.role,",
+                  "    pm.environment.get('authRole'),",
+                  "    'client',",
+                  "  ]);",
+                  "",
+                  "  const accessTokenEnvKeyByRole = {",
+                  "    client: 'clientToken',",
+                  "    staff: 'staffToken',",
+                  "    branch_admin: 'branchAdminToken',",
+                  "    super_admin: 'adminToken',",
+                  "  };",
+                  "",
+                  "  const refreshTokenEnvKeyByRole = {",
+                  "    client: 'refreshClientToken',",
+                  "    staff: 'refreshStaffToken',",
+                  "    branch_admin: 'refreshBranchAdminToken',",
+                  "    super_admin: 'refreshAdminToken',",
+                  "  };",
+                  "",
+                  "  const accessTokenResponseKeysByRole = {",
+                  "    client: ['clientToken', 'token'],",
+                  "    staff: ['staffToken', 'token'],",
+                  "    branch_admin: ['branchAdminToken', 'branchToken', 'token'],",
+                  "    super_admin: ['adminToken', 'superAdminToken', 'token'],",
+                  "  };",
+                  "",
+                  "  setIfNotExists('authRole', role);",
+                  "",
+                  "  const accessToken = getFirstValue(",
+                  "    data,",
+                  "    accessTokenResponseKeysByRole[role] || ['token']",
+                  "  );",
+                  "  if (accessToken) {",
+                  "    setIfNotExists('authToken', accessToken);",
+                  "",
+                  "    const accessEnvKey = accessTokenEnvKeyByRole[role];",
+                  "    if (accessEnvKey) {",
+                  "      setIfNotExists(accessEnvKey, accessToken);",
+                  "    }",
+                  "  }",
+                  "",
+                  "  const refreshToken = getFirstString([data.refreshToken]);",
                   "  if (refreshToken) {",
-                  "    if (role === 'client') pm.environment.set('refreshClientToken', refreshToken);",
-                  "    if (role === 'branch_admin') pm.environment.set('refreshBranchAdminToken', refreshToken);",
-                  "    if (role === 'staff') pm.environment.set('refreshStaffToken', refreshToken);",
-                  "    if (role === 'super_admin') pm.environment.set('refreshAdminToken', refreshToken);",
+                  "    setIfNotExists('refreshToken', refreshToken);",
+                  "",
+                  "    const refreshEnvKey = refreshTokenEnvKeyByRole[role];",
+                  "    if (refreshEnvKey) {",
+                  "      setIfNotExists(refreshEnvKey, refreshToken);",
+                  "    }",
                   "  }",
                   "}"
                 ]
@@ -73,7 +141,7 @@
           ]
         },
         {
-          "name": "Admin Login",
+          "name": "super_admin Login",
           "request": {
             "method": "POST",
             "description": "Enum parameters:\n- Header `platform`: APP | WEB (this request uses WEB)\n- Header `Accept-Language`: en | ar",
@@ -96,13 +164,13 @@
                 "exec": [
                   "const json = pm.response.json();",
                   "if (json && json.data) {",
-                  "  const token = json.data.token;",
+                  "  const token = json.data.superAdminToken;",
                   "  const refreshToken = json.data.refreshToken;",
                   "  if (token) {",
-                  "    pm.environment.set('adminToken', token);",
+                  "    pm.environment.set('superAdminToken', token);",
                   "  }",
                   "  if (refreshToken) {",
-                  "    pm.environment.set('refreshAdminToken', refreshToken);",
+                  "    pm.environment.set('refreshSuperAdminToken', refreshToken);",
                   "  }",
                   "}"
                 ]
@@ -120,7 +188,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"code\": \"333333\"\n}"
+              "raw": "{\n  \"email\": \"abdo.khalil@booklyx.com\",\n  \"code\": \"333333\"\n}"
             },
             "url": "{{baseUrl}}/auth/verify-email"
           }
@@ -137,7 +205,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"code\": \"333333\"\n}"
+              "raw": "{\n  \"email\": \"abdo.khalil@booklyx.com\",\n  \"code\": \"333333\"\n}"
             },
             "url": "{{baseUrl}}/auth/verify-phone"
           },
@@ -148,8 +216,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "const json = pm.response.json();",
-                  "if (json && json.data && json.data.token) {",
-                  "  pm.environment.set('clientToken', json.data.token);",
+                  "if (json && json.data && json.data.clientToken) {",
+                  "  pm.environment.set('clientToken', json.data.clientToken);",
                   "}",
                   "if (json && json.data && json.data.refreshToken) {",
                   "  pm.environment.set('refreshClientToken', json.data.refreshToken);",
@@ -170,7 +238,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"phone\": \"0123456789\",\n  \"type\": \"EMAIL\" // \"PHONE\", \"PASSWORD_RESET\"\n}"
+              "raw": "{\n  \"email\": \"abdo.khalil@booklyx.com\",\n  \"phone\": \"01000000001\",\n  \"type\": \"EMAIL\" // \"PHONE\", \"PASSWORD_RESET\"\n}"
             },
             "url": "{{baseUrl}}/auth/resend-code"
           }
@@ -185,7 +253,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"khalil@booklyx.com\"\n}"
+              "raw": "{\n  \"email\": \"abdo.khalil@booklyx.com\"\n}"
             },
             "url": "{{baseUrl}}/auth/request-password-reset"
           }
@@ -200,7 +268,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"khalil@booklyx.com\",\n  \"code\": \"333333\"\n}"
+              "raw": "{\n  \"email\": \"abdo.khalil@booklyx.com\",\n  \"code\": \"333333\"\n}"
             },
             "url": "{{baseUrl}}/auth/verify-password-reset"
           },
@@ -255,25 +323,92 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const json = pm.response.json();",
-                  "if (json && json.data) {",
-                  "  const role = json.data.role;",
-                  "  const token = json.data.token;",
-                  "  const refreshToken = json.data.refreshToken;",
-                  "  ",
-                  "  if (token) {",
-                  "    pm.environment.set('token', token);",
-                  "    if (role === 'client') pm.environment.set('clientToken', token);",
-                  "    if (role === 'branch_admin') pm.environment.set('branchAdminToken', token);",
-                  "    if (role === 'staff') pm.environment.set('staffToken', token);",
-                  "    if (role === 'super_admin') pm.environment.set('adminToken', token);",
+                  "function setIfNotExists(key, value) {",
+                  "  if (!key || value === undefined || value === null) return;",
+                  "  const existing = pm.environment.get(key);",
+                  "  if (existing === undefined || existing === null) {",
+                  "    pm.environment.set(key, value);",
                   "  }",
-                  "  ",
+                  "}",
+                  "",
+                  "function getFirstString(values) {",
+                  "  for (const value of values) {",
+                  "    if (typeof value === 'string' && value.trim() !== '') return value.trim();",
+                  "  }",
+                  "  return undefined;",
+                  "}",
+                  "",
+                  "function getFirstValue(source, keys) {",
+                  "  if (!source || typeof source !== 'object') return undefined;",
+                  "  for (const key of keys) {",
+                  "    const value = source[key];",
+                  "    if (typeof value === 'string' && value.trim() !== '') return value.trim();",
+                  "  }",
+                  "  return undefined;",
+                  "}",
+                  "",
+                  "let json;",
+                  "try {",
+                  "  json = pm.response.json();",
+                  "} catch (error) {",
+                  "  if (pm.console && typeof pm.console.log === 'function') {",
+                  "    pm.console.log('Response is not JSON; skipping token extraction.');",
+                  "  }",
+                  "}",
+                  "",
+                  "if (json && typeof json === 'object') {",
+                  "  const data = json.data && typeof json.data === 'object' ? json.data : {};",
+                  "  const role = getFirstString([",
+                  "    data.user && typeof data.user === 'object' ? data.user.role : undefined,",
+                  "    data.role,",
+                  "    pm.environment.get('authRole'),",
+                  "    'client',",
+                  "  ]);",
+                  "",
+                  "  const accessTokenEnvKeyByRole = {",
+                  "    client: 'clientToken',",
+                  "    staff: 'staffToken',",
+                  "    branch_admin: 'branchAdminToken',",
+                  "    super_admin: 'adminToken',",
+                  "  };",
+                  "",
+                  "  const refreshTokenEnvKeyByRole = {",
+                  "    client: 'refreshClientToken',",
+                  "    staff: 'refreshStaffToken',",
+                  "    branch_admin: 'refreshBranchAdminToken',",
+                  "    super_admin: 'refreshAdminToken',",
+                  "  };",
+                  "",
+                  "  const accessTokenResponseKeysByRole = {",
+                  "    client: ['clientToken', 'token'],",
+                  "    staff: ['staffToken', 'token'],",
+                  "    branch_admin: ['branchAdminToken', 'branchToken', 'token'],",
+                  "    super_admin: ['adminToken', 'superAdminToken', 'token'],",
+                  "  };",
+                  "",
+                  "  setIfNotExists('authRole', role);",
+                  "",
+                  "  const accessToken = getFirstValue(",
+                  "    data,",
+                  "    accessTokenResponseKeysByRole[role] || ['token']",
+                  "  );",
+                  "  if (accessToken) {",
+                  "    setIfNotExists('authToken', accessToken);",
+                  "",
+                  "    const accessEnvKey = accessTokenEnvKeyByRole[role];",
+                  "    if (accessEnvKey) {",
+                  "      setIfNotExists(accessEnvKey, accessToken);",
+                  "    }",
+                  "  }",
+                  "",
+                  "  const refreshToken = getFirstString([data.refreshToken]);",
                   "  if (refreshToken) {",
-                  "    if (role === 'client') pm.environment.set('refreshClientToken', refreshToken);",
-                  "    if (role === 'branch_admin') pm.environment.set('refreshBranchAdminToken', refreshToken);",
-                  "    if (role === 'staff') pm.environment.set('refreshStaffToken', refreshToken);",
-                  "    if (role === 'super_admin') pm.environment.set('refreshAdminToken', refreshToken);",
+                  "    setIfNotExists('refreshToken', refreshToken);",
+                  "",
+                  "    const refreshEnvKey = refreshTokenEnvKeyByRole[role];",
+                  "    if (refreshEnvKey) {",
+                  "      setIfNotExists(refreshEnvKey, refreshToken);",
+                  "    }",
                   "  }",
                   "}"
                 ]
@@ -284,7 +419,7 @@
       ]
     },
     {
-      "name": "Branch Admin",
+      "name": "branch_admin",
       "item": [
         {
           "name": "Apply",
@@ -298,7 +433,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"ownerName\": \"Abdo Khalil\",\n  \"email\": \"branch@example.com\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\",\n  \"businessName\": \"Khalil Spa\",\n  \"category\": \"SPA\" /* \"CLINIC\", \"BARBER\" */,\n  \"description\": \"Premium spa services\",\n  \"city\": \"Cairo\",\n  \"district\": \"Tahrir Square\",\n  \"address\": \"Tahrir Square\",\n  \"taxId\": \"123456789\",\n  \"commercialRegisterNumber\": \"123456789\",\n  \"latitude\": 30.0444,\n  \"longitude\": 31.2357\n}"
+              "raw": "{\n  \"ownerName\": \"Mahmoud Ibrahim\",\n  \"email\": \"mahmoud.ibrahim@booklyx.com\",\n  \"phone\": \"01000000011\",\n  \"password\": \"12345678\",\n  \"businessName\": \"Hassan Beauty Salon\",\n  \"category\": \"SPA\" /* \"CLINIC\", \"BARBER\" */,\n  \"description\": \"Premium beauty and skincare services.\",\n  \"city\": \"Cairo\",\n  \"district\": \"Nasr City\",\n  \"address\": \"12 Makram Ebeid Street\",\n  \"taxId\": \"TAX-2026-001\",\n  \"commercialRegisterNumber\": \"CR-2026-001\",\n  \"latitude\": 30.0626,\n  \"longitude\": 31.3368\n}"
             },
             "url": "{{baseUrl}}/branch-admin/apply"
           }
@@ -313,7 +448,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"branch@example.com\",\n  \"code\": \"333333\"\n}"
+              "raw": "{\n  \"email\": \"mahmoud.ibrahim@booklyx.com\",\n  \"code\": \"333333\"\n}"
             },
             "url": "{{baseUrl}}/branch-admin/verify-email"
           }
@@ -328,7 +463,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"branch@example.com\",\n  \"code\": \"333333\"\n}"
+              "raw": "{\n  \"email\": \"mahmoud.ibrahim@booklyx.com\",\n  \"code\": \"333333\"\n}"
             },
             "url": "{{baseUrl}}/branch-admin/verify-phone"
           }
@@ -344,7 +479,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"branch@example.com\",\n  \"type\": \"EMAIL\" // \"PHONE\"\n}"
+              "raw": "{\n  \"email\": \"mahmoud.ibrahim@booklyx.com\",\n  \"type\": \"EMAIL\" // \"PHONE\"\n}"
             },
             "url": "{{baseUrl}}/branch-admin/resend-code"
           }
@@ -359,13 +494,13 @@
               { "key": "Accept-Language", "value": "{{lang}}" },
               {
                 "key": "Authorization",
-                "value": "Bearer {{branchAdminToken}}"
+                "value": "Bearer {{branchToken}}"
               },
               { "key": "platform", "value": "{{platform}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Sara Ali\",\n  \"email\": \"staff@example.com\",\n  \"age\": 28,\n  \"startDate\": \"2026-03-01T00:00:00.000Z\",\n  \"phone\": \"0101234567\",\n  \"password\": \"12345678\",\n  \"staffRole\": \"SPA_SPECIALIST\",\n  \"commissionPercentage\": 20.5,\n  \"serviceIds\": [1, 2]\n}"
+              "raw": "{\n  \"name\": \"Mazen Tamer\",\n  \"email\": \"mazen.tamer@booklyx.com\",\n  \"age\": 28,\n  \"startDate\": \"2026-03-01T00:00:00.000Z\",\n  \"phone\": \"01000000021\",\n  \"password\": \"12345678\",\n  \"staffRole\": \"SPA_SPECIALIST\",\n  \"commissionPercentage\": 20.5,\n  \"serviceIds\": [1, 2]\n}"
             },
             "url": "{{baseUrl}}/branch-admin/create-staff"
           }
@@ -374,13 +509,13 @@
           "name": "Create Service",
           "request": {
             "method": "POST",
-            "description": "Branch admin creates a service. Status will be PENDING_APPROVAL until super admin approves it.",
+            "description": "Branch admin creates a service. Status will be PENDING_APPROVAL until super_admin approves it.",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept-Language", "value": "{{lang}}" },
               {
                 "key": "Authorization",
-                "value": "Bearer {{branchAdminToken}}"
+                "value": "Bearer {{branchToken}}"
               },
               { "key": "platform", "value": "{{platform}}" }
             ],
@@ -395,12 +530,12 @@
           "name": "Get My Services",
           "request": {
             "method": "GET",
-            "description": "Get all services of the branch admin, including pending, approved, and rejected services.",
+            "description": "Get all services of the branch_admin, including pending, approved, and rejected services.",
             "header": [
               { "key": "Accept-Language", "value": "{{lang}}" },
               {
                 "key": "Authorization",
-                "value": "Bearer {{branchAdminToken}}"
+                "value": "Bearer {{branchToken}}"
               },
               { "key": "platform", "value": "{{platform}}" }
             ],
@@ -410,7 +545,7 @@
       ]
     },
     {
-      "name": "Admin",
+      "name": "super_admin",
       "item": [
         {
           "name": "List Applications",
@@ -420,7 +555,7 @@
             "header": [
               { "key": "Accept-Language", "value": "{{lang}}" },
               { "key": "platform", "value": "WEB" },
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+              { "key": "Authorization", "value": "Bearer {{superAdminToken}}" }
             ],
             "url": {
               "raw": "{{baseUrl}}/admin/applications?status=PENDING_APPROVAL",
@@ -437,7 +572,7 @@
             "header": [
               { "key": "Accept-Language", "value": "{{lang}}" },
               { "key": "platform", "value": "WEB" },
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+              { "key": "Authorization", "value": "Bearer {{superAdminToken}}" }
             ],
             "url": "{{baseUrl}}/admin/applications/1"
           }
@@ -449,7 +584,7 @@
             "header": [
               { "key": "Accept-Language", "value": "{{lang}}" },
               { "key": "platform", "value": "WEB" },
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+              { "key": "Authorization", "value": "Bearer {{superAdminToken}}" }
             ],
             "url": "{{baseUrl}}/admin/applications/1/approve"
           }
@@ -462,7 +597,7 @@
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept-Language", "value": "{{lang}}" },
               { "key": "platform", "value": "WEB" },
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+              { "key": "Authorization", "value": "Bearer {{superAdminToken}}" }
             ],
             "body": {
               "mode": "raw",
@@ -478,7 +613,7 @@
             "header": [
               { "key": "Accept-Language", "value": "{{lang}}" },
               { "key": "platform", "value": "WEB" },
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+              { "key": "Authorization", "value": "Bearer {{superAdminToken}}" }
             ],
             "url": "{{baseUrl}}/admin/services/1/approve"
           }
@@ -491,7 +626,7 @@
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept-Language", "value": "{{lang}}" },
               { "key": "platform", "value": "WEB" },
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+              { "key": "Authorization", "value": "Bearer {{superAdminToken}}" }
             ],
             "body": {
               "mode": "raw",

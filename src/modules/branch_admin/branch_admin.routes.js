@@ -3,17 +3,22 @@ import { Role } from "../../generated/prisma/client.js";
 import { authenticate, authorize } from "../../middleware/authenticate.js";
 import { documentsUpload, imageOnlyUpload } from "../../middleware/upload.js";
 import {
-  addServiceCategoryHandler,
-  applyHandler,
-  createServiceHandler,
-  createStaffHandler,
-  deleteServiceHandler,
-  getMyServiceCategoriesHandler,
-  getMyServicesHandler,
-  resendCodeHandler,
-  updateServiceHandler,
-  verifyEmailHandler,
-  verifyPhoneHandler,
+    addServiceCategoryHandler,
+    applyHandler,
+    createServiceHandler,
+    createStaffHandler,
+    deleteServiceHandler,
+    deleteStaffHandler,
+    getMyServiceCategoriesHandler,
+    getMyServicesHandler,
+    getMyStaffByIdHandler,
+    getMyStaffHandler,
+    resendCodeHandler,
+    updateBranchAdminProfileHandler,
+    updateServiceHandler,
+    updateStaffHandler,
+    verifyEmailHandler,
+    verifyPhoneHandler,
 } from "./branch_admin.controller.js";
 
 const branchAdminRouter = Router();
@@ -27,6 +32,7 @@ const applicationUploadFields = documentsUpload.fields([
 ]);
 
 const serviceUploadField = imageOnlyUpload.fields([{ name: "image", maxCount: 1 }]);
+const profileUploadField = imageOnlyUpload.fields([{ name: "logo", maxCount: 1 }]);
 
 branchAdminRouter.post("/apply", applicationUploadFields, applyHandler);
 
@@ -44,11 +50,47 @@ branchAdminRouter.post(
   createServiceHandler,
 );
 
+branchAdminRouter.put(
+  "/profile",
+  authenticate,
+  authorize(Role.branch_admin),
+  profileUploadField,
+  updateBranchAdminProfileHandler,
+);
+
 branchAdminRouter.post(
   "/create-staff",
   authenticate,
   authorize(Role.branch_admin),
   createStaffHandler,
+);
+
+branchAdminRouter.get(
+  "/staff/my-staff",
+  authenticate,
+  authorize(Role.branch_admin),
+  getMyStaffHandler,
+);
+
+branchAdminRouter.get(
+  "/staff/:id",
+  authenticate,
+  authorize(Role.branch_admin),
+  getMyStaffByIdHandler,
+);
+
+branchAdminRouter.put(
+  "/staff/:id",
+  authenticate,
+  authorize(Role.branch_admin),
+  updateStaffHandler,
+);
+
+branchAdminRouter.delete(
+  "/staff/:id",
+  authenticate,
+  authorize(Role.branch_admin),
+  deleteStaffHandler,
 );
 
 branchAdminRouter.post(

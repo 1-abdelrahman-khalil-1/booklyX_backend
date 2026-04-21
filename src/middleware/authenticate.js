@@ -4,6 +4,27 @@ import { getLanguage, t, tr } from "../lib/i18n/index.js";
 import prisma from "../lib/prisma.js";
 import { errorResponse } from "../utils/response.js";
 
+function parseToken(token) {
+  if (typeof token !== "string" || !token) {
+    return null;
+  }
+
+  const separatorIndex = token.indexOf("|");
+
+  if (separatorIndex === -1) {
+    return { loginSequence: null, jwtToken: token };
+  }
+
+  const loginSequence = Number(token.slice(0, separatorIndex));
+  const jwtToken = token.slice(separatorIndex + 1);
+
+  if (!Number.isInteger(loginSequence) || loginSequence <= 0 || !jwtToken) {
+    return null;
+  }
+
+  return { loginSequence, jwtToken };
+}
+
 /**
  * authenticate — Express middleware
  *
@@ -31,8 +52,15 @@ export async function authenticate(req, res, next) {
     return;
   }
 
+  const parsedToken = parseToken(token);
+
+  if (!parsedToken) {
+    errorResponse(res, 401, t(tr.INVALID_OR_EXPIRED_TOKEN, lang));
+    return;
+  }
+
   try {
-    const decoded = jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(parsedToken.jwtToken, jwtSecret);
 
     // 1️⃣ Validate decoded JWT payload shape
     if (

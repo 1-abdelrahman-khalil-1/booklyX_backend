@@ -22,7 +22,10 @@ import {
   deleteServiceSchema,
   myServicesQuerySchema,
   resendCodeSchema,
+  staffIdSchema,
+  updateBranchAdminProfileSchema,
   updateServiceSchema,
+  updateStaffSchema,
   validateBranchAdminInput,
   verifyEmailSchema,
   verifyPhoneSchema,
@@ -91,6 +94,43 @@ export class ServiceCategoryNotFoundError extends AppError {
     this.name = "ServiceCategoryNotFoundError";
   }
 }
+
+export class StaffNotFoundError extends AppError {
+  constructor() {
+    super(tr.STAFF_NOT_FOUND, 404);
+    this.name = "StaffNotFoundError";
+  }
+}
+
+const staffUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  phone: true,
+  role: true,
+  status: true,
+  emailVerified: true,
+  phoneVerified: true,
+  createdAt: true,
+  updatedAt: true,
+  staff: {
+    include: {
+      services: {
+        include: {
+          service: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              durationMinutes: true,
+              status: true,
+            },
+          },
+        },
+      },
+    },
+  },
+};
 
 async function findLatestApplicationByEmail(email) {
   return prisma.branchAdmin.findFirst({
@@ -411,6 +451,7 @@ export async function createStaff(body, branchAdminUserId) {
         staff: {
           create: {
             branchId: branchAdmin.id,
+            profileImageUrl: data.profileImageUrl,
             age: data.age,
             startDate: new Date(data.startDate),
             staffRole: data.staffRole,
@@ -424,23 +465,7 @@ export async function createStaff(body, branchAdminUserId) {
         },
       },
       include: {
-        staff: {
-          include: {
-            services: {
-              include: {
-                service: {
-                  select: {
-                    id: true,
-                    name: true,
-                    price: true,
-                    durationMinutes: true,
-                    status: true,
-                  },
-                },
-              },
-            },
-          },
-        },
+        staff: staffUserSelect.staff,
       },
     });
   } catch (error) {
@@ -455,6 +480,227 @@ export async function createStaff(body, branchAdminUserId) {
 
   const { password: _password, ...safeUser } = user;
   return safeUser;
+}
+
+export async function getMyStaff(branchAdminUserId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+  });
+
+  if (!branchAdmin) {
+    throw new ApplicationNotFound();
+  }
+
+  return prisma.user.findMany({
+    where: {
+      role: Role.staff,
+      staff: {
+        is: {
+          branchId: branchAdmin.id,
+          isActive: true,
+        },
+      },
+    },
+    select: staffUserSelect,
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function getMyStaffById(staffId, branchAdminUserId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+  });
+
+  if (!branchAdmin) {
+    throw new ApplicationNotFound();
+  }
+
+  const staff = await prisma.user.findFirst({
+    where: {
+      id: staffId,
+      role: Role.staff,
+      staff: {
+        is: {
+          branchId: branchAdmin.id,
+          isActive: true,
+        },
+      },
+    },
+    select: staffUserSelect,
+  });
+
+  if (!staff) {
+    throw new StaffNotFoundError();
+  }
+
+  return staff;
+}
+
+export async function updateStaff(body, branchAdminUserId) {
+  const data = validateBranchAdminInput(updateStaffSchema, body);
+
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+  });
+
+  if (!branchAdmin) {
+    throw new ApplicationNotFound();
+  }
+
+  const staff = await prisma.user.findFirst({
+    where: {
+      id: data.id,
+      role: Role.staff,
+      staff: {
+        is: {
+          branchId: branchAdmin.id,
+          isActive: true,
+        },
+      },
+    },
+    select: {
+      id: true,
+      email: true,
+      phone: true,
+    },
+  });
+
+  if (!staff) {
+    throw new StaffNotFoundError();
+  }
+
+  if (data.email || data.phone) {
+    const duplicateUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          ...(data.email ? [{ email: data.email }] : []),
+          ...(data.phone ? [{ phone: data.phone }] : []),
+        ],
+        NOT: { id: staff.id },
+      },
+      select: { email: true, phone: true },
+    });
+
+    if (duplicateUser) {
+      if (duplicateUser.email === data.email) {
+        throw new BranchAdminValidationError(tr.DUPLICATE_EMAIL);
+      }
+      if (duplicateUser.phone === data.phone) {
+        throw new BranchAdminValidationError(tr.DUPLICATE_PHONE);
+      }
+      throw new BranchAdminValidationError(tr.DUPLICATE_ACCOUNT);
+    }
+  }
+
+  let uniqueServiceIds = [];
+  if (data.serviceIds) {
+    uniqueServiceIds = [...new Set(data.serviceIds)];
+    const approvedServices = await prisma.service.findMany({
+      where: {
+        id: { in: uniqueServiceIds },
+        branchId: branchAdmin.id,
+        status: ServiceApprovalStatus.APPROVED,
+      },
+      select: { id: true },
+    });
+
+    if (approvedServices.length !== uniqueServiceIds.length) {
+      throw new BranchAdminValidationError(tr.INVALID_STAFF_SERVICE_SELECTION);
+    }
+  }
+
+  const userUpdateData = {};
+  if (data.name !== undefined) userUpdateData.name = data.name;
+  if (data.email !== undefined) userUpdateData.email = data.email;
+  if (data.phone !== undefined) userUpdateData.phone = data.phone;
+
+  const staffUpdateData = {};
+  if (data.age !== undefined) staffUpdateData.age = data.age;
+  if (data.startDate !== undefined) {
+    staffUpdateData.startDate = new Date(data.startDate);
+  }
+  if (data.staffRole !== undefined) staffUpdateData.staffRole = data.staffRole;
+  if (data.profileImageUrl !== undefined) {
+    staffUpdateData.profileImageUrl = data.profileImageUrl;
+  }
+  if (data.commissionPercentage !== undefined) {
+    staffUpdateData.commissionPercentage = data.commissionPercentage;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    if (Object.keys(userUpdateData).length > 0) {
+      await tx.user.update({
+        where: { id: staff.id },
+        data: userUpdateData,
+      });
+    }
+
+    if (Object.keys(staffUpdateData).length > 0) {
+      await tx.staff.update({
+        where: { userId: staff.id },
+        data: staffUpdateData,
+      });
+    }
+
+    if (data.serviceIds) {
+      await tx.staffService.deleteMany({
+        where: { staffId: staff.id },
+      });
+
+      await tx.staffService.createMany({
+        data: uniqueServiceIds.map((serviceId) => ({
+          staffId: staff.id,
+          serviceId,
+        })),
+      });
+    }
+  });
+
+  return getMyStaffById(staff.id, branchAdminUserId);
+}
+
+export async function deleteStaff(body, branchAdminUserId) {
+  const data = validateBranchAdminInput(staffIdSchema, body);
+
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+  });
+
+  if (!branchAdmin) {
+    throw new ApplicationNotFound();
+  }
+
+  const staff = await prisma.user.findFirst({
+    where: {
+      id: data.id,
+      role: Role.staff,
+      staff: {
+        is: {
+          branchId: branchAdmin.id,
+          isActive: true,
+        },
+      },
+    },
+    select: { id: true },
+  });
+
+  if (!staff) {
+    throw new StaffNotFoundError();
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.staff.update({
+      where: { userId: staff.id },
+      data: { isActive: false },
+    });
+
+    await tx.user.update({
+      where: { id: staff.id },
+      data: { status: UserStatus.INACTIVE },
+    });
+  });
+
+  return { message: tr.STAFF_DELETED };
 }
 
 export async function addServiceCategory(body, branchAdminUserId) {
@@ -679,6 +925,96 @@ export async function updateService(body, branchAdminUserId) {
   });
 
   return updatedService;
+}
+
+export async function updateBranchAdminProfile(body, branchAdminUserId) {
+  const data = validateBranchAdminInput(updateBranchAdminProfileSchema, body);
+
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          password: true,
+        },
+      },
+    },
+  });
+
+  if (!branchAdmin || !branchAdmin.user) {
+    throw new ApplicationNotFound();
+  }
+
+  if (data.phone && data.phone !== branchAdmin.phone) {
+    const duplicateUser = await prisma.user.findFirst({
+      where: {
+        phone: data.phone,
+        NOT: { id: branchAdmin.user.id },
+      },
+      select: { id: true },
+    });
+
+    if (duplicateUser) {
+      throw new BranchAdminValidationError(tr.DUPLICATE_PHONE);
+    }
+  }
+
+  let newPasswordHash;
+  if (data.currentPassword && data.newPassword) {
+    const isCurrentPasswordValid = await bcrypt.compare(
+      data.currentPassword,
+      branchAdmin.user.password,
+    );
+
+    if (!isCurrentPasswordValid) {
+      throw new BranchAdminValidationError(tr.CURRENT_PASSWORD_INCORRECT);
+    }
+
+    newPasswordHash = await bcrypt.hash(data.newPassword, SALT_ROUNDS);
+  }
+
+  const updatedBranchAdmin = await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: branchAdmin.user.id },
+      data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.phone !== undefined ? { phone: data.phone } : {}),
+        ...(newPasswordHash ? { password: newPasswordHash } : {}),
+      },
+    });
+
+    return tx.branchAdmin.update({
+      where: { id: branchAdmin.id },
+      data: {
+        ...(data.name !== undefined ? { ownerName: data.name } : {}),
+        ...(data.phone !== undefined ? { phone: data.phone } : {}),
+        ...(data.logoUrl !== undefined ? { logoUrl: data.logoUrl } : {}),
+        ...(data.operatingHours !== undefined
+          ? { operatingHours: data.operatingHours }
+          : {}),
+        ...(data.address !== undefined ? { address: data.address } : {}),
+        ...(newPasswordHash ? { passwordHash: newPasswordHash } : {}),
+      },
+      select: {
+        id: true,
+        ownerName: true,
+        email: true,
+        phone: true,
+        businessName: true,
+        category: true,
+        logoUrl: true,
+        operatingHours: true,
+        address: true,
+        city: true,
+        district: true,
+        status: true,
+        updatedAt: true,
+      },
+    });
+  });
+
+  return updatedBranchAdmin;
 }
 
 export async function deleteService(body, branchAdminUserId) {

@@ -1,10 +1,9 @@
 export default {
   testEnvironment: "node",
-  transform: {
-    "^.+\\.[tj]sx?$": "babel-jest",
-  },
+  transform: {},
   moduleDirectories: ["node_modules", "src"],
   testMatch: ["**/__tests__/**/*.js", "**/?(*.)+(spec|test).js"],
+  testPathIgnorePatterns: ["/node_modules/", "/.history/"],
   collectCoverageFrom: [
     "src/**/*.js",
     "!src/**/*.test.js",

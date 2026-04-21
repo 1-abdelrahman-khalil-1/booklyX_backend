@@ -33,6 +33,7 @@ import {
 const SALT_ROUNDS = 10;
 const FIXED_OTP_CODE = process.env.FIXED_OTP_CODE || "333333";
 const PASSWORD_RESET_PURPOSE = "PASSWORD_RESET";
+const LOGIN_COUNTER_KEY = "login";
 
 const CODE_EXPIRES_MINUTES = parseInt(
   process.env.VERIFICATION_CODE_EXPIRES_MINUTES || "10",
@@ -71,8 +72,8 @@ export class PlatformAccessDeniedError extends AppError {
 }
 
 export class InactiveUserError extends AppError {
-  constructor() {
-    super(tr.INACTIVE_USER, 403);
+  constructor(data = null) {
+    super(tr.INACTIVE_USER, 403, undefined, data);
     this.name = "InactiveUserError";
   }
 }
@@ -118,8 +119,8 @@ export class MaxAttemptsExceededError extends AppError {
  * the user to the correct verification screen.
  */
 export class EmailNotVerifiedError extends AppError {
-  constructor() {
-    super(tr.EMAIL_NOT_VERIFIED, 403);
+  constructor(data = null) {
+    super(tr.EMAIL_NOT_VERIFIED, 403, undefined, data);
     this.name = "EmailNotVerifiedError";
   }
 }
@@ -130,10 +131,17 @@ export class EmailNotVerifiedError extends AppError {
  * client distinguish which step is pending.
  */
 export class PhoneNotVerifiedError extends AppError {
-  constructor() {
-    super(tr.PHONE_NOT_VERIFIED, 403);
+  constructor(data = null) {
+    super(tr.PHONE_NOT_VERIFIED, 403, undefined, data);
     this.name = "PhoneNotVerifiedError";
   }
+}
+
+function getVerificationFlags(user) {
+  return {
+    emailVerified: !!user?.emailVerified,
+    phoneVerified: !!user?.phoneVerified,
+  };
 }
 
 // ─── Parse Helper ─────────────────────────────────────────────────────────────
@@ -170,6 +178,17 @@ async function createVerificationCode(userId, type) {
   return code;
 }
 
+async function getNextLoginSequence() {
+  const counter = await prisma.systemCounter.upsert({
+    where: { key: LOGIN_COUNTER_KEY },
+    create: { key: LOGIN_COUNTER_KEY, value: 1 },
+    update: { value: { increment: 1 } },
+    select: { value: true },
+  });
+
+  return counter.value;
+}
+
 async function consumeVerificationCode(userId, type, code) {
   const record = await prisma.verificationCode.findFirst({
     where: { userId, type, used: false },
@@ -198,7 +217,7 @@ async function consumeVerificationCode(userId, type, code) {
 
 // ─── JWT Helper ──────────────────────────────────────────────────────────────
 
-async function issueAuthTokens(userId, role, platform) {
+async function issueAuthTokens(userId, role, platform, loginSequence) {
   const jwtSecret = process.env.JWT_SECRET;
 
   if (!jwtSecret) throw new Error("JWT_SECRET is not set.");
@@ -206,6 +225,7 @@ async function issueAuthTokens(userId, role, platform) {
   const accessToken = jwt.sign({ sub: userId, role, platform }, jwtSecret, {
     expiresIn: "1h",
   });
+  const prefixedAccessToken = `${loginSequence}|${accessToken}`;
 
   const refreshTokenString = crypto.randomBytes(40).toString("hex");
   const tokenHash = crypto
@@ -217,9 +237,9 @@ async function issueAuthTokens(userId, role, platform) {
   expiresAt.setDate(expiresAt.getDate() + 7);
 
   await prisma.refreshToken.create({
-    data: { userId, tokenHash, expiresAt },
+    data: { userId, tokenHash, expiresAt, loginSequence },
   });
-  return { token: accessToken, refreshToken: refreshTokenString };
+  return { token: prefixedAccessToken, refreshToken: refreshTokenString };
 }
 // ─── Sanitization Helper ───────────────────────────────────────────────────
 
@@ -271,7 +291,12 @@ export async function login(body, platformHeader) {
     throw new BranchAdminNotApprovedError();
   }
 
-  if (user.status !== UserStatus.ACTIVE) throw new InactiveUserError();
+  if (user.status !== UserStatus.ACTIVE) {
+    throw new InactiveUserError({
+      emailVerified: user.emailVerified,
+      phoneVerified: user.phoneVerified,
+    });
+  }
 
   if (user.role === Role.branch_admin) {
     if (
@@ -286,12 +311,22 @@ export async function login(body, platformHeader) {
     throw new PlatformAccessDeniedError();
 
   // Enforce verification funnel — email first, then phone
-  if (!user.emailVerified) throw new EmailNotVerifiedError();
-  if (!user.phoneVerified) throw new PhoneNotVerifiedError();
+  if (!user.emailVerified) {
+    throw new EmailNotVerifiedError(getVerificationFlags(user));
+  }
+  if (!user.phoneVerified) {
+    throw new PhoneNotVerifiedError(getVerificationFlags(user));
+  }
 
   await ensureClientProfile(user);
 
-  const tokens = await issueAuthTokens(user.id, user.role, platform);
+  const loginSequence = await getNextLoginSequence();
+  const tokens = await issueAuthTokens(
+    user.id,
+    user.role,
+    platform,
+    loginSequence,
+  );
 
   return { ...tokens, user: toSafeUser(user) };
 }
@@ -430,10 +465,12 @@ export async function verifyPhone(email, code, platformHeader) {
   });
 
   // Issue the auth token now that both verifications are complete
+  const loginSequence = await getNextLoginSequence();
   const tokens = await issueAuthTokens(
     updatedUser.id,
     updatedUser.role,
     platform,
+    loginSequence,
   );
 
   return { ...tokens, user: toSafeUser(updatedUser) };
@@ -574,7 +611,15 @@ export async function refresh(refreshToken, platformHeader) {
     .update(refreshToken)
     .digest("hex");
 
-  const record = await prisma.refreshToken.findUnique({ where: { tokenHash } });
+  const record = await prisma.refreshToken.findUnique({
+    where: { tokenHash },
+    select: {
+      id: true,
+      userId: true,
+      expiresAt: true,
+      loginSequence: true,
+    },
+  });
 
   if (!record) {
     throw new InvalidTokenError();
@@ -597,6 +642,11 @@ export async function refresh(refreshToken, platformHeader) {
     throw new PlatformAccessDeniedError();
   }
 
-  const tokens = await issueAuthTokens(user.id, user.role, platform);
+  const tokens = await issueAuthTokens(
+    user.id,
+    user.role,
+    platform,
+    record.loginSequence,
+  );
   return { ...tokens, role: user.role };
 }

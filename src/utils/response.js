@@ -1,9 +1,4 @@
-export function successResponse(
-  res,
-  status,
-  message,
-  data = null
-) {
+export function successResponse(res, status, message, data) {
   res.status(status).json({
     status,
     error: false,
@@ -12,15 +7,11 @@ export function successResponse(
   });
 }
 
-export function errorResponse(
-  res,
-  status,
-  message
-) {
+export function errorResponse(res, status, message, params = null) {
   res.status(status).json({
     status,
     error: true,
     message,
-    data: null,
+    params,
   });
 }

@@ -26,6 +26,8 @@ For this repository, the current maintained path is:
 - validate it locally
 - push updates to Apidog with `npm run apidog:sync`
 
+Staff mobile APIs are documented in the `/staff` section of `openapi.yaml` and should continue to use translation-key errors and enum-backed validation.
+
 ## Manual import steps
 
 1. Open Apidog.
@@ -118,50 +120,92 @@ Use this script in the Post Processor for these endpoints:
 - `/auth/refresh`
 
 ```javascript
+function setIfNotExists(key, value) {
+  if (!key || value === undefined || value === null) return;
+  const existing = pm.environment.get(key);
+  if (existing === undefined || existing === null) {
+    pm.environment.set(key, value);
+  }
+}
+
+function getFirstString(values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim() !== "") return value.trim();
+  }
+  return undefined;
+}
+
+function getFirstValue(source, keys) {
+  if (!source || typeof source !== "object") return undefined;
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === "string" && value.trim() !== "") return value.trim();
+  }
+  return undefined;
+}
+
 let json;
 try {
   json = pm.response.json();
 } catch (error) {
-  pm.console.log("Response is not JSON; skipping token extraction.");
+  if (pm.console && typeof pm.console.log === "function") {
+    pm.console.log("Response is not JSON; skipping token extraction.");
+  }
 }
 
 if (json && typeof json === "object") {
-  const data = json.data || {};
-  const roleToAccessVar = {
+  const data = json.data && typeof json.data === "object" ? json.data : {};
+  const role = getFirstString([
+    data.user && typeof data.user === "object" ? data.user.role : undefined,
+    data.role,
+    pm.environment.get("authRole"),
+    "client",
+  ]);
+
+  const accessTokenEnvKeyByRole = {
     client: "clientToken",
     staff: "staffToken",
     branch_admin: "branchAdminToken",
     super_admin: "adminToken",
   };
-  const roleToRefreshVar = {
+
+  const refreshTokenEnvKeyByRole = {
     client: "refreshClientToken",
     staff: "refreshStaffToken",
     branch_admin: "refreshBranchAdminToken",
     super_admin: "refreshAdminToken",
   };
 
-  const role =
-    (data.user && data.user.role) ||
-    data.role ||
-    pm.environment.get("authRole") ||
-    "client";
+  const accessTokenResponseKeysByRole = {
+    client: ["clientToken", "token"],
+    staff: ["staffToken", "token"],
+    branch_admin: ["branchAdminToken", "branchToken", "token"],
+    super_admin: ["adminToken", "superAdminToken", "token"],
+  };
 
-  pm.environment.set("authRole", role);
+  setIfNotExists("authRole", role);
 
-  if (data.token) {
-    pm.environment.set("authToken", data.token);
-    const accessVar = roleToAccessVar[role];
-    if (accessVar) pm.environment.set(accessVar, data.token);
+  const accessToken = getFirstValue(
+    data,
+    accessTokenResponseKeysByRole[role] || ["token"],
+  );
+  if (accessToken) {
+    setIfNotExists("authToken", accessToken);
+
+    const accessEnvKey = accessTokenEnvKeyByRole[role];
+    if (accessEnvKey) {
+      setIfNotExists(accessEnvKey, accessToken);
+    }
   }
 
-  if (data.refreshToken) {
-    pm.environment.set("refreshToken", data.refreshToken);
-    const refreshVar = roleToRefreshVar[role];
-    if (refreshVar) pm.environment.set(refreshVar, data.refreshToken);
-  }
+  const refreshToken = getFirstString([data.refreshToken]);
+  if (refreshToken) {
+    setIfNotExists("refreshToken", refreshToken);
 
-  if (data.resetToken) {
-    pm.environment.set("resetToken", data.resetToken);
+    const refreshEnvKey = refreshTokenEnvKeyByRole[role];
+    if (refreshEnvKey) {
+      setIfNotExists(refreshEnvKey, refreshToken);
+    }
   }
 }
 ```

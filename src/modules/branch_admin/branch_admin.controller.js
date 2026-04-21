@@ -6,11 +6,16 @@ import {
   createService,
   createStaff,
   deleteService,
+  deleteStaff,
   getMyServiceCategories,
   getMyServices,
+  getMyStaff,
+  getMyStaffById,
   resendApplicationCode,
   submitApplication,
+  updateBranchAdminProfile,
   updateService,
+  updateStaff,
   verifyApplicationEmail,
   verifyApplicationPhone,
 } from "./branch_admin.service.js";
@@ -62,6 +67,13 @@ function buildServicePayload(req) {
   };
 }
 
+function buildProfilePayload(req) {
+  return {
+    ...req.body,
+    logoUrl: getPublicImageUrl(req, firstUploadedFile(req, "logo")) ?? req.body.logoUrl,
+  };
+}
+
 // ─── Apply Handler ───────────────────────────────────────────────────────────
 
 export const applyHandler = asyncHandler(async (req, res) => {
@@ -105,6 +117,36 @@ export const createStaffHandler = asyncHandler(async (req, res) => {
   successResponse(res, 201, t(tr.STAFF_CREATED, lang), result);
 });
 
+export const getMyStaffHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const result = await getMyStaff(req.user.sub);
+  successResponse(res, 200, t(tr.STAFF_RETRIEVED_SUCCESSFULLY, lang), result);
+});
+
+export const updateStaffHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const result = await updateStaff(
+    {
+      ...req.body,
+      id: req.body.id ?? req.params.id,
+    },
+    req.user.sub,
+  );
+  successResponse(res, 200, t(tr.STAFF_UPDATED, lang), result);
+});
+
+export const getMyStaffByIdHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const result = await getMyStaffById(parseInt(req.params.id, 10), req.user.sub);
+  successResponse(res, 200, t(tr.STAFF_RETRIEVED_SUCCESSFULLY, lang), result);
+});
+
+export const deleteStaffHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const result = await deleteStaff({ id: req.params.id }, req.user.sub);
+  successResponse(res, 200, t(result.message, lang));
+});
+
 export const addServiceCategoryHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const result = await addServiceCategory(req.body, req.user.sub);
@@ -145,4 +187,10 @@ export const deleteServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const result = await deleteService({ id: parseInt(req.params.id, 10) }, req.user.sub);
   successResponse(res, 200, t(result.message, lang));
+});
+
+export const updateBranchAdminProfileHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const result = await updateBranchAdminProfile(buildProfilePayload(req), req.user.sub);
+  successResponse(res, 200, t(tr.PROFILE_UPDATED_SUCCESSFULLY, lang), result);
 });

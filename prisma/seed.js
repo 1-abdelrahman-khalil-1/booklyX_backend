@@ -1,4 +1,3 @@
-import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcrypt";
 import {
   ApplicationStatus,
@@ -15,6 +14,7 @@ const SUPER_ADMIN_PASSWORD = "12345678";
 const SUPER_ADMIN_PHONE = "01000000000";
 const SUPER_ADMIN_NAME = "Super Admin";
 const SALT_ROUNDS = 10;
+const LOGIN_COUNTER_KEY = "login";
 
 const SEED_USERS = [
   {
@@ -26,27 +26,29 @@ const SEED_USERS = [
     status: UserStatus.ACTIVE,
   },
   {
-    name: "Mazen Tamer",
-    email: "mazen.tamer@booklyx.com",
+    name: "Eslam Wael",
+    email: "eslam.wael@booklyx.com",
     password: "12345678",
-    phone: "01000000003",
+    phone: "01000000002",
     role: Role.client,
     status: UserStatus.ACTIVE,
   },
 ];
 const SEED_INITIAL_STAFF_USERS = [
   {
-    name: "Eslam Wael",
-    email: "eslam.wael.staff@booklyx.com",
+    name: "Mazen Tamer",
+    email: "mazen.tamer@booklyx.com",
     password: "12345678",
     phone: "01000000021",
+    age: 22,
     role: Role.staff,
     status: UserStatus.ACTIVE,
   },
   {
     name: "Abdo Badr",
-    email: "abdo.badr.staff@booklyx.com",
+    email: "abdo.badr@booklyx.com",
     password: "12345678",
+    age: 30,
     phone: "01000000022",
     role: Role.staff,
     status: UserStatus.ACTIVE,
@@ -55,7 +57,7 @@ const SEED_INITIAL_STAFF_USERS = [
 const SEED_BRANCH_APPLICATIONS = [
   {
     ownerName: "Mahmoud Ibrahim",
-    email: "mahmoud.Ibrahim@booklyx.com",
+    email: "mahmoud.ibrahim@booklyx.com",
     phone: "01000000011",
     password: "12345678",
     businessName: "Hassan Beauty Salon",
@@ -92,7 +94,7 @@ const SEED_BRANCH_APPLICATIONS = [
 // Service Categories & Services per branch
 const SEED_SERVICE_CATEGORIES = [
   {
-    branchEmail: "mahmoud.Ibrahim@booklyx.com",
+    branchEmail: "mahmoud.ibrahim@booklyx.com",
     categories: [
       { name: "Hair Care" },
       { name: "Facial Treatments" },
@@ -111,7 +113,7 @@ const SEED_SERVICE_CATEGORIES = [
 
 const SEED_SERVICES = [
   {
-    branchEmail: "mahmoud.Ibrahim@booklyx.com",
+    branchEmail: "mahmoud.ibrahim@booklyx.com",
     categoryName: "Hair Care",
     services: [
       {
@@ -129,7 +131,7 @@ const SEED_SERVICES = [
     ],
   },
   {
-    branchEmail: "mahmoud.Ibrahim@booklyx.com",
+    branchEmail: "mahmoud.ibrahim@booklyx.com",
     categoryName: "Facial Treatments",
     services: [
       {
@@ -187,17 +189,24 @@ const SEED_SERVICES = [
 // Staff mapping to branches
 const STAFF_BRANCH_MAPPING = [
   {
-    staffEmail: "eslam.wael.staff@booklyx.com",
-    branchEmail: "mahmoud.Ibrahim@booklyx.com",
+    staffEmail: "mazen.tamer@booklyx.com",
+    branchEmail: "mahmoud.ibrahim@booklyx.com",
+    age: 22,
+    startDate: new Date("2026-01-05"),
+    profileImageUrl: null,
     staffRole: StaffRole.BARBER,
     commissionPercentage: 15,
-    
+    serviceNames: ["Haircut", "Hair Coloring"],
   },
   {
-    staffEmail: "abdo.badr.staff@booklyx.com",
+    staffEmail: "abdo.badr@booklyx.com",
     branchEmail: "ahmed.samir@booklyx.com",
+    age: 30,
+    startDate: new Date("2026-01-12"),
+    profileImageUrl: null,
     staffRole: StaffRole.DOCTOR,
     commissionPercentage: 20,
+    serviceNames: ["General Checkup", "Skin Consultation"],
   },
 ];
 
@@ -228,6 +237,7 @@ const SEED_STAFF = [
     password: "12345678",
     age: 26,
     startDate: new Date("2026-01-15"),
+    profileImageUrl: null,
     staffRole: "SPA_SPECIALIST",
     commissionPercentage: 25,
   },
@@ -238,19 +248,22 @@ const SEED_STAFF = [
     password: "12345678",
     age: 28,
     startDate: new Date("2026-02-01"),
+    profileImageUrl: null,
     staffRole: "SPA_SPECIALIST",
     commissionPercentage: 22.5,
   },
 ];
 
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 async function main() {
   console.log("🌱 Starting database seed...\n");
+
+  await prisma.systemCounter.upsert({
+    where: { key: LOGIN_COUNTER_KEY },
+    update: {},
+    create: { key: LOGIN_COUNTER_KEY, value: 0 },
+  });
 
   const superAdminPasswordHash = await bcrypt.hash(
     SUPER_ADMIN_PASSWORD,
@@ -550,6 +563,9 @@ async function main() {
           where: { userId: staff.id },
           data: {
             branchId: branch.id,
+            age: staffMapping.age,
+            startDate: staffMapping.startDate,
+            profileImageUrl: staffMapping.profileImageUrl,
             staffRole: staffMapping.staffRole,
             commissionPercentage: staffMapping.commissionPercentage,
           },
@@ -559,6 +575,9 @@ async function main() {
           data: {
             userId: staff.id,
             branchId: branch.id,
+            age: staffMapping.age,
+            startDate: staffMapping.startDate,
+            profileImageUrl: staffMapping.profileImageUrl,
             staffRole: staffMapping.staffRole,
             commissionPercentage: staffMapping.commissionPercentage,
           },
@@ -571,6 +590,30 @@ async function main() {
       }));
 
       if (staffRecord) {
+        const servicesToAssign = await prisma.service.findMany({
+          where: {
+            branchId: branch.id,
+            status: ServiceApprovalStatus.APPROVED,
+            ...(staffMapping.serviceNames?.length
+              ? { name: { in: staffMapping.serviceNames } }
+              : {}),
+          },
+          select: { id: true },
+        });
+
+        await prisma.staffService.deleteMany({
+          where: { staffId: staffRecord.id },
+        });
+
+        if (servicesToAssign.length > 0) {
+          await prisma.staffService.createMany({
+            data: servicesToAssign.map((service) => ({
+              staffId: staffRecord.id,
+              serviceId: service.id,
+            })),
+          });
+        }
+
         await prisma.staffProfessionalProfile.upsert({
           where: { staffId: staffRecord.id },
           update: {},
@@ -736,6 +779,7 @@ async function main() {
         update: {
           age: staffData.age,
           startDate: staffData.startDate,
+          profileImageUrl: staffData.profileImageUrl,
           staffRole: staffData.staffRole,
           commissionPercentage: staffData.commissionPercentage,
         },
@@ -744,10 +788,41 @@ async function main() {
           branchId: approvedBranch.id,
           age: staffData.age,
           startDate: staffData.startDate,
+          profileImageUrl: staffData.profileImageUrl,
           staffRole: staffData.staffRole,
           commissionPercentage: staffData.commissionPercentage,
         },
       });
+
+      const approvedBranchServices = await prisma.service.findMany({
+        where: {
+          branchId: approvedBranch.id,
+          status: ServiceApprovalStatus.APPROVED,
+        },
+        select: { id: true },
+        orderBy: { id: "asc" },
+        take: 2,
+      });
+
+      const staffRecord = await prisma.staff.findUnique({
+        where: { userId: staffUser.id },
+        select: { id: true },
+      });
+
+      if (staffRecord) {
+        await prisma.staffService.deleteMany({
+          where: { staffId: staffRecord.id },
+        });
+
+        if (approvedBranchServices.length > 0) {
+          await prisma.staffService.createMany({
+            data: approvedBranchServices.map((service) => ({
+              staffId: staffRecord.id,
+              serviceId: service.id,
+            })),
+          });
+        }
+      }
 
       console.log(
         `✅ Seeded staff: ${staffData.name} (${staffData.staffRole})`,
@@ -778,6 +853,11 @@ async function main() {
   });
 
   console.log("\n👨‍💼 STAFF:");
+  SEED_INITIAL_STAFF_USERS.forEach((staff) => {
+    console.log(`   ${staff.email} (Password: ${staff.password})`);
+  });
+
+  console.log("\n👷 ADDITIONAL STAFF:");
   SEED_STAFF.forEach((staff) => {
     console.log(`   ${staff.email} (Password: ${staff.password})`);
   });

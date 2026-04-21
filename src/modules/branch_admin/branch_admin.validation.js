@@ -1,9 +1,9 @@
 import { z } from "zod";
 import {
-  BusinessCategory,
-  ServiceApprovalStatus,
-  StaffRole,
-  VerificationType,
+    BusinessCategory,
+    ServiceApprovalStatus,
+    StaffRole,
+    VerificationType,
 } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
 import { BranchAdminValidationError } from "./branch_admin.service.js";
@@ -19,7 +19,7 @@ export const applySchema = z.object({
   }),
   phone: z
     .string({ error: tr.PHONE_REQUIRED })
-    .regex(/^\d{10}$/, tr.PHONE_INVALID),
+    .regex(/^\d{11}$/, tr.PHONE_INVALID),
   password: z
     .string({ error: tr.PASSWORD_REQUIRED })
     .min(8, tr.PASSWORD_MIN_LENGTH),
@@ -78,19 +78,84 @@ export const createStaffSchema = z.object({
   }),
   phone: z
     .string({ error: tr.PHONE_REQUIRED })
-    .regex(/^\d{10}$/, tr.PHONE_INVALID),
+    .regex(/^\d{11}$/, tr.PHONE_INVALID),
   password: z
     .string({ error: tr.PASSWORD_REQUIRED })
     .min(8, tr.PASSWORD_MIN_LENGTH),
   staffRole: z.enum(Object.values(StaffRole), {
     error: tr.INVALID_ENUM_VALUE,
   }),
+  profileImageUrl: z.string().url().optional(),
   commissionPercentage: z.number().min(0, tr.COMMISSION_OUT_OF_RANGE).max(100, tr.COMMISSION_OUT_OF_RANGE),
   serviceIds: z
     .array(z.number().int().positive({ message: tr.INVALID_ID }), {
       error: tr.STAFF_SERVICES_REQUIRED,
     })
     .min(1, tr.STAFF_SERVICES_REQUIRED),
+});
+
+export const updateStaffSchema = z
+  .object({
+    id: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
+    name: z.string({ error: tr.NAME_REQUIRED }).trim().min(1, tr.NAME_REQUIRED).optional(),
+    email: z.email({ error: tr.EMAIL_INVALID }).optional(),
+    phone: z
+      .string({ error: tr.PHONE_REQUIRED })
+      .regex(/^\d{11}$/, tr.PHONE_INVALID)
+      .optional(),
+    age: z
+      .number({ error: tr.AGE_REQUIRED })
+      .int({ message: tr.AGE_MUST_BE_INTEGER })
+      .min(18, tr.AGE_MINIMUM)
+      .optional(),
+    startDate: z
+      .string({ error: tr.START_DATE_REQUIRED })
+      .refine((date) => !isNaN(Date.parse(date)), {
+        message: tr.INVALID_DATE_FORMAT_USE_ISO_STRING,
+      })
+      .optional(),
+    staffRole: z
+      .enum(Object.values(StaffRole), {
+        error: tr.INVALID_ENUM_VALUE,
+      })
+      .optional(),
+    profileImageUrl: z.string().url().nullable().optional(),
+    commissionPercentage: z
+      .number()
+      .min(0, tr.COMMISSION_OUT_OF_RANGE)
+      .max(100, tr.COMMISSION_OUT_OF_RANGE)
+      .optional(),
+    serviceIds: z
+      .array(z.number().int().positive({ message: tr.INVALID_ID }), {
+        error: tr.STAFF_SERVICES_REQUIRED,
+      })
+      .min(1, tr.STAFF_SERVICES_REQUIRED)
+      .optional(),
+  })
+  .superRefine((data, ctx) => {
+    const hasUpdatableField = [
+      data.name,
+      data.email,
+      data.phone,
+      data.age,
+      data.startDate,
+      data.staffRole,
+      data.profileImageUrl,
+      data.commissionPercentage,
+      data.serviceIds,
+    ].some((value) => value !== undefined);
+
+    if (!hasUpdatableField) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["id"],
+        message: tr.STAFF_UPDATE_FIELDS_REQUIRED,
+      });
+    }
+  });
+
+export const staffIdSchema = z.object({
+  id: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
 });
 
 export const addServiceCategorySchema = z.object({
@@ -152,6 +217,63 @@ export const updateServiceSchema = z.object({
 export const deleteServiceSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
+
+export const updateBranchAdminProfileSchema = z
+  .object({
+    name: z.string({ error: tr.NAME_REQUIRED }).trim().min(1, tr.NAME_REQUIRED).optional(),
+    phone: z
+      .string({ error: tr.PHONE_REQUIRED })
+      .regex(/^\d{11}$/, tr.PHONE_INVALID)
+      .optional(),
+    logoUrl: z.string().url().optional(),
+    operatingHours: z.string().trim().min(1, tr.OPERATING_HOURS_REQUIRED).optional(),
+    address: z.string().trim().min(1, tr.ADDRESS_REQUIRED).optional(),
+    currentPassword: z.string().min(1, tr.CURRENT_PASSWORD_REQUIRED).optional(),
+    newPassword: z.string().min(8, tr.PASSWORD_MIN_LENGTH).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.currentPassword && !data.newPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["newPassword"],
+        message: tr.NEW_PASSWORD_REQUIRED,
+      });
+    }
+
+    if (!data.currentPassword && data.newPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["currentPassword"],
+        message: tr.CURRENT_PASSWORD_REQUIRED,
+      });
+    }
+
+    if (data.currentPassword && data.newPassword && data.currentPassword === data.newPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["newPassword"],
+        message: tr.NEW_PASSWORD_MUST_BE_DIFFERENT,
+      });
+    }
+
+    const hasUpdatableField = [
+      data.name,
+      data.phone,
+      data.logoUrl,
+      data.operatingHours,
+      data.address,
+      data.currentPassword,
+      data.newPassword,
+    ].some((value) => value !== undefined);
+
+    if (!hasUpdatableField) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["name"],
+        message: tr.PROFILE_UPDATE_FIELDS_REQUIRED,
+      });
+    }
+  });
 
 export const verifyApplicationSchema = z.object({
   id: z.number(),

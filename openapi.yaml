@@ -9,6 +9,7 @@ info:
     - Platform-aware endpoints require `platform` header: `APP` or `WEB`.
     - Localized messages use `Accept-Language`: `en` or `ar`.
     - Protected endpoints require `Authorization: Bearer <token>`.
+    - Access token format is `<loginSequence>|<jwt>` (example: `15|eyJ...`).
     - In development, OTP is commonly `333333`.
 servers:
   - url: http://localhost:3000
@@ -18,8 +19,9 @@ servers:
 
 tags:
   - name: Auth
-  - name: Branch Admin
-  - name: Admin
+  - name: branch_admin
+  - name: staff
+  - name: super_admin
   - name: Files
 
 components:
@@ -143,6 +145,37 @@ components:
           nullable: true
           example: null
 
+    VerificationFlags:
+      type: object
+      required: [emailVerified, phoneVerified]
+      properties:
+        emailVerified:
+          type: boolean
+          example: false
+        phoneVerified:
+          type: boolean
+          example: true
+
+    LoginForbiddenErrorData:
+      type: object
+      nullable: true
+      required: [emailVerified, phoneVerified]
+      properties:
+        emailVerified:
+          type: boolean
+          example: false
+        phoneVerified:
+          type: boolean
+          example: true
+
+    LoginForbiddenError:
+      allOf:
+        - $ref: "#/components/schemas/ApiError"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/LoginForbiddenErrorData"
+
     User:
       type: object
       properties:
@@ -185,6 +218,11 @@ components:
             branchId:
               type: integer
               example: 1
+            profileImageUrl:
+              type: string
+              format: uri
+              nullable: true
+              example: https://cdn.booklyx.com/staff/mazen-tamer.png
             staffRole:
               type: string
               enum: [DOCTOR, BARBER, SPA_SPECIALIST]
@@ -209,12 +247,29 @@ components:
     AuthTokens:
       type: object
       properties:
-        token:
+        clientToken:
           type: string
+          nullable: true
+          description: Access token formatted as `<loginSequence>|<jwt>`.
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
+        staffToken:
+          type: string
+          nullable: true
+          description: Access token formatted as `<loginSequence>|<jwt>`.
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-access-token
+        branchToken:
+          type: string
+          nullable: true
+          description: Access token formatted as `<loginSequence>|<jwt>`.
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-access-token
+        superAdminToken:
+          type: string
+          nullable: true
+          description: Access token formatted as `<loginSequence>|<jwt>`.
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin-access-token
         refreshToken:
           type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh-token
 
     LoginResponseData:
       allOf:
@@ -224,7 +279,7 @@ components:
             user:
               $ref: "#/components/schemas/User"
       example:
-        token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
+        clientToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
         refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
         user:
           id: 2
@@ -246,20 +301,20 @@ components:
         email:
           type: string
           format: email
-          example: khalil@booklyx.com
+          example: abdo.khalil@booklyx.com
         password:
           type: string
           minLength: 8
           example: "12345678"
         phone:
           type: string
-          pattern: '^\\d{10}$'
-          example: "01000000009"
+          pattern: '^\\d{11}$'
+          example: "01000000001"
       example:
-        name: Nour Hassan
-        email: nour.hassan@booklyx.com
+        name: Abdo Khalil
+        email: abdo.khalil@booklyx.com
         password: "12345678"
-        phone: "01000000009"
+        phone: "01000000001"
 
     LoginRequest:
       type: object
@@ -307,7 +362,7 @@ components:
           example: abdo.khalil@booklyx.com
         phone:
           type: string
-          pattern: '^\\d{10}$'
+          pattern: '^\\d{11}$'
           example: "01000000001"
         type:
           type: string
@@ -384,22 +439,22 @@ components:
       properties:
         ownerName:
           type: string
-          example: Mona Adel
+          example: Mahmoud Ibrahim
         email:
           type: string
           format: email
-          example: mona.adel@booklyx.com
+          example: mahmoud.ibrahim@booklyx.com
         phone:
           type: string
-          pattern: '^\\d{10}$'
-          example: "0101234567"
+          pattern: '^\\d{11}$'
+          example: "01000000011"
         password:
           type: string
           minLength: 8
           example: "12345678"
         businessName:
           type: string
-          example: Glow Beauty Lounge
+          example: Hassan Beauty Salon
         category:
           type: string
           enum: [SPA, CLINIC, BARBER]
@@ -432,21 +487,21 @@ components:
           format: double
           example: 31.3368
       example:
-        ownerName: Mona Adel
-        email: mona.adel@booklyx.com
-        phone: "0101234567"
+        ownerName: Mahmoud Ibrahim
+        email: mahmoud.ibrahim@booklyx.com
+        phone: "01000000011"
         password: "12345678"
-        businessName: Glow Beauty Lounge
+        businessName: Hassan Beauty Salon
         category: SPA
-        description: Premium beauty and skincare services for women.
-        commercialRegisterNumber: CR-2026-010
-        taxId: TAX-2026-010
+        description: Premium beauty and skincare services.
+        commercialRegisterNumber: CR-2026-001
+        taxId: TAX-2026-001
         city: Cairo
         district: Nasr City
         address: 12 Makram Ebeid Street
         latitude: 30.0626
         longitude: 31.3368
-        logoUrl: https://cdn.booklyx.com/branches/glow-lounge-logo.png
+        logoUrl: https://cdn.booklyx.com/branches/hassan-beauty-salon-logo.png
 
     BranchAdminApplyRequestMultipart:
       allOf:
@@ -488,40 +543,118 @@ components:
 
     CreateStaffRequest:
       type: object
-      required: [name, email, phone, password, staffRole, commissionPercentage]
+      required:
+        [
+          name,
+          email,
+          phone,
+          password,
+          age,
+          startDate,
+          staffRole,
+          commissionPercentage,
+          serviceIds,
+        ]
       properties:
         name:
           type: string
-          example: Eslam Wael
+          example: Mazen Tamer
         email:
           type: string
           format: email
-          example: eslam.wael.staff@booklyx.com
+          example: mazen.tamer@booklyx.com
         phone:
           type: string
-          pattern: '^\\d{10}$'
+          pattern: '^\\d{11}$'
           example: "01000000021"
         password:
           type: string
           minLength: 8
           example: "12345678"
+        age:
+          type: integer
+          minimum: 18
+          example: 28
+        startDate:
+          type: string
+          format: date-time
+          example: 2026-03-01T00:00:00.000Z
         staffRole:
           type: string
           enum: [DOCTOR, BARBER, SPA_SPECIALIST]
           default: BARBER
           example: BARBER
+        profileImageUrl:
+          type: string
+          format: uri
+          example: https://cdn.booklyx.com/staff/mazen-tamer.png
         commissionPercentage:
           type: number
           minimum: 0
           maximum: 100
           example: 15
+        serviceIds:
+          type: array
+          minItems: 1
+          items:
+            type: integer
+            minimum: 1
+          example: [1, 2]
       example:
-        name: Eslam Wael
-        email: eslam.wael.staff@booklyx.com
+        name: Mazen Tamer
+        email: mazen.tamer@booklyx.com
         phone: "01000000021"
         password: "12345678"
+        age: 28
+        startDate: 2026-03-01T00:00:00.000Z
         staffRole: BARBER
+        profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
         commissionPercentage: 15
+        serviceIds: [1, 2]
+
+    UpdateStaffRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Mazen Tamer Updated
+        email:
+          type: string
+          format: email
+          example: mazen.updated@booklyx.com
+        phone:
+          type: string
+          pattern: '^\\d{11}$'
+          example: "01000000031"
+        age:
+          type: integer
+          minimum: 18
+          example: 29
+        startDate:
+          type: string
+          format: date-time
+          example: 2026-04-01T00:00:00.000Z
+        staffRole:
+          type: string
+          enum: [DOCTOR, BARBER, SPA_SPECIALIST]
+          example: BARBER
+        profileImageUrl:
+          type: string
+          format: uri
+          nullable: true
+          example: https://cdn.booklyx.com/staff/mazen-tamer-v2.png
+        commissionPercentage:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 20
+        serviceIds:
+          type: array
+          minItems: 1
+          items:
+            type: integer
+            minimum: 1
+          example: [2, 3]
 
     AddServiceCategoryRequest:
       type: object
@@ -940,23 +1073,23 @@ components:
   examples:
     RegisterClientRequest:
       value:
-        name: Mazen Tamer
-        email: mazen.tamer@booklyx.com
+        name: Abdo Khalil
+        email: abdo.khalil@booklyx.com
         password: "12345678"
-        phone: "01000000003"
+        phone: "01000000001"
     LoginClientRequest:
       value:
-        email: mazen.tamer@booklyx.com
+        email: eslam.wael@booklyx.com
         password: "12345678"
         role: client
     LoginStaffRequest:
       value:
-        email: eslam.wael.staff@booklyx.com
+        email: mazen.tamer@booklyx.com
         password: "12345678"
         role: staff
     LoginBranchAdminRequest:
       value:
-        email: mahmoud.Ibrahim@booklyx.com
+        email: mahmoud.ibrahim@booklyx.com
         password: "12345678"
         role: branch_admin
     LoginSuperAdminRequest:
@@ -966,32 +1099,32 @@ components:
         role: super_admin
     VerifyClientCodeRequest:
       value:
-        email: mazen.tamer@booklyx.com
+        email: abdo.khalil@booklyx.com
         code: "333333"
     VerifyBranchApplicationCodeRequest:
       value:
-        email: mahmoud.Ibrahim@booklyx.com
+        email: mahmoud.ibrahim@booklyx.com
         code: "333333"
     ResendEmailCodeRequest:
       value:
-        email: mazen.tamer@booklyx.com
-        phone: "01000000003"
+        email: abdo.khalil@booklyx.com
+        phone: "01000000001"
         type: EMAIL
     ResendPhoneCodeRequest:
       value:
-        email: mazen.tamer@booklyx.com
-        phone: "01000000003"
+        email: abdo.khalil@booklyx.com
+        phone: "01000000001"
         type: PHONE
     ResendPasswordResetCodeRequest:
       value:
-        email: mazen.tamer@booklyx.com
+        email: abdo.khalil@booklyx.com
         type: PASSWORD_RESET
     PasswordResetRequest:
       value:
-        email: mazen.tamer@booklyx.com
+        email: abdo.khalil@booklyx.com
     PasswordResetVerifyRequest:
       value:
-        email: mazen.tamer@booklyx.com
+        email: abdo.khalil@booklyx.com
         code: "333333"
     ResetPasswordRequest:
       value:
@@ -1003,7 +1136,7 @@ components:
     BranchAdminApplyRequest:
       value:
         ownerName: Mahmoud Ibrahim
-        email: mahmoud.Ibrahim@booklyx.com
+        email: mahmoud.ibrahim@booklyx.com
         phone: "01000000011"
         password: "12345678"
         businessName: Hassan Beauty Salon
@@ -1019,16 +1152,31 @@ components:
         logoUrl: https://cdn.booklyx.com/branches/hassan-beauty-salon-logo.png
     BranchAdminResendRequest:
       value:
-        email: mahmoud.Ibrahim@booklyx.com
+        email: mahmoud.ibrahim@booklyx.com
         type: PHONE
     CreateStaffRequest:
       value:
-        name: Eslam Wael
-        email: eslam.wael.staff@booklyx.com
+        name: Mazen Tamer
+        email: mazen.tamer@booklyx.com
         phone: "01000000021"
         password: "12345678"
+        age: 28
+        startDate: 2026-03-01T00:00:00.000Z
         staffRole: BARBER
+        profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
         commissionPercentage: 15
+        serviceIds: [1, 2]
+    UpdateStaffRequest:
+      value:
+        name: Mazen Tamer Updated
+        email: mazen.updated@booklyx.com
+        phone: "01000000031"
+        age: 29
+        startDate: 2026-04-01T00:00:00.000Z
+        staffRole: BARBER
+        profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer-v2.png
+        commissionPercentage: 20
+        serviceIds: [2, 3]
     AddServiceCategoryRequest:
       value:
         name: Hair Care
@@ -1052,6 +1200,351 @@ components:
     RejectReasonRequest:
       value:
         reason: Missing required documents.
+    StaffCompleteAppointmentRequest:
+      value:
+        notes: Client requested layered finish.
+    StaffAddServiceRequest:
+      value:
+        serviceId: 1
+    StaffCreateAvailabilityRequest:
+      value:
+        dayOfWeek: 1
+        startTime: "09:00"
+        endTime: "17:00"
+    StaffUpdateAvailabilityRequest:
+      value:
+        dayOfWeek: 2
+        startTime: "10:00"
+        endTime: "18:00"
+    VerifyEmailSuccessResponse:
+      value:
+        status: 200
+        error: false
+        message: Email verified successfully.
+        data: null
+    ResendCodeSuccessResponse:
+      value:
+        status: 200
+        error: false
+        message: Verification code sent successfully.
+        data: null
+    PasswordResetRequestSuccessResponse:
+      value:
+        status: 200
+        error: false
+        message: Password reset code sent successfully.
+        data: null
+    ResetPasswordSuccessResponse:
+      value:
+        status: 200
+        error: false
+        message: Password reset successfully.
+        data: null
+    BranchVerifyEmailSuccessResponse:
+      value:
+        status: 200
+        error: false
+        message: Application email verified successfully.
+        data: null
+    BranchVerifyPhoneSuccessResponse:
+      value:
+        status: 200
+        error: false
+        message: Application phone verified successfully.
+        data: null
+    BranchResendCodeSuccessResponse:
+      value:
+        status: 200
+        error: false
+        message: Application verification code sent successfully.
+        data: null
+    BranchAdminStaffListResponse:
+      value:
+        status: 200
+        error: false
+        message: Staff retrieved successfully.
+        data:
+          - id: 7
+            name: Mazen Tamer
+            email: mazen.tamer@booklyx.com
+            phone: "01000000021"
+            role: staff
+            status: ACTIVE
+            emailVerified: true
+            phoneVerified: true
+            staff:
+              id: 7
+              branchId: 1
+              profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
+              age: 28
+              staffRole: BARBER
+              commissionPercentage: 15
+          - id: 8
+            name: Abdo Badr
+            email: abdo.badr@booklyx.com
+            phone: "01000000022"
+            role: staff
+            status: ACTIVE
+            emailVerified: true
+            phoneVerified: true
+            staff:
+              id: 8
+              branchId: 1
+              profileImageUrl: null
+              age: 30
+              staffRole: DOCTOR
+              commissionPercentage: 20
+    BranchAdminStaffDetailResponse:
+      value:
+        status: 200
+        error: false
+        message: Staff retrieved successfully.
+        data:
+          id: 7
+          name: Mazen Tamer
+          email: mazen.tamer@booklyx.com
+          phone: "01000000021"
+          role: staff
+          status: ACTIVE
+          emailVerified: true
+          phoneVerified: true
+          staff:
+            id: 7
+            branchId: 1
+            profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
+            age: 28
+            staffRole: BARBER
+            commissionPercentage: 15
+    BranchAdminStaffUpdatedResponse:
+      value:
+        status: 200
+        error: false
+        message: Staff updated successfully.
+        data:
+          id: 7
+          name: Mazen Tamer Updated
+          email: mazen.updated@booklyx.com
+          phone: "01000000031"
+          role: staff
+          status: ACTIVE
+          emailVerified: true
+          phoneVerified: true
+          staff:
+            id: 7
+            branchId: 1
+            profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer-v2.png
+            age: 29
+            staffRole: BARBER
+            commissionPercentage: 20
+    BranchAdminStaffDeletedResponse:
+      value:
+        status: 200
+        error: false
+        message: Staff deleted successfully.
+        data: null
+    ServiceDeletedResponse:
+      value:
+        status: 200
+        error: false
+        message: Service deleted successfully.
+        data: null
+    StaffProfileResponse:
+      value:
+        status: 200
+        error: false
+        message: Profile retrieved successfully.
+        data:
+          name: Mazen Tamer
+          phone: "01000000021"
+          profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
+          staffRole: BARBER
+          age: 28
+          commissionPercentage: 15
+          branch:
+            businessName: Hassan Beauty Salon
+            category: SPA
+          professionalProfile:
+            bio: Senior stylist focused on modern cuts and beard shaping.
+            experience: 6
+            specialization: BARBER
+          averageRating: 4.7
+          reviewCount: 34
+    StaffScheduleResponse:
+      value:
+        status: 200
+        error: false
+        message: Schedule retrieved successfully.
+        data:
+          today:
+            - id: 8a1be4b3-c1d7-4a96-8c8b-6e87e5bd3a31
+              clientName: Abdo Khalil
+              serviceName: Haircut
+              scheduledAt: 2026-04-21T10:00:00.000Z
+              duration: 30
+              status: CONFIRMED
+          upcoming:
+            - id: bbe0cc3f-c49a-45eb-b2d4-a03ea3afd6e9
+              clientName: Eslam Wael
+              serviceName: Hair Coloring
+              scheduledAt: 2026-04-24T13:30:00.000Z
+              duration: 60
+              status: CONFIRMED
+    StaffRequestsResponse:
+      value:
+        status: 200
+        error: false
+        message: Appointment requests retrieved successfully.
+        data:
+          - id: 4d827f47-8aaf-4480-a8c4-d53ccf7b2af0
+            clientName: Abdo Khalil
+            serviceName: Haircut
+            scheduledAt: 2026-04-22T11:00:00.000Z
+            duration: 30
+          - id: 6eecf393-131e-4869-a474-f50afba95e9f
+            clientName: Eslam Wael
+            serviceName: Hair Coloring
+            scheduledAt: 2026-04-22T14:00:00.000Z
+            duration: 60
+    StaffAppointmentAcceptedResponse:
+      value:
+        status: 200
+        error: false
+        message: Appointment accepted successfully.
+        data:
+          id: 4d827f47-8aaf-4480-a8c4-d53ccf7b2af0
+          status: CONFIRMED
+    StaffAppointmentRejectedResponse:
+      value:
+        status: 200
+        error: false
+        message: Appointment rejected successfully.
+        data:
+          id: 6eecf393-131e-4869-a474-f50afba95e9f
+          status: CANCELED
+    StaffAppointmentStartedResponse:
+      value:
+        status: 200
+        error: false
+        message: Appointment started successfully.
+        data:
+          id: 8a1be4b3-c1d7-4a96-8c8b-6e87e5bd3a31
+          status: IN_PROGRESS
+    StaffAppointmentCompletedResponse:
+      value:
+        status: 200
+        error: false
+        message: Appointment completed successfully.
+        data:
+          id: 8a1be4b3-c1d7-4a96-8c8b-6e87e5bd3a31
+          status: COMPLETED
+    StaffIncomeResponse:
+      value:
+        status: 200
+        error: false
+        message: Income statistics retrieved successfully.
+        data:
+          totalEarnings: 560
+          serviceCount: 14
+          range: weekly
+          dailyStats:
+            - date: 2026-04-15
+              earnings: 80
+              serviceCount: 2
+            - date: 2026-04-16
+              earnings: 120
+              serviceCount: 3
+            - date: 2026-04-17
+              earnings: 200
+              serviceCount: 5
+            - date: 2026-04-20
+              earnings: 160
+              serviceCount: 4
+    StaffServicesResponse:
+      value:
+        status: 200
+        error: false
+        message: Services retrieved successfully.
+        data:
+          - id: 1
+            name: Haircut
+            description: Professional haircut with styling
+            price: 150
+            durationMinutes: 30
+            imageUrl: https://cdn.booklyx.com/services/haircut.png
+            status: APPROVED
+          - id: 8
+            name: Hair Coloring
+            description: Premium hair coloring service
+            price: 300
+            durationMinutes: 60
+            imageUrl: https://cdn.booklyx.com/services/hair-coloring.png
+            status: APPROVED
+    StaffServiceAddedResponse:
+      value:
+        status: 201
+        error: false
+        message: Service added to your profile successfully.
+        data:
+          serviceId: 1
+    StaffAvailabilityListResponse:
+      value:
+        status: 200
+        error: false
+        message: Availability slots retrieved successfully.
+        data:
+          - id: 1
+            dayOfWeek: 1
+            startTime: "09:00"
+            endTime: "17:00"
+            status: AVAILABLE
+          - id: 2
+            dayOfWeek: 3
+            startTime: "10:00"
+            endTime: "18:00"
+            status: AVAILABLE
+    StaffAvailabilityCreatedResponse:
+      value:
+        status: 201
+        error: false
+        message: Availability slot created successfully.
+        data:
+          id: 3
+          dayOfWeek: 5
+          startTime: "12:00"
+          endTime: "20:00"
+          status: AVAILABLE
+    StaffAvailabilityUpdatedResponse:
+      value:
+        status: 200
+        error: false
+        message: Availability slot updated successfully.
+        data:
+          id: 3
+          dayOfWeek: 5
+          startTime: "13:00"
+          endTime: "21:00"
+          status: AVAILABLE
+    StaffAvailabilityDeletedResponse:
+      value:
+        status: 200
+        error: false
+        message: Availability slot deleted successfully.
+        data:
+          id: 3
+    StaffAvailableSlotsResponse:
+      value:
+        status: 200
+        error: false
+        message: Available slots retrieved successfully.
+        data:
+          date: 2026-04-25
+          serviceId: 1
+          available: true
+          slots:
+            - startTime: 2026-04-25T09:00:00.000Z
+              endTime: 2026-04-25T09:30:00.000Z
+            - startTime: 2026-04-25T09:30:00.000Z
+              endTime: 2026-04-25T10:00:00.000Z
     RegisterSuccessResponse:
       value:
         status: 201
@@ -1064,13 +1557,13 @@ components:
         error: false
         message: Login successful.
         data:
-          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mazen-client-access-token
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mazen-client-refresh-token
+          clientToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
+          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
           user:
             id: 3
-            name: Mazen Tamer
-            email: mazen.tamer@booklyx.com
-            phone: "01000000003"
+            name: Abdo Khalil
+            email: abdo.khalil@booklyx.com
+            phone: "01000000001"
             role: client
             status: ACTIVE
             emailVerified: true
@@ -1081,12 +1574,12 @@ components:
         error: false
         message: Login successful.
         data:
-          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eslam-staff-access-token
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eslam-staff-refresh-token
+          staffToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-access-token
+          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-refresh-token
           user:
             id: 6
-            name: Eslam Wael
-            email: eslam.wael.staff@booklyx.com
+            name: Mazen Tamer
+            email: mazen.tamer@booklyx.com
             phone: "01000000021"
             role: staff
             status: ACTIVE
@@ -1098,12 +1591,12 @@ components:
         error: false
         message: Login successful.
         data:
-          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mahmoud-branch-admin-access-token
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mahmoud-branch-admin-refresh-token
+          branchToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-access-token
+          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-refresh-token
           user:
             id: 4
             name: Mahmoud Ibrahim
-            email: mahmoud.Ibrahim@booklyx.com
+            email: mahmoud.ibrahim@booklyx.com
             phone: "01000000011"
             role: branch_admin
             status: ACTIVE
@@ -1115,10 +1608,10 @@ components:
         error: false
         message: Login successful.
         data:
-          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin-access-token
+          superAdminToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin-access-token
           user:
             id: 1
-            name: Super Admin
+            name: super_admin
             email: admin@booklyx.com
             phone: "01000000000"
             role: super_admin
@@ -1137,13 +1630,13 @@ components:
         error: false
         message: Phone verified successfully.
         data:
-          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mazen-client-access-token
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mazen-client-refresh-token
+          clientToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
+          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
           user:
-            id: 3
-            name: Mazen Tamer
-            email: mazen.tamer@booklyx.com
-            phone: "01000000003"
+            id: 2
+            name: Abdo Khalil
+            email: abdo.khalil@booklyx.com
+            phone: "01000000001"
             role: client
             status: ACTIVE
             emailVerified: true
@@ -1161,8 +1654,8 @@ components:
         error: false
         message: Login successful.
         data:
-          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mazen-client-access-token-next
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mazen-client-refresh-token-next
+          clientToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token-next
+          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token-next
           role: client
     RefreshStaffSuccessResponse:
       value:
@@ -1170,8 +1663,8 @@ components:
         error: false
         message: Login successful.
         data:
-          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eslam-staff-access-token-next
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eslam-staff-refresh-token-next
+          staffToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-access-token-next
+          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-refresh-token-next
           role: staff
     RefreshBranchAdminSuccessResponse:
       value:
@@ -1179,8 +1672,8 @@ components:
         error: false
         message: Login successful.
         data:
-          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mahmoud-branch-admin-access-token-next
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mahmoud-branch-admin-refresh-token-next
+          branchToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-access-token-next
+          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-refresh-token-next
           role: branch_admin
     RefreshSuperAdminSuccessResponse:
       value:
@@ -1188,9 +1681,33 @@ components:
         error: false
         message: Login successful.
         data:
-          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.super-admin-access-token-next
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.super-admin-refresh-token-next
+          superAdminToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin-access-token-next
+          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin-refresh-token-next
           role: super_admin
+    LoginEmailNotVerifiedErrorResponse:
+      value:
+        status: 403
+        error: true
+        message: Email is not verified.
+        data:
+          emailVerified: false
+          phoneVerified: false
+    LoginPhoneNotVerifiedErrorResponse:
+      value:
+        status: 403
+        error: true
+        message: Phone is not verified.
+        data:
+          emailVerified: true
+          phoneVerified: false
+    LoginInactiveErrorResponse:
+      value:
+        status: 403
+        error: true
+        message: User account is inactive.
+        data:
+          emailVerified: false
+          phoneVerified: true
     BranchApplicationSubmittedResponse:
       value:
         status: 201
@@ -1204,8 +1721,8 @@ components:
         message: Staff created successfully.
         data:
           id: 7
-          name: Eslam Wael
-          email: eslam.wael.staff@booklyx.com
+          name: Mazen Tamer
+          email: mazen.tamer@booklyx.com
           phone: "01000000021"
           role: staff
           status: ACTIVE
@@ -1214,6 +1731,7 @@ components:
           staff:
             id: 7
             branchId: 1
+            profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
             staffRole: BARBER
             commissionPercentage: 15
             isActive: true
@@ -1327,7 +1845,6 @@ components:
             ownerName: Mahmoud Ibrahim
             businessName: Hassan Beauty Salon
             email: mahmoud.ibrahim@booklyx.com
-            phone: "01000000011"
             category: SPA
             description: Premium beauty and skincare services.
             commercialRegisterNumber: CR-2026-001
@@ -1529,6 +2046,8 @@ paths:
     post:
       tags: [Auth]
       summary: Register client account
+      description: Register client account.
+      operationId: postAuthRegister
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeader"
@@ -1562,53 +2081,8 @@ paths:
     post:
       tags: [Auth]
       summary: Login
-      x-post-response-script: |-
-        let json;
-        try {
-          json = pm.response.json();
-        } catch (error) {
-          pm.console.log("Response is not JSON; skipping token extraction.");
-        }
-
-        if (json && typeof json === "object") {
-          const data = json.data || {};
-          const roleToAccessVar = {
-            client: "clientToken",
-            staff: "staffToken",
-            branch_admin: "branchAdminToken",
-            super_admin: "adminToken",
-          };
-          const roleToRefreshVar = {
-            client: "refreshClientToken",
-            staff: "refreshStaffToken",
-            branch_admin: "refreshBranchAdminToken",
-            super_admin: "refreshAdminToken",
-          };
-
-          const role =
-            (data.user && data.user.role) ||
-            data.role ||
-            pm.environment.get("authRole") ||
-            "client";
-
-          pm.environment.set("authRole", role);
-
-          if (data.token) {
-            pm.environment.set("authToken", data.token);
-            const accessVar = roleToAccessVar[role];
-            if (accessVar) pm.environment.set(accessVar, data.token);
-          }
-
-          if (data.refreshToken) {
-            pm.environment.set("refreshToken", data.refreshToken);
-            const refreshVar = roleToRefreshVar[role];
-            if (refreshVar) pm.environment.set(refreshVar, data.refreshToken);
-          }
-
-          if (data.resetToken) {
-            pm.environment.set("resetToken", data.resetToken);
-          }
-        }
+      description: Login.
+      operationId: postAuthLogin
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeader"
@@ -1653,7 +2127,18 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          description: Forbidden login state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginForbiddenError"
+              examples:
+                emailNotVerified:
+                  $ref: "#/components/examples/LoginEmailNotVerifiedErrorResponse"
+                phoneNotVerified:
+                  $ref: "#/components/examples/LoginPhoneNotVerifiedErrorResponse"
+                inactiveUser:
+                  $ref: "#/components/examples/LoginInactiveErrorResponse"
         "404":
           $ref: "#/components/responses/NotFound"
         "429":
@@ -1663,6 +2148,8 @@ paths:
     post:
       tags: [Auth]
       summary: Verify email OTP
+      description: Verify email OTP.
+      operationId: postAuthVerifyEmail
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
       requestBody:
@@ -1683,7 +2170,7 @@ paths:
                 $ref: "#/components/schemas/ApiSuccess"
               examples:
                 default:
-                  $ref: "#/components/examples/SimpleSuccessResponse"
+                  $ref: "#/components/examples/VerifyEmailSuccessResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "404":
@@ -1695,36 +2182,8 @@ paths:
     post:
       tags: [Auth]
       summary: Verify phone OTP and login
-      x-post-response-script: |-
-        let json;
-        try {
-          json = pm.response.json();
-        } catch (error) {
-          pm.console.log("Response is not JSON; skipping token extraction.");
-        }
-
-        if (json && typeof json === "object") {
-          const data = json.data || {};
-          const role =
-            (data.user && data.user.role) ||
-            data.role ||
-            pm.environment.get("authRole") ||
-            "client";
-
-          pm.environment.set("authRole", role);
-
-          if (data.token) {
-            pm.environment.set("authToken", data.token);
-            if (role === "client") pm.environment.set("clientToken", data.token);
-          }
-
-          if (data.refreshToken) {
-            pm.environment.set("refreshToken", data.refreshToken);
-            if (role === "client") {
-              pm.environment.set("refreshClientToken", data.refreshToken);
-            }
-          }
-        }
+      description: Verify phone OTP and login.
+      operationId: postAuthVerifyPhone
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeader"
@@ -1765,6 +2224,8 @@ paths:
     post:
       tags: [Auth]
       summary: Resend verification/reset code
+      description: Resend verification/reset code.
+      operationId: postAuthResendCode
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
       requestBody:
@@ -1789,7 +2250,7 @@ paths:
                 $ref: "#/components/schemas/ApiSuccess"
               examples:
                 default:
-                  $ref: "#/components/examples/SimpleSuccessResponse"
+                  $ref: "#/components/examples/ResendCodeSuccessResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "404":
@@ -1801,6 +2262,8 @@ paths:
     post:
       tags: [Auth]
       summary: Request password reset
+      description: Request password reset.
+      operationId: postAuthRequestPasswordReset
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
       requestBody:
@@ -1821,7 +2284,7 @@ paths:
                 $ref: "#/components/schemas/ApiSuccess"
               examples:
                 default:
-                  $ref: "#/components/examples/SimpleSuccessResponse"
+                  $ref: "#/components/examples/PasswordResetRequestSuccessResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "429":
@@ -1831,20 +2294,8 @@ paths:
     post:
       tags: [Auth]
       summary: Verify password reset OTP
-      x-post-response-script: |-
-        let json;
-        try {
-          json = pm.response.json();
-        } catch (error) {
-          pm.console.log("Response is not JSON; skipping reset token extraction.");
-        }
-
-        if (json && typeof json === "object") {
-          const data = json.data || {};
-          if (data.resetToken) {
-            pm.environment.set("resetToken", data.resetToken);
-          }
-        }
+      description: Verify password reset OTP.
+      operationId: postAuthVerifyPasswordReset
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
       requestBody:
@@ -1882,6 +2333,8 @@ paths:
     post:
       tags: [Auth]
       summary: Reset password using reset token
+      description: Reset password using reset token.
+      operationId: postAuthResetPassword
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
       requestBody:
@@ -1902,7 +2355,7 @@ paths:
                 $ref: "#/components/schemas/ApiSuccess"
               examples:
                 default:
-                  $ref: "#/components/examples/SimpleSuccessResponse"
+                  $ref: "#/components/examples/ResetPasswordSuccessResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
 
@@ -1910,44 +2363,8 @@ paths:
     post:
       tags: [Auth]
       summary: Refresh access token
-      x-post-response-script: |-
-        let json;
-        try {
-          json = pm.response.json();
-        } catch (error) {
-          pm.console.log("Response is not JSON; skipping token extraction.");
-        }
-
-        if (json && typeof json === "object") {
-          const data = json.data || {};
-          const roleToAccessVar = {
-            client: "clientToken",
-            staff: "staffToken",
-            branch_admin: "branchAdminToken",
-            super_admin: "adminToken",
-          };
-          const roleToRefreshVar = {
-            client: "refreshClientToken",
-            staff: "refreshStaffToken",
-            branch_admin: "refreshBranchAdminToken",
-            super_admin: "refreshAdminToken",
-          };
-
-          const role = data.role || pm.environment.get("authRole") || "client";
-          pm.environment.set("authRole", role);
-
-          if (data.token) {
-            pm.environment.set("authToken", data.token);
-            const accessVar = roleToAccessVar[role];
-            if (accessVar) pm.environment.set(accessVar, data.token);
-          }
-
-          if (data.refreshToken) {
-            pm.environment.set("refreshToken", data.refreshToken);
-            const refreshVar = roleToRefreshVar[role];
-            if (refreshVar) pm.environment.set(refreshVar, data.refreshToken);
-          }
-        }
+      description: Refresh access token.
+      operationId: postAuthRefresh
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeader"
@@ -1988,8 +2405,10 @@ paths:
 
   /branch-admin/apply:
     post:
-      tags: [Branch Admin]
-      summary: Submit branch admin application
+      tags: [branch_admin]
+      summary: Submit branch_admin application
+      description: Submit branch_admin application.
+      operationId: postBranchAdminApply
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
       requestBody:
@@ -2021,8 +2440,10 @@ paths:
 
   /branch-admin/verify-email:
     post:
-      tags: [Branch Admin]
+      tags: [branch_admin]
       summary: Verify application email OTP
+      description: Verify application email OTP.
+      operationId: postBranchAdminVerifyEmail
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
       requestBody:
@@ -2043,7 +2464,7 @@ paths:
                 $ref: "#/components/schemas/ApiSuccess"
               examples:
                 default:
-                  $ref: "#/components/examples/SimpleSuccessResponse"
+                  $ref: "#/components/examples/BranchVerifyEmailSuccessResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "404":
@@ -2053,8 +2474,10 @@ paths:
 
   /branch-admin/verify-phone:
     post:
-      tags: [Branch Admin]
+      tags: [branch_admin]
       summary: Verify application phone OTP
+      description: Verify application phone OTP.
+      operationId: postBranchAdminVerifyPhone
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
       requestBody:
@@ -2075,7 +2498,7 @@ paths:
                 $ref: "#/components/schemas/ApiSuccess"
               examples:
                 default:
-                  $ref: "#/components/examples/SimpleSuccessResponse"
+                  $ref: "#/components/examples/BranchVerifyPhoneSuccessResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "404":
@@ -2085,8 +2508,10 @@ paths:
 
   /branch-admin/resend-code:
     post:
-      tags: [Branch Admin]
-      summary: Resend branch admin application OTP
+      tags: [branch_admin]
+      summary: Resend branch_admin application OTP
+      description: Resend branch_admin application OTP.
+      operationId: postBranchAdminResendCode
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
       requestBody:
@@ -2107,7 +2532,7 @@ paths:
                 $ref: "#/components/schemas/ApiSuccess"
               examples:
                 default:
-                  $ref: "#/components/examples/SimpleSuccessResponse"
+                  $ref: "#/components/examples/BranchResendCodeSuccessResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "404":
@@ -2117,8 +2542,10 @@ paths:
 
   /branch-admin/create-staff:
     post:
-      tags: [Branch Admin]
+      tags: [branch_admin]
       summary: Create staff user
+      description: Create staff user.
+      operationId: postBranchAdminCreateStaff
       security:
         - bearerAuth: []
       parameters:
@@ -2155,10 +2582,166 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /branch-admin/staff/my-staff:
+    get:
+      tags: [branch_admin]
+      summary: List current branch_admin staff
+      description: List current branch_admin staff.
+      operationId: getBranchAdminStaffMyStaff
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Staff fetched
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/BranchAdminStaffListResponse"
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /branch-admin/staff/{id}:
+    get:
+      tags: [branch_admin]
+      summary: Get staff by id for current branch_admin
+      description: Get staff by id for current branch_admin.
+      operationId: getBranchAdminStaffById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Staff fetched
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/BranchAdminStaffDetailResponse"
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    put:
+      tags: [branch_admin]
+      summary: Update staff by id for current branch_admin
+      description: Update staff by id for current branch_admin.
+      operationId: putBranchAdminStaffById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStaffRequest"
+            examples:
+              default:
+                $ref: "#/components/examples/UpdateStaffRequest"
+      responses:
+        "200":
+          description: Staff updated
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/BranchAdminStaffUpdatedResponse"
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [branch_admin]
+      summary: Delete staff by id for current branch_admin
+      description: Delete staff by id for current branch_admin.
+      operationId: deleteBranchAdminStaffById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Staff deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
+              examples:
+                default:
+                  $ref: "#/components/examples/BranchAdminStaffDeletedResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /branch-admin/services/categories:
     post:
-      tags: [Branch Admin]
+      tags: [branch_admin]
       summary: Add service category
+      description: Add service category.
+      operationId: postBranchAdminServicesCategories
       security:
         - bearerAuth: []
       parameters:
@@ -2196,8 +2779,10 @@ paths:
           $ref: "#/components/responses/Forbidden"
 
     get:
-      tags: [Branch Admin]
-      summary: List service categories for current branch admin
+      tags: [branch_admin]
+      summary: List service categories for current branch_admin
+      description: List service categories for current branch_admin.
+      operationId: getBranchAdminServicesCategories
       security:
         - bearerAuth: []
       parameters:
@@ -2227,8 +2812,10 @@ paths:
 
   /branch-admin/services/create-service:
     post:
-      tags: [Branch Admin]
+      tags: [branch_admin]
       summary: Create service (pending approval)
+      description: Create service (pending approval).
+      operationId: postBranchAdminServicesCreateService
       security:
         - bearerAuth: []
       parameters:
@@ -2270,8 +2857,10 @@ paths:
 
   /branch-admin/services/my-services:
     get:
-      tags: [Branch Admin]
-      summary: List current branch admin services
+      tags: [branch_admin]
+      summary: List current branch_admin services
+      description: List current branch_admin services.
+      operationId: getBranchAdminServicesMyServices
       security:
         - bearerAuth: []
       parameters:
@@ -2302,8 +2891,10 @@ paths:
 
   /branch-admin/services/{id}:
     put:
-      tags: [Branch Admin]
+      tags: [branch_admin]
       summary: Update service by id
+      description: Update service by id.
+      operationId: putBranchAdminServicesById
       security:
         - bearerAuth: []
       parameters:
@@ -2352,8 +2943,10 @@ paths:
           $ref: "#/components/responses/NotFound"
 
     delete:
-      tags: [Branch Admin]
+      tags: [branch_admin]
       summary: Delete service by id
+      description: Delete service by id.
+      operationId: deleteBranchAdminServicesById
       security:
         - bearerAuth: []
       parameters:
@@ -2374,7 +2967,7 @@ paths:
                 $ref: "#/components/schemas/ApiSuccess"
               examples:
                 default:
-                  $ref: "#/components/examples/SimpleSuccessResponse"
+                  $ref: "#/components/examples/ServiceDeletedResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -2384,10 +2977,627 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /staff/profile:
+    get:
+      tags: [staff]
+      summary: Get authenticated staff profile
+      description: Get authenticated staff profile.
+      operationId: getStaffProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Staff profile fetched
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/StaffProfileResponse"
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          phone:
+                            type: string
+                          profileImageUrl:
+                            type: string
+                            nullable: true
+                          staffRole:
+                            type: string
+                            enum: [DOCTOR, BARBER, SPA_SPECIALIST]
+                          age:
+                            type: integer
+                          commissionPercentage:
+                            type: number
+                          branch:
+                            type: object
+                            properties:
+                              businessName:
+                                type: string
+                              category:
+                                type: string
+                          professionalProfile:
+                            type: object
+                            nullable: true
+                          averageRating:
+                            type: number
+                          reviewCount:
+                            type: integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /staff/schedule:
+    get:
+      tags: [staff]
+      summary: Get staff schedule for a day
+      description: Get staff schedule for a day.
+      operationId: getStaffSchedule
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Schedule fetched
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/StaffScheduleResponse"
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          today:
+                            type: array
+                            items:
+                              type: object
+                          upcoming:
+                            type: array
+                            items:
+                              type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /staff/requests:
+    get:
+      tags: [staff]
+      summary: List pending appointment requests
+      description: List pending appointment requests.
+      operationId: getStaffRequests
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Requests fetched
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/StaffRequestsResponse"
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /staff/appointments/{appointmentId}/accept:
+    patch:
+      tags: [staff]
+      summary: Accept a pending appointment
+      description: Accept a pending appointment.
+      operationId: patchStaffAppointmentsByAppointmentIdAccept
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Appointment accepted
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/StaffAppointmentAcceptedResponse"
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /staff/appointments/{appointmentId}/reject:
+    patch:
+      tags: [staff]
+      summary: Reject a pending appointment
+      description: Reject a pending appointment.
+      operationId: patchStaffAppointmentsByAppointmentIdReject
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Appointment rejected
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/StaffAppointmentRejectedResponse"
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /staff/appointments/{appointmentId}/start:
+    patch:
+      tags: [staff]
+      summary: Mark an appointment as in progress
+      description: Mark an appointment as in progress.
+      operationId: patchStaffAppointmentsByAppointmentIdStart
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Appointment started
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/StaffAppointmentStartedResponse"
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /staff/appointments/{appointmentId}/complete:
+    patch:
+      tags: [staff]
+      summary: Mark an appointment as completed
+      description: Mark an appointment as completed.
+      operationId: patchStaffAppointmentsByAppointmentIdComplete
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            examples:
+              default:
+                $ref: "#/components/examples/StaffCompleteAppointmentRequest"
+            schema:
+              type: object
+              properties:
+                notes:
+                  type: string
+      responses:
+        "200":
+          description: Appointment completed
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/StaffAppointmentCompletedResponse"
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /staff/income:
+    get:
+      tags: [staff]
+      summary: Get staff income statistics
+      description: Get staff income statistics.
+      operationId: getStaffIncome
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+        - name: range
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [weekly, monthly]
+      responses:
+        "200":
+          description: Income statistics fetched
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/StaffIncomeResponse"
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          totalEarnings:
+                            type: number
+                          serviceCount:
+                            type: integer
+                          range:
+                            type: string
+                          dailyStats:
+                            type: array
+                            items:
+                              type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /staff/services:
+    get:
+      tags: [staff]
+      summary: List staff services
+      description: List staff services.
+      operationId: getStaffServices
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Services fetched
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/StaffServicesResponse"
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [staff]
+      summary: Add a service to the staff profile
+      description: Add a service to the staff profile.
+      operationId: postStaffServices
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            examples:
+              default:
+                $ref: "#/components/examples/StaffAddServiceRequest"
+            schema:
+              type: object
+              required: [serviceId]
+              properties:
+                serviceId:
+                  type: integer
+                  minimum: 1
+      responses:
+        "201":
+          description: Service added
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/StaffServiceAddedResponse"
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /staff/availability:
+    get:
+      tags: [staff]
+      summary: List staff availability slots
+      description: List staff availability slots.
+      operationId: getStaffAvailability
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Availability fetched
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/StaffAvailabilityListResponse"
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [staff]
+      summary: Create a staff availability slot
+      description: Create a staff availability slot.
+      operationId: postStaffAvailability
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            examples:
+              default:
+                $ref: "#/components/examples/StaffCreateAvailabilityRequest"
+            schema:
+              type: object
+              required: [dayOfWeek, startTime, endTime]
+              properties:
+                dayOfWeek:
+                  type: integer
+                  minimum: 0
+                  maximum: 6
+                startTime:
+                  type: string
+                endTime:
+                  type: string
+      responses:
+        "201":
+          description: Availability created
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/StaffAvailabilityCreatedResponse"
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /staff/availability/{availabilityId}:
+    put:
+      tags: [staff]
+      summary: Update a staff availability slot
+      description: Update a staff availability slot.
+      operationId: putStaffAvailabilityByAvailabilityId
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: availabilityId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            examples:
+              default:
+                $ref: "#/components/examples/StaffUpdateAvailabilityRequest"
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Availability updated
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/StaffAvailabilityUpdatedResponse"
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [staff]
+      summary: Delete a staff availability slot
+      description: Delete a staff availability slot.
+      operationId: deleteStaffAvailabilityByAvailabilityId
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: availabilityId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Availability deleted
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/StaffAvailabilityDeletedResponse"
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /staff/available-slots:
+    get:
+      tags: [staff]
+      summary: Get available booking slots for a service
+      description: Get available booking slots for a service.
+      operationId: getStaffAvailableSlots
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: serviceId
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Available slots fetched
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/StaffAvailableSlotsResponse"
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          date:
+                            type: string
+                          serviceId:
+                            type: integer
+                          available:
+                            type: boolean
+                          slots:
+                            type: array
+                            items:
+                              type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   /admin/applications:
     get:
-      tags: [Admin]
+      tags: [super_admin]
       summary: List branch applications
+      description: List branch applications.
+      operationId: getAdminApplications
       security:
         - bearerAuth: []
       parameters:
@@ -2418,8 +3628,10 @@ paths:
 
   /admin/applications/{id}:
     get:
-      tags: [Admin]
+      tags: [super_admin]
       summary: Get application details
+      description: Get application details.
+      operationId: getAdminApplicationsById
       security:
         - bearerAuth: []
       parameters:
@@ -2455,8 +3667,10 @@ paths:
 
   /admin/applications/{id}/approve:
     post:
-      tags: [Admin]
+      tags: [super_admin]
       summary: Approve branch application
+      description: Approve branch application.
+      operationId: postAdminApplicationsByIdApprove
       security:
         - bearerAuth: []
       parameters:
@@ -2494,8 +3708,10 @@ paths:
 
   /admin/applications/{id}/reject:
     post:
-      tags: [Admin]
+      tags: [super_admin]
       summary: Reject branch application
+      description: Reject branch application.
+      operationId: postAdminApplicationsByIdReject
       security:
         - bearerAuth: []
       parameters:
@@ -2537,8 +3753,10 @@ paths:
 
   /admin/services/pending:
     get:
-      tags: [Admin]
+      tags: [super_admin]
       summary: List pending services
+      description: List pending services.
+      operationId: getAdminServicesPending
       security:
         - bearerAuth: []
       parameters:
@@ -2568,8 +3786,10 @@ paths:
 
   /admin/services/{id}/approve:
     post:
-      tags: [Admin]
+      tags: [super_admin]
       summary: Approve pending service
+      description: Approve pending service.
+      operationId: postAdminServicesByIdApprove
       security:
         - bearerAuth: []
       parameters:
@@ -2607,8 +3827,10 @@ paths:
 
   /admin/services/{id}/reject:
     post:
-      tags: [Admin]
+      tags: [super_admin]
       summary: Reject pending service
+      description: Reject pending service.
+      operationId: postAdminServicesByIdReject
       security:
         - bearerAuth: []
       parameters:
@@ -2657,6 +3879,7 @@ paths:
     get:
       tags: [Files]
       summary: Download sensitive file (requires authentication)
+      operationId: getFilesDownloadByFilename
       description: Download sensitive files (documents, certificates) by stored filename. Requires user authentication. Access control is enforced server-side.
       security:
         - bearerAuth: []

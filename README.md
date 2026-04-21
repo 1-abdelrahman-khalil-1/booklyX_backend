@@ -118,6 +118,8 @@ platform: APP
 Authorization: Bearer <token>
 ```
 
+Access token format: `<loginSequence>|<jwt>` (example: `15|eyJ...`).
+
 ## Development OTP Note
 
 - In development, OTP is fixed to `333333`.
@@ -125,36 +127,37 @@ Authorization: Bearer <token>
 
 ## Seeded Accounts
 
-### Super Admin
+### super_admin
 
-| Field | Value |
-| --- | --- |
-| Email | `admin@booklyx.com` |
-| Password | `12345678` |
-| Phone | `01000000000` |
-| Platform | `WEB` |
-| Role | `super_admin` |
-
-### Staff Accounts
-
-| Name | Email | Password | Phone | Branch | Role |
-| --- | --- | --- | --- | --- | --- |
-| Eslam Wael | `eslam.wael.staff@booklyx.com` | `12345678` | `01000000021` | Hassan Beauty Salon | `BARBER` |
-| Abdo Badr | `abdo.badr.staff@booklyx.com` | `12345678` | `01000000022` | Samir Health Clinic | `DOCTOR` |
+| Field    | Value               |
+| -------- | ------------------- |
+| Email    | `admin@booklyx.com` |
+| Password | `12345678`          |
+| Phone    | `01000000000`       |
+| Platform | `WEB`               |
+| Role     | `super_admin`       |
 
 ### Client Accounts
 
-| Name | Email | Password | Phone |
-| --- | --- | --- | --- |
+| Name        | Email                     | Password   | Phone         |
+| ----------- | ------------------------- | ---------- | ------------- |
 | Abdo Khalil | `abdo.khalil@booklyx.com` | `12345678` | `01000000001` |
-| Mazen Tamer | `mazen.tamer@booklyx.com` | `12345678` | `01000000003` |
+| Eslam Wael  | `eslam.wael@booklyx.com`  | `12345678` | `01000000002` |
 
-### Branch Admin Accounts
+### Staff Accounts (Initial)
 
-| Owner Name | Email | Password | Phone | Business Name | Category |
-| --- | --- | --- | --- | --- | --- |
-| Mahmoud Ibrahim | `mahmoud.ibrahim@booklyx.com` | `12345678` | `01000000011` | Hassan Beauty Salon | `SPA` |
-| Ahmed Samir | `ahmed.samir@booklyx.com` | `12345678` | `01000000012` | Samir Health Clinic | `CLINIC` |
+| Name        | Email                     | Password   | Phone         |
+| ----------- | ------------------------- | ---------- | ------------- |
+| Mazen Tamer | `mazen.tamer@booklyx.com` | `12345678` | `01000000021` |
+| Abdo Badr   | `abdo.badr@booklyx.com`   | `12345678` | `01000000022` |
+
+### branch_admin Accounts
+
+| Owner Name      | Email                         | Password   | Phone         | Business Name       | Category |
+| --------------- | ----------------------------- | ---------- | ------------- | ------------------- | -------- |
+| Mahmoud Ibrahim | `mahmoud.ibrahim@booklyx.com` | `12345678` | `01000000011` | Hassan Beauty Salon | `SPA`    |
+| Ahmed Samir     | `ahmed.samir@booklyx.com`     | `12345678` | `01000000012` | Samir Health Clinic | `CLINIC` |
+| Eslam Wael      | `eslam.branch@booklyx.com`    | `12345678` | `01000000020` | Eslam Premium Spa   | `SPA`    |
 
 ## Typical Flows
 
@@ -181,7 +184,7 @@ Authorization: Bearer <token>
 1. POST /branch-admin/apply
 2. POST /branch-admin/verify-email
 3. POST /branch-admin/verify-phone
-4. Wait for super admin approval
+4. Wait for super_admin approval
 5. POST /auth/login with role=branch_admin
 6. POST /branch-admin/create-staff
 7. POST /branch-admin/services

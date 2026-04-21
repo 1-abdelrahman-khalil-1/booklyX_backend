@@ -164,10 +164,10 @@ Primary lifecycle:
 - Service must be approved.
 - Confirmation requires successful payment when payment is required by flow.
 
-### 4.7 Branch Admin Re-Apply Policy (Mandatory)
+### 4.7 branch_admin Re-Apply Policy (Mandatory)
 
-- Onboarding flow: `branch admin submits application` -> `super admin approves/rejects`.
-- If application is rejected, branch admin is allowed to apply again.
+- Onboarding flow: `branch_admin submits application` -> `super_admin approves/rejects`.
+- If application is rejected, branch_admin is allowed to apply again.
 - For `BranchAdmin` applications, `email` and `phone` are NOT globally unique historical identifiers.
 - Do not enforce permanent uniqueness on rejected application records.
 - Enforce conflict checks in service layer based on active workflow status (for example: prevent duplicates for pending/in-review applications, but allow re-apply after rejection according to business rules).
@@ -216,6 +216,8 @@ Before finalizing any implementation, verify:
 - No duplicate/unnecessary DB calls.
 - No business logic in controller.
 - No hardcoded user-facing text (must use translation keys).
+- If Prisma models changed, `prisma/seed.js` was updated in the same change and Prisma client was regenerated.
+- If the change requires database schema work, use `npx prisma migrate dev --name <descriptive-name>` and only use `npx prisma migrate reset` when drift exists and the development-data loss is explicitly acceptable.
 
 ---
 
