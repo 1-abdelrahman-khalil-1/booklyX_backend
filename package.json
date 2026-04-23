@@ -1,7 +1,7 @@
 {
   "name": "booklyx_backend",
   "version": "1.0.0",
-  "description": "Backend API for BooklyX (graduation project), built with **Node.js**, **Express 5**, **TypeScript**, **Prisma 6**, **Zod**, and **PostgreSQL**.",
+  "description": "Backend API for BooklyX (graduation project), built with **Node.js**, **Express 5**, **TypeScript**, **Prisma 6**, **Zod**, and **MySQL**.",
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
@@ -44,7 +44,6 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
     "nodemailer": "^8.0.1",
-    "pg": "^8.18.0",
     "prisma": "^6.16.3",
     "zod": "^4.3.6"
   },

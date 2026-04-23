@@ -2,11 +2,11 @@
 
 ![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-blue?logo=postgresql&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-4479A1?logo=mysql&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES2022-F7DF1E?logo=javascript&logoColor=black)
 
-Backend API for BooklyX, built with Node.js, Express 5, Prisma, Zod, and PostgreSQL.
+Backend API for BooklyX, built with Node.js, Express 5, Prisma, Zod, and MySQL.
 
 ## Table of Contents
 
@@ -45,7 +45,7 @@ Core route groups:
 - Node.js
 - Express 5
 - Prisma ORM
-- PostgreSQL
+- MySQL
 - Zod validation
 - Jest + Supertest
 

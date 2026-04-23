@@ -6,7 +6,7 @@ This guide covers the actual local setup flow for the current repository.
 
 - Node.js 18+
 - npm
-- PostgreSQL
+- MySQL
 
 ## 1. Install dependencies
 
@@ -27,7 +27,7 @@ copy .env.example .env
 Recommended variables:
 
 ```bash
-DATABASE_URL="postgresql://username:password@localhost:5432/booklyx"
+DATABASE_URL="mysql://USER:PASSWORD@localhost:3306/DB_NAME"
 JWT_SECRET="replace-with-a-long-random-secret"
 NODE_ENV="development"
 PORT="3000"
@@ -132,7 +132,7 @@ npm run api:export:apidog
 
 Check:
 
-- PostgreSQL is running
+- MySQL is running
 - `DATABASE_URL` is correct
 - the target database exists
 

@@ -359,11 +359,12 @@ async function main() {
     console.log(`👤 Seeded staff: ${staff.email} (${staff.role})`);
   }
 
-  const branchAdminTableState = await prisma.$queryRaw`
-        SELECT to_regclass('"public"."BranchAdmin"')::text AS table_name
-    `;
-
-  const branchAdminTableExists = !!branchAdminTableState[0]?.table_name;
+  let branchAdminTableExists = true;
+  try {
+    await prisma.branchAdmin.count();
+  } catch {
+    branchAdminTableExists = false;
+  }
 
   if (!branchAdminTableExists) {
     console.log(
