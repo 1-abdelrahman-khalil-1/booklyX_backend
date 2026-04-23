@@ -265,7 +265,7 @@ npm start
 That runs:
 
 ```bash
-prisma migrate deploy && node src/server.js
+prisma migrate deploy && node app.js
 ```
 
 For Railway deployment, make sure these are set:
