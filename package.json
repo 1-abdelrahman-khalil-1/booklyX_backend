@@ -7,7 +7,7 @@
     "start": "node app.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "dev": "node --watch app.js",
+    "dev": "nodemon  --watch app.js",
     "postinstall": "prisma generate",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "openapi:validate": "npm exec swagger-cli validate openapi.yaml",
@@ -57,5 +57,8 @@
   "bugs": {
     "url": "https://github.com/1-abdelrahman-khalil-1/booklyX_backend/issues"
   },
-  "homepage": "https://github.com/1-abdelrahman-khalil-1/booklyX_backend#readme"
+  "homepage": "https://github.com/1-abdelrahman-khalil-1/booklyX_backend#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
 }
