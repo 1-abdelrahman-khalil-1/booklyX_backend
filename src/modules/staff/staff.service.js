@@ -8,6 +8,7 @@ import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import { IncomeRange } from "../../utils/enums.js";
+import { id } from "zod/locales";
 
 // ─── Custom Error Classes ───────────────────────────────────────────────
 class StaffNotFoundError extends AppError {
@@ -110,6 +111,7 @@ export async function getStaffProfile(userId) {
   }
 
   return {
+    id: staff.id,
     name: staff.user.name,
     phone: staff.user.phone,
     profileImageUrl: staff.profileImageUrl,
@@ -122,10 +124,10 @@ export async function getStaffProfile(userId) {
     },
     professionalProfile: staff.professionalProfile
       ? {
-          bio: staff.professionalProfile.bio,
-          experience: staff.professionalProfile.yearsOfExperience,
-          specialization: staff.professionalProfile.specialization,
-        }
+        bio: staff.professionalProfile.bio,
+        experience: staff.professionalProfile.yearsOfExperience,
+        specialization: staff.professionalProfile.specialization,
+      }
       : null,
     averageRating: staff.averageRating,
     reviewCount: staff.reviewCount,
@@ -364,8 +366,8 @@ export async function startAppointment(userId, appointmentId) {
   return updated;
 }
 
-export async function completeAppointment(userId, appointmentId, notes) {
-  const staffId = await getStaffIdByUserId(userId);
+export async function completeAppointment(userId, appointmentId, data) {
+  const staff = await getStaffProfile(userId);
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     select: {
@@ -379,14 +381,20 @@ export async function completeAppointment(userId, appointmentId, notes) {
     throw new AppointmentNotFoundError();
   }
 
-  if (appointment.staffId !== staffId) {
+  if (appointment.staffId !== staff.id) {
     throw new AppointmentAccessError();
   }
 
   if (appointment.status !== AppointmentStatus.IN_PROGRESS) {
     throw new InvalidAppointmentStatusError();
   }
-
+  const excution = await prisma.serviceExecution.create({
+    data: {
+      appointmentId,
+      notes: data.notes,
+      attachments: data.attachments,
+    },
+  });
   const updated = await prisma.appointment.update({
     where: { id: appointmentId },
     data: { status: AppointmentStatus.COMPLETED },
@@ -396,7 +404,18 @@ export async function completeAppointment(userId, appointmentId, notes) {
     },
   });
 
-  return updated;
+  if (staff.staffRole === staffRole.DOCTOR) {
+    return {
+      ...updated,
+      notes: excution.notes,
+      attachments: excution.attachments,
+    }
+  } else {
+    return {
+      ...updated,
+      notes: excution.notes,
+    };
+  }
 }
 
 // ─── Income Tracking ────────────────────────────────────────────────────

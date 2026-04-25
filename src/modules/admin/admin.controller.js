@@ -2,22 +2,26 @@ import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
-    approveApplication,
-    approveService,
-    getApplicationDetail,
-    listApplications,
-    listPendingServices,
-    rejectApplication,
-    rejectService,
+  approveApplication,
+  approveService,
+  getApplicationDetail,
+  listApplications,
+  listPendingServices,
+  rejectApplication,
+  rejectService,
 } from "./admin.service.js";
-import { applicationParamSchema, validateAdminInput } from "./admin.validation.js";
+import {
+  applicationParamSchema,
+  rejectApplicationSchema,
+  rejectServiceSchema,
+  validateAdminInput,
+} from "./admin.validation.js";
 
 // ─── List Applications Handler ──────────────────────────────────────────────
 
 export const listApplicationsHandler = asyncHandler(async (req, res) => {
-  const status = req.query.status;
   const lang = getLanguage(req);
-  const result = await listApplications(status);
+  const result = await listApplications();
   successResponse(
     res,
     200,
@@ -55,7 +59,7 @@ export const approveApplicationHandler = asyncHandler(async (req, res) => {
 export const rejectApplicationHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { id } = validateAdminInput(applicationParamSchema, req.params);
-  const { reason } = req.body;
+  const { reason } = validateAdminInput(rejectApplicationSchema, req.body);
   const result = await rejectApplication(id, reason);
   successResponse(res, 200, t(result.message, lang));
 });
@@ -76,7 +80,7 @@ export const approveServiceHandler = asyncHandler(async (req, res) => {
 export const rejectServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { id } = validateAdminInput(applicationParamSchema, req.params);
-  const { reason } = req.body;
+  const { reason } = validateAdminInput(rejectServiceSchema, req.body);
   const result = await rejectService(id, reason);
   successResponse(res, 200, t(result.message, lang), result.service);
 });

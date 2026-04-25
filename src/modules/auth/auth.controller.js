@@ -13,12 +13,26 @@ import {
   verifyPasswordReset,
   verifyPhone,
 } from "./auth.service.js";
+import {
+  loginSchema,
+  registerSchema,
+  requestPasswordResetSchema,
+  resendCodeSchema,
+  resetPasswordSchema,
+  validateAuthInput,
+  verifyEmailSchema,
+  verifyPasswordResetSchema,
+  verifyPhoneSchema,
+} from "./auth.validation.js";
+
 // ─── Login ────────────────────────────────────────────────────────────────────
 
 export const loginHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const platformHeader = req.headers["platform"];
-  const result = await login(req.body, platformHeader);
+  const data = validateAuthInput(loginSchema, req.body);
+  const platform = validateAuthInput(platformSchema, platformHeader);
+  const result = await login(data, platform);
 
   // if platform is web set refresh token in cookies
   if (platformHeader === Platform.WEB) {
@@ -39,22 +53,25 @@ export const loginHandler = asyncHandler(async (req, res) => {
 export const registerHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const platformHeader = req.headers["platform"];
-  await register(req.body, platformHeader);
+  const data = validateAuthInput(registerSchema, req.body);
+  const platform = validateAuthInput(platformSchema, platformHeader);
+  await register(data, platform);
   successResponse(res, 201, t(tr.REGISTER_SUCCESS, lang));
 });
 
 export const verifyEmailHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { email, code } = req.body;
+  const { email, code } = validateAuthInput(verifyEmailSchema, req.body);
   await verifyEmail(email, code);
   successResponse(res, 200, t(tr.EMAIL_VERIFIED_SUCCESS, lang));
 });
 
 export const verifyPhoneHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { email, code } = req.body;
+  const { email, code } = validateAuthInput(verifyPhoneSchema, req.body);
   const platformHeader = req.headers["platform"];
-  const result = await verifyPhone(email, code, platformHeader);
+  const platform = validateAuthInput(platformSchema, platformHeader);
+  const result = await verifyPhone(email, code, platform);
 
   if (platformHeader === Platform.WEB) {
     res.cookie("refreshToken", result.refreshToken, {
@@ -73,28 +90,28 @@ export const verifyPhoneHandler = asyncHandler(async (req, res) => {
 
 export const requestPasswordResetHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { email } = req.body;
+  const { email } = validateAuthInput(requestPasswordResetSchema, req.body);
   await requestPasswordReset(email);
   successResponse(res, 200, t(tr.PASSWORD_RESET_EMAIL_SENT, lang));
 });
 
 export const verifyPasswordResetHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { email, code } = req.body;
+  const { email, code } = validateAuthInput(verifyPasswordResetSchema, req.body);
   const result = await verifyPasswordReset(email, code);
   successResponse(res, 200, t(tr.PASSWORD_RESET_OTP_VERIFIED, lang), result);
 });
 
 export const resetPasswordHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { resetToken, newPassword } = req.body;
+  const { resetToken, newPassword } = validateAuthInput(resetPasswordSchema, req.body);
   await resetPassword(resetToken, newPassword);
   successResponse(res, 200, t(tr.PASSWORD_RESET_SUCCESS, lang));
 });
 
 export const resendCodeHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { email, phone, type } = req.body;
+  const { email, phone, type } = validateAuthInput(resendCodeSchema, req.body);
   await resendCode(email, phone, type);
   successResponse(res, 200, t(tr.VERIFICATION_CODE_SENT, lang));
 });
@@ -102,6 +119,7 @@ export const resendCodeHandler = asyncHandler(async (req, res) => {
 export const refreshHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const platformHeader = req.headers["platform"];
+  const platform = validateAuthInput(platformSchema, platformHeader);
 
   // Priority: read from cookie on WEB, fallback to body
   const refreshToken =
@@ -109,7 +127,7 @@ export const refreshHandler = asyncHandler(async (req, res) => {
       ? req.cookies.refreshToken
       : req.body.refreshToken;
 
-  const result = await refresh(refreshToken, platformHeader);
+  const result = await refresh(refreshToken, platform);
 
   if (platformHeader === Platform.WEB) {
     res.cookie("refreshToken", result.refreshToken, {

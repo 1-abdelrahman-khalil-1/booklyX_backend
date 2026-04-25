@@ -219,84 +219,101 @@
 
 ## 16. Module File Patterns (Reference)
 
-### 16.1 `[module].controller.js`
+### 16.1 `[module].controller.js` — Request Entry + Validation
 
 ```javascript
 import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import { someServiceFunction } from "./example.service.js";
+import { someSchema, validateModuleInput } from "./example.validation.js";
 
 export const exampleHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await someServiceFunction(req.body);
+
+  // ✅ VALIDATE INPUT in controller before passing to service
+  const data = validateModuleInput(someSchema, req.body);
+
+  // ✅ Pass validated data to service (service receives clean data)
+  const result = await someServiceFunction(data);
+
   successResponse(res, 200, t(tr.SUCCESS_KEY, lang), result);
 });
 ```
 
-### 16.2 `[module].service.js`
+### 16.2 `[module].service.js` — Business Logic + DB Access
 
 ```javascript
 import prisma from "../../lib/prisma.js";
 import { tr } from "../../lib/i18n/index.js";
 import { AppError } from "../../utils/AppError.js";
 
-export class ModuleValidationError extends AppError {
+// ✅ Domain errors (for business logic, not input validation)
+export class EntityNotFoundError extends AppError {
+  constructor() {
+    super(tr.ENTITY_NOT_FOUND, 404);
+    this.name = "EntityNotFoundError";
+  }
+}
+
+export class DuplicateEntityError extends AppError {
+  constructor(message) {
+    super(message, 409);
+    this.name = "DuplicateEntityError";
+  }
+}
+
+export async function someServiceFunction(data) {
+  // ✅ NO validation here — data is already validated by controller
+  // ✅ Work directly with validated data (no safeParse, no validateInput)
+
+  const entity = await prisma.someModel.findUnique({
+    where: { id: data.id },
+    select: { id: true },
+  });
+
+  if (!entity) {
+    throw new EntityNotFoundError();
+  }
+
+  return entity;
+}
+
+// ✅ File upload handling: Accept file URLs from controller
+export async function createWithAttachment(data) {
+  // data.attachmentUrl is already a URL (uploaded and validated by controller)
+  const record = await prisma.someModel.create({
+    data: {
+      title: data.title,
+      attachmentUrl: data.attachmentUrl, // Already a URL, not a file
+    },
+  });
+  return record;
+}
+```
+
+### 16.3 `[module].validation.js` — Zod Schemas + Validation Logic
+
+```javascript
+import { z } from "zod";
+import { tr } from "../../lib/i18n/index.js";
+import { DomainError } from "./example.service.js"; // Adjust name
+
+class ModuleValidationError extends DomainError {
   constructor(message, params) {
     super(message, 400, params);
     this.name = "ModuleValidationError";
   }
 }
 
-export async function someServiceFunction(payload) {
-  if (!payload?.id) {
-    throw new ModuleValidationError(tr.INVALID_ID);
-  }
-
-  const entity = await prisma.someModel.findUnique({
-    where: { id: payload.id },
-    select: { id: true },
-  });
-
-  if (!entity) {
-    throw new AppError(tr.NOT_FOUND, 404);
-  }
-
-  return entity;
-}
-```
-
-### 16.3 `[module].routes.js`
-
-```javascript
-import { Router } from "express";
-import { Role } from "../../generated/prisma/client.js";
-import { authenticate, authorize } from "../../middleware/authenticate.js";
-import { someHandler } from "./example.controller.js";
-
-const moduleRouter = Router();
-
-moduleRouter.get(
-  "/example",
-  authenticate,
-  authorize(Role.branch_admin),
-  someHandler,
-);
-
-export default moduleRouter;
-```
-
-### 16.4 `[module].validation.js`
-
-```javascript
-import { z } from "zod";
-import { tr } from "../../lib/i18n/index.js";
-import { ModuleValidationError } from "./example.service.js";
-
 export const someSchema = z.object({
   id: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
+  title: z.string().min(1, tr.TITLE_REQUIRED),
+  // ✅ For file uploads, expect URL strings (files uploaded in controller)
+  attachmentUrl: z.string().url().optional(),
 });
 
+// ✅ Validate any input, handle validation errors
 export function validateModuleInput(schema, data) {
   const result = schema.safeParse(data);
   if (result.success) return result.data;
@@ -317,14 +334,145 @@ export function validateModuleInput(schema, data) {
 }
 ```
 
-## 17. Implementation Checklist (Quick)
+### 16.4 `[module].controller.js` — File Upload Handling
+
+```javascript
+// For controllers that handle file uploads (images, attachments, etc.)
+
+import multer from "multer"; // Already configured middleware
+import { asyncHandler } from "../../utils/asyncHandler.js";
+
+function getUploadedFileUrl(req, fieldName) {
+  const files = req.files?.[fieldName];
+  const file = Array.isArray(files) ? files[0] : undefined;
+  if (!file) return undefined;
+
+  // ✅ Return the full URL (assuming file middleware sets file.path or similar)
+  return `${req.protocol}://${req.get("host")}/files/public/${file.filename}`;
+}
+
+function getUploadedFilesUrls(req, fieldName) {
+  const files = req.files?.[fieldName];
+  if (!files || files.length === 0) return [];
+
+  return files.map(
+    (file) =>
+      `${req.protocol}://${req.get("host")}/files/public/${file.filename}`,
+  );
+}
+
+export const createWithAttachmentHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+
+  // ✅ Handle file upload in controller
+  const attachmentUrl = getUploadedFileUrl(req, "attachment");
+
+  // ✅ Build validated data with URL
+  const data = validateModuleInput(someSchema, {
+    ...req.body,
+    attachmentUrl,
+  });
+
+  // ✅ Pass to service with URL (not file object)
+  const result = await someServiceFunction(data);
+
+  successResponse(res, 201, t(tr.SUCCESS_KEY, lang), result);
+});
+
+export const createWithMultipleAttachmentsHandler = asyncHandler(
+  async (req, res) => {
+    const lang = getLanguage(req);
+
+    // ✅ Handle multiple file uploads
+    const attachmentUrls = getUploadedFilesUrls(req, "attachments");
+
+    // ✅ Validate with URLs in array
+    const data = validateModuleInput(multipleAttachmentsSchema, {
+      ...req.body,
+      attachments: attachmentUrls,
+    });
+
+    const result = await someServiceFunction(data);
+    successResponse(res, 201, t(tr.SUCCESS_KEY, lang), result);
+  },
+);
+```
+
+### 16.5 `[module].routes.js`
+
+```javascript
+import { Router } from "express";
+import multer from "multer"; // Express file upload middleware
+import { Role } from "../../generated/prisma/client.js";
+import { authenticate, authorize } from "../../middleware/authenticate.js";
+import {
+  someHandler,
+  createWithAttachmentHandler,
+} from "./example.controller.js";
+
+const upload = multer({ dest: "uploads/" }); // Configure as needed
+const moduleRouter = Router();
+
+moduleRouter.get(
+  "/example",
+  authenticate,
+  authorize(Role.branch_admin),
+  someHandler,
+);
+
+// ✅ File upload routes include multer middleware
+moduleRouter.post(
+  "/with-attachment",
+  authenticate,
+  authorize(Role.branch_admin),
+  upload.single("attachment"), // Handle single file
+  createWithAttachmentHandler,
+);
+
+moduleRouter.post(
+  "/with-attachments",
+  authenticate,
+  authorize(Role.branch_admin),
+  upload.array("attachments", 10), // Handle multiple files (max 10)
+  createWithAttachmentsHandler,
+);
+
+export default moduleRouter;
+```
+
+---
+
+## 17. File Upload Pattern
+
+Files are **NEVER** stored in database as raw file objects. Follow this pattern:
+
+1. **Controller receives file** → upload middleware (`multer`) handles it
+2. **Controller converts file to URL** → use helper functions to build file URL
+3. **Controller validates URL** → include URL in validation schema (as string URL)
+4. **Service receives URL** → stores the URL in database (string field, not file)
+5. **Schema** → attachments/images are arrays of URLs or single URL strings
+
+✅ **Example Flow**:
+
+- Request: `POST /service` with `FormData { files: [file1, file2], title: "..." }`
+- Middleware: `multer` uploads files → stored in `uploads/` folder
+- Controller: Builds URLs → `["http://api.com/files/public/abc123.jpg", ...]`
+- Validation: Confirms they're valid URLs
+- Service: Stores `attachments: ["http://api.com/files/public/abc123.jpg", ...]` in DB
+- Response: Returns record with URL strings (client fetches images from URLs)
+
+## 18. Implementation Checklist (Quick)
 
 - Add/extend module files in `src/modules/<module>/`
 - Add or update Zod schema in `[module].validation.js`
-- Keep business logic and Prisma calls inside `[module].service.js`
+- ✅ **NEW PATTERN**: Validation MUST happen in `[module].controller.js` before calling service
+- ✅ All business logic and Prisma calls inside `[module].service.js`
+- Services receive already-validated data (no validation inside services)
+- ✅ Domain errors in service extend `AppError` and describe business logic failures (not input validation)
 - Throw domain errors extending `AppError` with `tr.KEY`
 - Ensure all user-facing messages/errors use translation keys (no hardcoded text)
 - Use `asyncHandler` + `successResponse` in controller
+- ✅ **FOR FILE UPLOADS**: Handle file upload in controller, build URL, pass URL to service (not file object)
 - Register routes in `src/routes/index.js`
 - Add/update service-layer Jest tests in `__tests__`
 - If Prisma schema changes, update `prisma/seed.js` in the same change and regenerate Prisma client.
@@ -332,7 +480,7 @@ export function validateModuleInput(schema, data) {
 - If API surface changed: update OpenAPI docs and run `npm run apidog:sync`
 - If you add a mobile-only module like `staff`, keep it under `src/modules/staff/` and protect it with `Role.staff`
 
-## 18. OpenAPI Endpoint Pattern (Required)
+## 19. OpenAPI Endpoint Pattern (Required)
 
 - Every endpoint in `openapi.yaml` MUST include:
   - `tags`

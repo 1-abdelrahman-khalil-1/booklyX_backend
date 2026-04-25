@@ -2,27 +2,37 @@ import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
-    createOffer,
-    listBranchOffers,
-    toggleOffer,
-    updateOffer,
+  createOffer,
+  listBranchOffers,
+  toggleOffer,
+  updateOffer,
 } from "./offers.service.js";
+import {
+  createOfferSchema,
+  offerIdSchema,
+  updateOfferSchema,
+  validateOffersInput,
+} from "./offers.validation.js";
 
 export const createOfferHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await createOffer(req.body, req.user.sub);
+  const data = validateOffersInput(createOfferSchema, req.body);
+  const result = await createOffer(data, req.user.sub);
   successResponse(res, 201, t(tr.OFFER_CREATED, lang), result);
 });
 
 export const updateOfferHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await updateOffer(req.params.id, req.body, req.user.sub);
+  const { id } = validateOffersInput(offerIdSchema, req.params);
+  const data = validateOffersInput(updateOfferSchema, req.body);
+  const result = await updateOffer(id, data, req.user.sub);
   successResponse(res, 200, t(tr.OFFER_UPDATED, lang), result);
 });
 
 export const toggleOfferHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await toggleOffer(req.params.id, req.user.sub);
+  const { id } = validateOffersInput(offerIdSchema, req.params);
+  const result = await toggleOffer(id, req.user.sub);
   successResponse(res, 200, t(tr.OFFER_TOGGLED, lang), result);
 });
 

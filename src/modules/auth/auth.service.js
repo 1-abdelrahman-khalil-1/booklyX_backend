@@ -2,33 +2,22 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import {
-  ApplicationStatus,
-  Prisma,
-  Role,
-  UserStatus,
-  VerificationType
+    ApplicationStatus,
+    Prisma,
+    Role,
+    UserStatus,
+    VerificationType
 } from "../../generated/prisma/client.js";
 import {
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  sendPhoneVerificationCode,
+    sendEmailVerification,
+    sendPasswordResetEmail,
+    sendPhoneVerificationCode,
 } from "../../lib/email.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import { isPlatformAllowedForRole } from "./auth.permissions.js";
-import {
-  loginSchema,
-  platformSchema,
-  registerSchema,
-  requestPasswordResetSchema,
-  resendCodeSchema,
-  resetPasswordSchema,
-  validateAuthInput,
-  verifyEmailSchema,
-  verifyPasswordResetSchema,
-  verifyPhoneSchema,
-} from "./auth.validation.js";
+// Validation is now handled in auth.controller.js
 
 const SALT_ROUNDS = 10;
 const FIXED_OTP_CODE = process.env.FIXED_OTP_CODE || "333333";
@@ -266,9 +255,8 @@ async function ensureClientProfile(user) {
 
 // ─── Auth Services ────────────────────────────────────────────────────────────
 
-export async function login(body, platformHeader) {
-  const { email, role, password } = validateAuthInput(loginSchema, body);
-  const platform = validateAuthInput(platformSchema, platformHeader);
+export async function login(data, platform) {
+  const { email, role, password } = data;
 
   const user = await prisma.user.findUnique({
     where: { email, role },
@@ -337,12 +325,8 @@ export async function login(body, platformHeader) {
  * Token is NOT issued here — the user must complete both verifications first.
  */
 
-export async function register(body, platformHeader) {
-  const { name, email, password, phone } = validateAuthInput(
-    registerSchema,
-    body,
-  );
-  const platform = validateAuthInput(platformSchema, platformHeader);
+export async function register(data, platform) {
+  const { name, email, password, phone } = data;
 
   // Only CLIENTs can self-register; staff/admins are created by super admins
   if (!isPlatformAllowedForRole(Role.client, platform)) {
@@ -408,15 +392,14 @@ export async function register(body, platformHeader) {
  */
 
 export async function verifyEmail(email, code) {
-  const data = validateAuthInput(verifyEmailSchema, { email, code });
-  const user = await prisma.user.findUnique({ where: { email: data.email } });
+  const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new UserNotFound();
 
   if (user.emailVerified) {
     throw new AuthValidationError(tr.EMAIL_ALREADY_VERIFIED);
   }
 
-  await consumeVerificationCode(user.id, VerificationType.EMAIL, data.code);
+  await consumeVerificationCode(user.id, VerificationType.EMAIL, code);
 
   await prisma.user.update({
     where: { id: user.id },
@@ -438,10 +421,8 @@ export async function verifyEmail(email, code) {
  * This is the only point in the flow where a token is returned.
  */
 
-export async function verifyPhone(email, code, platformHeader) {
-  const data = validateAuthInput(verifyPhoneSchema, { email, code });
-  const platform = validateAuthInput(platformSchema, platformHeader);
-  const user = await prisma.user.findUnique({ where: { email: data.email } });
+export async function verifyPhone(email, code, platform) {
+  const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new UserNotFound();
 
   // Strict Step Enforcement: Cannot verify phone if email is still pending
@@ -457,7 +438,7 @@ export async function verifyPhone(email, code, platformHeader) {
     throw new PlatformAccessDeniedError();
   }
 
-  await consumeVerificationCode(user.id, VerificationType.PHONE, data.code);
+  await consumeVerificationCode(user.id, VerificationType.PHONE, code);
 
   const updatedUser = await prisma.user.update({
     where: { id: user.id },
@@ -484,15 +465,14 @@ export async function verifyPhone(email, code, platformHeader) {
  */
 
 export async function requestPasswordReset(email) {
-  const data = validateAuthInput(requestPasswordResetSchema, { email });
-  const user = await prisma.user.findUnique({ where: { email: data.email } });
+  const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return; // Silently do nothing — don't reveal if email exists
 
   const code = await createVerificationCode(
     user.id,
     VerificationType.PASSWORD_RESET,
   );
-  await sendPasswordResetEmail(data.email, code);
+  await sendPasswordResetEmail(email, code);
 }
 
 /**
@@ -503,14 +483,13 @@ export async function requestPasswordReset(email) {
  */
 
 export async function verifyPasswordReset(email, code) {
-  const data = validateAuthInput(verifyPasswordResetSchema, { email, code });
-  const user = await prisma.user.findUnique({ where: { email: data.email } });
+  const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new UserNotFound();
 
   await consumeVerificationCode(
     user.id,
     VerificationType.PASSWORD_RESET,
-    data.code,
+    code,
   );
 
   const jwtSecret = process.env.JWT_SECRET;
@@ -532,24 +511,19 @@ export async function verifyPasswordReset(email, code) {
  */
 
 export async function resetPassword(resetToken, newPassword) {
-  const data = validateAuthInput(resetPasswordSchema, {
-    resetToken,
-    newPassword,
-  });
-
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) throw new Error("JWT_SECRET is not set.");
 
   let payload;
   try {
-    payload = jwt.verify(data.resetToken, jwtSecret);
+    payload = jwt.verify(resetToken, jwtSecret);
   } catch {
     throw new InvalidTokenError();
   }
 
   if (payload.purpose !== PASSWORD_RESET_PURPOSE) throw new InvalidTokenError();
 
-  const hashedPassword = await bcrypt.hash(data.newPassword, SALT_ROUNDS);
+  const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
   await prisma.user.update({
     where: { id: payload.sub },
     data: { password: hashedPassword },
@@ -562,16 +536,14 @@ export async function resetPassword(resetToken, newPassword) {
  */
 
 export async function resendCode(email, phone, type) {
-  const data = validateAuthInput(resendCodeSchema, { email, phone, type });
-
   let where = {};
 
-  if (data.email) {
-    where.email = data.email;
+  if (email) {
+    where.email = email;
   }
 
-  if (data.phone) {
-    where.phone = data.phone;
+  if (phone) {
+    where.phone = phone;
   }
 
   // Find the user by email or phone
@@ -600,8 +572,7 @@ export async function resendCode(email, phone, type) {
   }
 }
 
-export async function refresh(refreshToken, platformHeader) {
-  const platform = validateAuthInput(platformSchema, platformHeader);
+export async function refresh(refreshToken, platform) {
   if (!refreshToken || typeof refreshToken !== "string") {
     throw new InvalidTokenError();
   }

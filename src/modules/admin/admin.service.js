@@ -7,13 +7,7 @@ import {
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
-import {
-  approveApplicationSchema,
-  approveServiceSchema,
-  rejectApplicationSchema,
-  rejectServiceSchema,
-  validateAdminInput,
-} from "./admin.validation.js";
+// Validation is now handled in admin.controller.js
 
 // ─── Domain Error Classes ─────────────────────────────────────────────────────
 
@@ -145,7 +139,6 @@ export async function getApplicationDetail(id, includeCodes = false) {
 }
 
 export async function approveApplication(id) {
-  const parsed = validateAdminInput(approveApplicationSchema, { id });
   const application = await prisma.branchAdmin.findUnique({
     where: { id: parsed.id },
   });
@@ -184,7 +177,6 @@ export async function approveApplication(id) {
 }
 
 export async function rejectApplication(id, reason) {
-  const parsed = validateAdminInput(rejectApplicationSchema, { id, reason });
   const application = await prisma.branchAdmin.findUnique({
     where: { id: parsed.id },
   });
@@ -225,7 +217,6 @@ export async function listPendingServices() {
 }
 
 export async function approveService(id) {
-  const parsed = validateAdminInput(approveServiceSchema, { id });
 
   const service = await prisma.service.findUnique({
     where: { id: parsed.id },
@@ -264,7 +255,6 @@ export async function approveService(id) {
 }
 
 export async function rejectService(id, reason) {
-  const parsed = validateAdminInput(rejectServiceSchema, { id, reason });
 
   const service = await prisma.service.findUnique({
     where: { id: parsed.id },

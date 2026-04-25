@@ -2,33 +2,33 @@ import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
-    acceptAppointment,
-    addStaffService,
-    completeAppointment,
-    createStaffAvailability,
-    deleteStaffAvailability,
-    getAvailableSlots,
-    getIncomeStats,
-    getPendingRequests,
-    getStaffProfile,
-    getStaffSchedule,
-    listStaffAvailability,
-    listStaffServices,
-    rejectAppointment,
-    startAppointment,
-    updateStaffAvailability,
+  acceptAppointment,
+  addStaffService,
+  completeAppointment,
+  createStaffAvailability,
+  deleteStaffAvailability,
+  getAvailableSlots,
+  getIncomeStats,
+  getPendingRequests,
+  getStaffProfile,
+  getStaffSchedule,
+  listStaffAvailability,
+  listStaffServices,
+  rejectAppointment,
+  startAppointment,
+  updateStaffAvailability,
 } from "./staff.service.js";
 import {
-    appointmentActionSchema,
-    appointmentIdSchema,
-    availabilityIdSchema,
-    availableSlotsQuerySchema,
-    createAvailabilitySchema,
-    incomeQuerySchema,
-    scheduleQuerySchema,
-    serviceIdSchema,
-    updateAvailabilitySchema,
-    validateStaffInput,
+  appointmentActionSchema,
+  appointmentIdSchema,
+  availabilityIdSchema,
+  availableSlotsQuerySchema,
+  createAvailabilitySchema,
+  incomeQuerySchema,
+  scheduleQuerySchema,
+  serviceIdSchema,
+  updateAvailabilitySchema,
+  validateStaffInput,
 } from "./staff.validation.js";
 
 // ─── Profile Handler ────────────────────────────────────────────────────
@@ -99,9 +99,9 @@ export const completeAppointmentHandler = asyncHandler(async (req, res) => {
   const userId = req.user.sub;
 
   const { appointmentId } = validateStaffInput(appointmentIdSchema, req.params);
-  const { notes } = validateStaffInput(appointmentActionSchema, req.body);
+  const data = validateStaffInput(appointmentActionSchema, req.body);
 
-  const appointment = await completeAppointment(userId, appointmentId, notes, lang);
+  const appointment = await completeAppointment(userId, appointmentId, data);
   successResponse(res, 200, t(tr.APPOINTMENT_COMPLETED, lang), appointment);
 });
 

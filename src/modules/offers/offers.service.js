@@ -6,12 +6,7 @@ import {
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
-import {
-    createOfferSchema,
-    offerIdSchema,
-    updateOfferSchema,
-    validateOffersInput,
-} from "./offers.validation.js";
+// Validation is now handled in offers.controller.js
 
 export class OffersValidationError extends AppError {
   constructor(message, params) {
@@ -105,9 +100,8 @@ function resolveDiscountAmount(basePrice, offer) {
 }
 
 export async function createOffer(body, branchAdminUserId) {
-  const data = validateOffersInput(createOfferSchema, body);
   const branchAdmin = await getApprovedBranchAdmin(branchAdminUserId);
-  const serviceIds = await validateApprovedBranchServices(data.serviceIds, branchAdmin.id);
+  const serviceIds = await validateApprovedBranchServices(body.serviceIds, branchAdmin.id);
 
   const offer = await prisma.offer.create({
     data: {

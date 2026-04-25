@@ -2,23 +2,37 @@ import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
-  addServiceCategory,
-  createService,
-  createStaff,
-  deleteService,
-  deleteStaff,
-  getMyServiceCategories,
-  getMyServices,
-  getMyStaff,
-  getMyStaffById,
-  resendApplicationCode,
-  submitApplication,
-  updateBranchAdminProfile,
-  updateService,
-  updateStaff,
-  verifyApplicationEmail,
-  verifyApplicationPhone,
+    addServiceCategory,
+    createService,
+    createStaff,
+    deleteService,
+    deleteStaff,
+    getMyServiceCategories,
+    getMyServices,
+    getMyStaff,
+    getMyStaffById,
+    resendApplicationCode,
+    submitApplication,
+    updateBranchAdminProfile,
+    updateService,
+    updateStaff,
+    verifyApplicationEmail,
+    verifyApplicationPhone,
 } from "./branch_admin.service.js";
+import {
+    addServiceCategorySchema,
+    applySchema,
+    createServiceSchema,
+    createStaffSchema,
+    myServicesQuerySchema,
+    resendCodeSchema,
+    staffIdSchema,
+    updateServiceSchema,
+    updateStaffSchema,
+    validateBranchAdminInput,
+    verifyEmailSchema,
+    verifyPhoneSchema,
+} from "./branch_admin.validation.js";
 
 function firstUploadedFile(req, fieldName) {
   const fileList = req.files?.[fieldName];
@@ -78,7 +92,8 @@ function buildProfilePayload(req) {
 
 export const applyHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await submitApplication(buildApplicationPayload(req));
+  const data = validateBranchAdminInput(applySchema, buildApplicationPayload(req));
+  const result = await submitApplication(data);
   successResponse(res, 201, t(result.message, lang), result.application);
 });
 
@@ -86,7 +101,7 @@ export const applyHandler = asyncHandler(async (req, res) => {
 
 export const verifyEmailHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { email, code } = req.body;
+  const { email, code } = validateBranchAdminInput(verifyEmailSchema, req.body);
   const result = await verifyApplicationEmail(email, code);
   successResponse(res, 200, t(result.message, lang));
 });
@@ -95,7 +110,7 @@ export const verifyEmailHandler = asyncHandler(async (req, res) => {
 
 export const verifyPhoneHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { email, code } = req.body;
+  const { email, code } = validateBranchAdminInput(verifyPhoneSchema, req.body);
   const result = await verifyApplicationPhone(email, code);
   successResponse(res, 200, t(result.message, lang));
 });
@@ -104,7 +119,7 @@ export const verifyPhoneHandler = asyncHandler(async (req, res) => {
 
 export const resendCodeHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { email, type } = req.body;
+  const { email, type } = validateBranchAdminInput(resendCodeSchema, req.body);
   const result = await resendApplicationCode(email, type);
   successResponse(res, 200, t(result.message, lang));
 });
@@ -113,7 +128,8 @@ export const resendCodeHandler = asyncHandler(async (req, res) => {
 
 export const createStaffHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await createStaff(req.body, req.user.sub);
+  const data = validateBranchAdminInput(createStaffSchema, req.body);
+  const result = await createStaff(data, req.user.sub);
   successResponse(res, 201, t(tr.STAFF_CREATED, lang), result);
 });
 
@@ -125,31 +141,32 @@ export const getMyStaffHandler = asyncHandler(async (req, res) => {
 
 export const updateStaffHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await updateStaff(
-    {
-      ...req.body,
-      id: req.body.id ?? req.params.id,
-    },
-    req.user.sub,
-  );
+  const data = validateBranchAdminInput(updateStaffSchema, {
+    ...req.body,
+    id: req.body.id ?? req.params.id,
+  });
+  const result = await updateStaff(data, req.user.sub);
   successResponse(res, 200, t(tr.STAFF_UPDATED, lang), result);
 });
 
 export const getMyStaffByIdHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await getMyStaffById(parseInt(req.params.id, 10), req.user.sub);
+  const { id } = validateBranchAdminInput(staffIdSchema, req.params);
+  const result = await getMyStaffById(id, req.user.sub);
   successResponse(res, 200, t(tr.STAFF_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 
 export const deleteStaffHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await deleteStaff({ id: req.params.id }, req.user.sub);
+  const { id } = validateBranchAdminInput(staffIdSchema, req.params);
+  const result = await deleteStaff({ id }, req.user.sub);
   successResponse(res, 200, t(result.message, lang));
 });
 
 export const addServiceCategoryHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await addServiceCategory(req.body, req.user.sub);
+  const data = validateBranchAdminInput(addServiceCategorySchema, req.body);
+  const result = await addServiceCategory(data, req.user.sub);
   successResponse(res, 201, t(tr.CATEGORY_ADDED_SUCCESSFULLY, lang), result);
 });
 
@@ -161,31 +178,32 @@ export const getMyServiceCategoriesHandler = asyncHandler(async (req, res) => {
 
 export const createServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await createService(buildServicePayload(req), req.user.sub);
+  const data = validateBranchAdminInput(createServiceSchema, buildServicePayload(req));
+  const result = await createService(data, req.user.sub);
   successResponse(res, 201, t(tr.SERVICE_CREATED, lang), result);
 });
 
 export const getMyServicesHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await getMyServices(req.user.sub, req.query);
+  const query = validateBranchAdminInput(myServicesQuerySchema, req.query);
+  const result = await getMyServices(req.user.sub, query);
   successResponse(res, 200, t(tr.SERVICES_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 
 export const updateServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await updateService(
-    {
-      ...buildServicePayload(req),
-      id: req.body.id ?? req.params.id,
-    },
-    req.user.sub,
-  );
+  const data = validateBranchAdminInput(updateServiceSchema, {
+    ...buildServicePayload(req),
+    id: req.body.id ?? req.params.id,
+  });
+  const result = await updateService(data, req.user.sub);
   successResponse(res, 200, t(tr.SERVICE_UPDATED, lang), result);
 });
 
 export const deleteServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await deleteService({ id: parseInt(req.params.id, 10) }, req.user.sub);
+  const { id } = validateBranchAdminInput(staffIdSchema, req.params);
+  const result = await deleteService({ id }, req.user.sub);
   successResponse(res, 200, t(result.message, lang));
 });
 

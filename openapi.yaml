@@ -18,10 +18,24 @@ servers:
     description: Production server
 
 tags:
-  - name: Auth
-  - name: branch_admin
-  - name: staff
-  - name: super_admin
+  - name: Auth/Verification
+  - name: Auth/Session
+  - name: Auth/Password Reset
+  - name: branch_admin/Application
+  - name: branch_admin/Profile
+  - name: branch_admin/Staff
+  - name: branch_admin/Services
+  - name: branch_admin/Offers
+  - name: staff/Profile
+  - name: staff/Schedule
+  - name: staff/Requests
+  - name: staff/Appointments
+  - name: staff/Income
+  - name: staff/Services
+  - name: staff/Availability
+  - name: super_admin/Applications
+  - name: super_admin/Services
+  - name: Reviews
   - name: Files
 
 components:
@@ -247,26 +261,11 @@ components:
     AuthTokens:
       type: object
       properties:
-        clientToken:
+        token:
           type: string
-          nullable: true
+          nullable: false
           description: Access token formatted as `<loginSequence>|<jwt>`.
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
-        staffToken:
-          type: string
-          nullable: true
-          description: Access token formatted as `<loginSequence>|<jwt>`.
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-access-token
-        branchToken:
-          type: string
-          nullable: true
-          description: Access token formatted as `<loginSequence>|<jwt>`.
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-access-token
-        superAdminToken:
-          type: string
-          nullable: true
-          description: Access token formatted as `<loginSequence>|<jwt>`.
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin-access-token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.access-token
         refreshToken:
           type: string
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh-token
@@ -279,7 +278,7 @@ components:
             user:
               $ref: "#/components/schemas/User"
       example:
-        clientToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
+        token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
         refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
         user:
           id: 2
@@ -1557,7 +1556,7 @@ components:
         error: false
         message: Login successful.
         data:
-          clientToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
           refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
           user:
             id: 3
@@ -1574,7 +1573,7 @@ components:
         error: false
         message: Login successful.
         data:
-          staffToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-access-token
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-access-token
           refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-refresh-token
           user:
             id: 6
@@ -1630,7 +1629,7 @@ components:
         error: false
         message: Phone verified successfully.
         data:
-          clientToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
           refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
           user:
             id: 2
@@ -1654,7 +1653,7 @@ components:
         error: false
         message: Login successful.
         data:
-          clientToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token-next
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token-next
           refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token-next
           role: client
     RefreshStaffSuccessResponse:
@@ -1663,7 +1662,7 @@ components:
         error: false
         message: Login successful.
         data:
-          staffToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-access-token-next
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-access-token-next
           refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-refresh-token-next
           role: staff
     RefreshBranchAdminSuccessResponse:
@@ -2044,7 +2043,7 @@ components:
 paths:
   /auth/register:
     post:
-      tags: [Auth]
+      tags: [Auth/Verification]
       summary: Register client account
       description: Register client account.
       operationId: postAuthRegister
@@ -2079,7 +2078,7 @@ paths:
 
   /auth/login:
     post:
-      tags: [Auth]
+      tags: [Auth/Session]
       summary: Login
       description: Login.
       operationId: postAuthLogin
@@ -2146,7 +2145,7 @@ paths:
 
   /auth/verify-email:
     post:
-      tags: [Auth]
+      tags: [Auth/Verification]
       summary: Verify email OTP
       description: Verify email OTP.
       operationId: postAuthVerifyEmail
@@ -2180,7 +2179,7 @@ paths:
 
   /auth/verify-phone:
     post:
-      tags: [Auth]
+      tags: [Auth/Verification]
       summary: Verify phone OTP and login
       description: Verify phone OTP and login.
       operationId: postAuthVerifyPhone
@@ -2222,7 +2221,7 @@ paths:
 
   /auth/resend-code:
     post:
-      tags: [Auth]
+      tags: [Auth/Verification]
       summary: Resend verification/reset code
       description: Resend verification/reset code.
       operationId: postAuthResendCode
@@ -2260,7 +2259,7 @@ paths:
 
   /auth/request-password-reset:
     post:
-      tags: [Auth]
+      tags: [Auth/Password Reset]
       summary: Request password reset
       description: Request password reset.
       operationId: postAuthRequestPasswordReset
@@ -2292,7 +2291,7 @@ paths:
 
   /auth/verify-password-reset:
     post:
-      tags: [Auth]
+      tags: [Auth/Password Reset]
       summary: Verify password reset OTP
       description: Verify password reset OTP.
       operationId: postAuthVerifyPasswordReset
@@ -2331,7 +2330,7 @@ paths:
 
   /auth/reset-password:
     post:
-      tags: [Auth]
+      tags: [Auth/Password Reset]
       summary: Reset password using reset token
       description: Reset password using reset token.
       operationId: postAuthResetPassword
@@ -2361,7 +2360,7 @@ paths:
 
   /auth/refresh:
     post:
-      tags: [Auth]
+      tags: [Auth/Session]
       summary: Refresh access token
       description: Refresh access token.
       operationId: postAuthRefresh
@@ -2405,7 +2404,7 @@ paths:
 
   /branch-admin/apply:
     post:
-      tags: [branch_admin]
+      tags: [branch_admin/Application]
       summary: Submit branch_admin application
       description: Submit branch_admin application.
       operationId: postBranchAdminApply
@@ -2440,7 +2439,7 @@ paths:
 
   /branch-admin/verify-email:
     post:
-      tags: [branch_admin]
+      tags: [branch_admin/Application]
       summary: Verify application email OTP
       description: Verify application email OTP.
       operationId: postBranchAdminVerifyEmail
@@ -2474,7 +2473,7 @@ paths:
 
   /branch-admin/verify-phone:
     post:
-      tags: [branch_admin]
+      tags: [branch_admin/Application]
       summary: Verify application phone OTP
       description: Verify application phone OTP.
       operationId: postBranchAdminVerifyPhone
@@ -2508,7 +2507,7 @@ paths:
 
   /branch-admin/resend-code:
     post:
-      tags: [branch_admin]
+      tags: [branch_admin/Application]
       summary: Resend branch_admin application OTP
       description: Resend branch_admin application OTP.
       operationId: postBranchAdminResendCode
@@ -2540,9 +2539,127 @@ paths:
         "429":
           $ref: "#/components/responses/TooManyRequests"
 
+  /branch-admin/profile:
+    put:
+      tags: [branch_admin/Profile]
+      summary: Update branch profile
+      description: Update authenticated branch_admin profile data.
+      operationId: putBranchAdminProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                phone:
+                  type: string
+                logoUrl:
+                  type: string
+                  format: uri
+                operatingHours:
+                  type: string
+                address:
+                  type: string
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+            examples:
+              default:
+                value:
+                  name: "Updated Branch Name"
+                  phone: "01000000022"
+                  operatingHours: "09:00-22:00"
+                  address: "New address"
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                phone:
+                  type: string
+                logo:
+                  type: string
+                  format: binary
+                operatingHours:
+                  type: string
+                address:
+                  type: string
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          ownerName:
+                            type: string
+                          email:
+                            type: string
+                          phone:
+                            type: string
+                          businessName:
+                            type: string
+                          category:
+                            type: string
+                          logoUrl:
+                            type: string
+                            nullable: true
+                          operatingHours:
+                            type: string
+                            nullable: true
+                          address:
+                            type: string
+                            nullable: true
+              examples:
+                default:
+                  value:
+                    status: 200
+                    error: false
+                    message: Profile updated successfully
+                    data:
+                      id: 1
+                      ownerName: Updated Branch Name
+                      email: branch@example.com
+                      phone: "01000000022"
+                      businessName: Prime Salon
+                      category: SALON
+                      logoUrl: https://cdn.booklyx.com/branch/logo.png
+                      operatingHours: 09:00-22:00
+                      address: New address
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /branch-admin/create-staff:
     post:
-      tags: [branch_admin]
+      tags: [branch_admin/Staff]
       summary: Create staff user
       description: Create staff user.
       operationId: postBranchAdminCreateStaff
@@ -2584,7 +2701,7 @@ paths:
 
   /branch-admin/staff/my-staff:
     get:
-      tags: [branch_admin]
+      tags: [branch_admin/Staff]
       summary: List current branch_admin staff
       description: List current branch_admin staff.
       operationId: getBranchAdminStaffMyStaff
@@ -2617,7 +2734,7 @@ paths:
 
   /branch-admin/staff/{id}:
     get:
-      tags: [branch_admin]
+      tags: [branch_admin/Staff]
       summary: Get staff by id for current branch_admin
       description: Get staff by id for current branch_admin.
       operationId: getBranchAdminStaffById
@@ -2655,7 +2772,7 @@ paths:
           $ref: "#/components/responses/NotFound"
 
     put:
-      tags: [branch_admin]
+      tags: [branch_admin/Staff]
       summary: Update staff by id for current branch_admin
       description: Update staff by id for current branch_admin.
       operationId: putBranchAdminStaffById
@@ -2704,7 +2821,7 @@ paths:
           $ref: "#/components/responses/NotFound"
 
     delete:
-      tags: [branch_admin]
+      tags: [branch_admin/Staff]
       summary: Delete staff by id for current branch_admin
       description: Delete staff by id for current branch_admin.
       operationId: deleteBranchAdminStaffById
@@ -2738,7 +2855,7 @@ paths:
 
   /branch-admin/services/categories:
     post:
-      tags: [branch_admin]
+      tags: [branch_admin/Services]
       summary: Add service category
       description: Add service category.
       operationId: postBranchAdminServicesCategories
@@ -2779,7 +2896,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
 
     get:
-      tags: [branch_admin]
+      tags: [branch_admin/Services]
       summary: List service categories for current branch_admin
       description: List service categories for current branch_admin.
       operationId: getBranchAdminServicesCategories
@@ -2812,7 +2929,7 @@ paths:
 
   /branch-admin/services/create-service:
     post:
-      tags: [branch_admin]
+      tags: [branch_admin/Services]
       summary: Create service (pending approval)
       description: Create service (pending approval).
       operationId: postBranchAdminServicesCreateService
@@ -2855,9 +2972,54 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /branch-admin/services:
+    post:
+      tags: [branch_admin/Services]
+      summary: Create service (alias)
+      description: Alias endpoint for creating a service (pending approval).
+      operationId: postBranchAdminServices
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateServiceRequestJson"
+            examples:
+              default:
+                $ref: "#/components/examples/CreateServiceRequest"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateServiceRequestMultipart"
+      responses:
+        "201":
+          description: Service created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Service"
+              examples:
+                default:
+                  $ref: "#/components/examples/ServiceCreatedResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   /branch-admin/services/my-services:
     get:
-      tags: [branch_admin]
+      tags: [branch_admin/Services]
       summary: List current branch_admin services
       description: List current branch_admin services.
       operationId: getBranchAdminServicesMyServices
@@ -2889,9 +3051,43 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /branch-admin/my-services:
+    get:
+      tags: [branch_admin/Services]
+      summary: List current branch_admin services (alias)
+      description: Backward-compatible alias for listing current branch_admin services.
+      operationId: getBranchAdminMyServices
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/ServiceStatusQuery"
+      responses:
+        "200":
+          description: Services fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Service"
+              examples:
+                default:
+                  $ref: "#/components/examples/ServicesListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   /branch-admin/services/{id}:
     put:
-      tags: [branch_admin]
+      tags: [branch_admin/Services]
       summary: Update service by id
       description: Update service by id.
       operationId: putBranchAdminServicesById
@@ -2943,7 +3139,7 @@ paths:
           $ref: "#/components/responses/NotFound"
 
     delete:
-      tags: [branch_admin]
+      tags: [branch_admin/Services]
       summary: Delete service by id
       description: Delete service by id.
       operationId: deleteBranchAdminServicesById
@@ -2979,7 +3175,7 @@ paths:
 
   /staff/profile:
     get:
-      tags: [staff]
+      tags: [staff/Profile]
       summary: Get authenticated staff profile
       description: Get authenticated staff profile.
       operationId: getStaffProfile
@@ -3039,7 +3235,7 @@ paths:
 
   /staff/schedule:
     get:
-      tags: [staff]
+      tags: [staff/Schedule]
       summary: Get staff schedule for a day
       description: Get staff schedule for a day.
       operationId: getStaffSchedule
@@ -3087,7 +3283,7 @@ paths:
 
   /staff/requests:
     get:
-      tags: [staff]
+      tags: [staff/Requests]
       summary: List pending appointment requests
       description: List pending appointment requests.
       operationId: getStaffRequests
@@ -3120,7 +3316,7 @@ paths:
 
   /staff/appointments/{appointmentId}/accept:
     patch:
-      tags: [staff]
+      tags: [staff/Appointments]
       summary: Accept a pending appointment
       description: Accept a pending appointment.
       operationId: patchStaffAppointmentsByAppointmentIdAccept
@@ -3152,7 +3348,7 @@ paths:
 
   /staff/appointments/{appointmentId}/reject:
     patch:
-      tags: [staff]
+      tags: [staff/Appointments]
       summary: Reject a pending appointment
       description: Reject a pending appointment.
       operationId: patchStaffAppointmentsByAppointmentIdReject
@@ -3184,7 +3380,7 @@ paths:
 
   /staff/appointments/{appointmentId}/start:
     patch:
-      tags: [staff]
+      tags: [staff/Appointments]
       summary: Mark an appointment as in progress
       description: Mark an appointment as in progress.
       operationId: patchStaffAppointmentsByAppointmentIdStart
@@ -3216,7 +3412,7 @@ paths:
 
   /staff/appointments/{appointmentId}/complete:
     patch:
-      tags: [staff]
+      tags: [staff/Appointments]
       summary: Mark an appointment as completed
       description: Mark an appointment as completed.
       operationId: patchStaffAppointmentsByAppointmentIdComplete
@@ -3260,7 +3456,7 @@ paths:
 
   /staff/income:
     get:
-      tags: [staff]
+      tags: [staff/Income]
       summary: Get staff income statistics
       description: Get staff income statistics.
       operationId: getStaffIncome
@@ -3310,7 +3506,7 @@ paths:
 
   /staff/services:
     get:
-      tags: [staff]
+      tags: [staff/Services]
       summary: List staff services
       description: List staff services.
       operationId: getStaffServices
@@ -3341,7 +3537,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
     post:
-      tags: [staff]
+      tags: [staff/Services]
       summary: Add a service to the staff profile
       description: Add a service to the staff profile.
       operationId: postStaffServices
@@ -3383,7 +3579,7 @@ paths:
 
   /staff/availability:
     get:
-      tags: [staff]
+      tags: [staff/Availability]
       summary: List staff availability slots
       description: List staff availability slots.
       operationId: getStaffAvailability
@@ -3414,7 +3610,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
     post:
-      tags: [staff]
+      tags: [staff/Availability]
       summary: Create a staff availability slot
       description: Create a staff availability slot.
       operationId: postStaffAvailability
@@ -3461,7 +3657,7 @@ paths:
 
   /staff/availability/{availabilityId}:
     put:
-      tags: [staff]
+      tags: [staff/Availability]
       summary: Update a staff availability slot
       description: Update a staff availability slot.
       operationId: putStaffAvailabilityByAvailabilityId
@@ -3504,7 +3700,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
     delete:
-      tags: [staff]
+      tags: [staff/Availability]
       summary: Delete a staff availability slot
       description: Delete a staff availability slot.
       operationId: deleteStaffAvailabilityByAvailabilityId
@@ -3538,7 +3734,7 @@ paths:
 
   /staff/available-slots:
     get:
-      tags: [staff]
+      tags: [staff/Availability]
       summary: Get available booking slots for a service
       description: Get available booking slots for a service.
       operationId: getStaffAvailableSlots
@@ -3594,7 +3790,7 @@ paths:
 
   /admin/applications:
     get:
-      tags: [super_admin]
+      tags: [super_admin/Applications]
       summary: List branch applications
       description: List branch applications.
       operationId: getAdminApplications
@@ -3628,7 +3824,7 @@ paths:
 
   /admin/applications/{id}:
     get:
-      tags: [super_admin]
+      tags: [super_admin/Applications]
       summary: Get application details
       description: Get application details.
       operationId: getAdminApplicationsById
@@ -3667,7 +3863,7 @@ paths:
 
   /admin/applications/{id}/approve:
     post:
-      tags: [super_admin]
+      tags: [super_admin/Applications]
       summary: Approve branch application
       description: Approve branch application.
       operationId: postAdminApplicationsByIdApprove
@@ -3708,7 +3904,7 @@ paths:
 
   /admin/applications/{id}/reject:
     post:
-      tags: [super_admin]
+      tags: [super_admin/Applications]
       summary: Reject branch application
       description: Reject branch application.
       operationId: postAdminApplicationsByIdReject
@@ -3753,7 +3949,7 @@ paths:
 
   /admin/services/pending:
     get:
-      tags: [super_admin]
+      tags: [super_admin/Services]
       summary: List pending services
       description: List pending services.
       operationId: getAdminServicesPending
@@ -3786,7 +3982,7 @@ paths:
 
   /admin/services/{id}/approve:
     post:
-      tags: [super_admin]
+      tags: [super_admin/Services]
       summary: Approve pending service
       description: Approve pending service.
       operationId: postAdminServicesByIdApprove
@@ -3827,7 +4023,7 @@ paths:
 
   /admin/services/{id}/reject:
     post:
-      tags: [super_admin]
+      tags: [super_admin/Services]
       summary: Reject pending service
       description: Reject pending service.
       operationId: postAdminServicesByIdReject
@@ -3909,3 +4105,474 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+
+  /files/public/{filename}:
+    get:
+      tags: [Files]
+      summary: Download public file
+      operationId: getFilesPublicByFilename
+      description: Download public files (for example service images) by stored filename.
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 100
+          description: Stored upload filename.
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+      responses:
+        "200":
+          description: File stream
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /offers:
+    post:
+      tags: [branch_admin/Offers]
+      summary: Create offer
+      description: Create a new offer for authenticated branch_admin.
+      operationId: postOffers
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                [
+                  title,
+                  discountType,
+                  discountValue,
+                  startDate,
+                  endDate,
+                  serviceIds,
+                ]
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                  nullable: true
+                discountType:
+                  type: string
+                  enum: [PERCENTAGE, FIXED]
+                discountValue:
+                  type: number
+                startDate:
+                  type: string
+                  format: date-time
+                endDate:
+                  type: string
+                  format: date-time
+                usageLimit:
+                  type: integer
+                  minimum: 1
+                  nullable: true
+                serviceIds:
+                  type: array
+                  items:
+                    type: integer
+                    minimum: 1
+            examples:
+              default:
+                value:
+                  title: Weekend Offer
+                  description: 20 percent discount this weekend
+                  discountType: PERCENTAGE
+                  discountValue: 20
+                  startDate: "2026-04-24T00:00:00.000Z"
+                  endDate: "2026-04-26T23:59:59.000Z"
+                  usageLimit: 100
+                  serviceIds: [1, 2]
+      responses:
+        "201":
+          description: Offer created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+              examples:
+                default:
+                  value:
+                    status: 201
+                    error: false
+                    message: Offer created
+                    data:
+                      id: 7f6d2f79-34f7-4f01-b9fb-6f8d71f618f9
+                      title: Weekend Offer
+                      discountType: PERCENTAGE
+                      discountValue: 20
+                      isActive: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    get:
+      tags: [branch_admin/Offers]
+      summary: List branch offers
+      description: List offers for authenticated branch_admin.
+      operationId: getOffers
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Offers fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+              examples:
+                default:
+                  value:
+                    status: 200
+                    error: false
+                    message: Offers fetched successfully
+                    data:
+                      - id: 7f6d2f79-34f7-4f01-b9fb-6f8d71f618f9
+                        title: Weekend Offer
+                        discountType: PERCENTAGE
+                        discountValue: 20
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /offers/{id}:
+    put:
+      tags: [branch_admin/Offers]
+      summary: Update offer by id
+      description: Update an offer owned by authenticated branch_admin.
+      operationId: putOffersById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                  nullable: true
+                discountType:
+                  type: string
+                  enum: [PERCENTAGE, FIXED]
+                discountValue:
+                  type: number
+                startDate:
+                  type: string
+                  format: date-time
+                endDate:
+                  type: string
+                  format: date-time
+                usageLimit:
+                  type: integer
+                  minimum: 1
+                  nullable: true
+                isActive:
+                  type: boolean
+                serviceIds:
+                  type: array
+                  items:
+                    type: integer
+                    minimum: 1
+            examples:
+              default:
+                value:
+                  title: Updated Weekend Offer
+                  discountValue: 25
+                  isActive: true
+      responses:
+        "200":
+          description: Offer updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+              examples:
+                default:
+                  value:
+                    status: 200
+                    error: false
+                    message: Offer updated
+                    data:
+                      id: 7f6d2f79-34f7-4f01-b9fb-6f8d71f618f9
+                      title: Updated Weekend Offer
+                      discountType: PERCENTAGE
+                      discountValue: 25
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /offers/{id}/toggle:
+    patch:
+      tags: [branch_admin/Offers]
+      summary: Toggle offer active state
+      description: Toggle active/inactive state for an offer owned by authenticated branch_admin.
+      operationId: patchOffersByIdToggle
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Offer toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
+              examples:
+                default:
+                  value:
+                    status: 200
+                    error: false
+                    message: Offer toggled
+                    data:
+                      id: 7f6d2f79-34f7-4f01-b9fb-6f8d71f618f9
+                      isActive: false
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /reviews:
+    get:
+      tags: [Reviews]
+      summary: List scoped reviews
+      description: List reviews visible to authenticated branch_admin, staff, or super_admin.
+      operationId: getReviews
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+        - name: serviceId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: staffId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Reviews fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          reviews:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                rating:
+                                  type: integer
+                                comment:
+                                  type: string
+                                  nullable: true
+                                createdAt:
+                                  type: string
+                                  format: date-time
+                          pagination:
+                            type: object
+                            properties:
+                              page:
+                                type: integer
+                              limit:
+                                type: integer
+                              total:
+                                type: integer
+                              totalPages:
+                                type: integer
+              examples:
+                default:
+                  value:
+                    status: 200
+                    error: false
+                    message: Reviews fetched successfully
+                    data:
+                      reviews:
+                        - id: 14
+                          rating: 5
+                          comment: Great experience
+                      pagination:
+                        page: 1
+                        limit: 20
+                        total: 1
+                        totalPages: 1
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /reviews/my:
+    get:
+      tags: [Reviews]
+      summary: List my submitted reviews
+      description: List reviews submitted by authenticated user.
+      operationId: getReviewsMy
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+        - name: serviceId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: staffId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: My reviews fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          reviews:
+                            type: array
+                            items:
+                              type: object
+                          pagination:
+                            type: object
+              examples:
+                default:
+                  value:
+                    status: 200
+                    error: false
+                    message: My reviews fetched successfully
+                    data:
+                      reviews:
+                        - id: 20
+                          rating: 4
+                          comment: Nice service
+                      pagination:
+                        page: 1
+                        limit: 20
+                        total: 1
+                        totalPages: 1
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"

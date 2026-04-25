@@ -73,7 +73,13 @@ export const incomeQuerySchema = z.object({
 
 // ─── Appointment Actions ────────────────────────────────────────────────
 export const appointmentActionSchema = z.object({
-  notes: z.string().optional(),
+  notes: z.string().optional().nullable(),
+  attachments: z
+    .array(z.string().url({ message: tr.INVALID_URL }), {
+      error: "Attachments must be an array of URLs",
+    })
+    .optional()
+    .nullable(),
 });
 
 // ─── Available Slots Query ──────────────────────────────────────────────
