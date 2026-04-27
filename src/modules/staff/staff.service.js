@@ -3,12 +3,12 @@ import {
   AppointmentStatus,
   AvailabilityStatus,
   ServiceApprovalStatus,
+  StaffRole,
 } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import { IncomeRange } from "../../utils/enums.js";
-import { id } from "zod/locales";
 
 // ─── Custom Error Classes ───────────────────────────────────────────────
 class StaffNotFoundError extends AppError {
@@ -169,6 +169,7 @@ export async function getStaffSchedule(userId, dateStr) {
           select: {
             name: true,
             durationMinutes: true,
+            price: true,
           },
         },
         scheduledAt: true,
@@ -404,7 +405,7 @@ export async function completeAppointment(userId, appointmentId, data) {
     },
   });
 
-  if (staff.staffRole === staffRole.DOCTOR) {
+  if (staff.staffRole === StaffRole.DOCTOR) {
     return {
       ...updated,
       notes: excution.notes,
@@ -488,7 +489,9 @@ export async function getIncomeStats(userId, range) {
   });
 
   // Sort daily stats
-  const sortedDailyStats = Object.values(dailyStats).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const sortedDailyStats = Object.values(dailyStats).sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  );
 
   return {
     totalEarnings: Number(totalEarnings.toFixed(2)),
@@ -787,6 +790,14 @@ export async function getAvailableSlots(userId, dateStr, serviceId) {
   // Parse available hours
   const [availableHourStart, availableMinStart] = availability.startTime.split(":").map(Number);
   const [availableHourEnd, availableMinEnd] = availability.endTime.split(":").map(Number);
+  if (
+    availableHourStart === undefined ||
+    availableMinStart === undefined ||
+    availableHourEnd === undefined ||
+    availableMinEnd === undefined
+  ) {
+    throw new AppError(tr.STAFF_TIME_FORMAT_INVALID, 400);
+  }
 
   let dayStart = dayjs(targetDate).hour(availableHourStart).minute(availableMinStart).toDate();
   let dayEnd = dayjs(targetDate).hour(availableHourEnd).minute(availableMinEnd).toDate();

@@ -140,7 +140,7 @@ export async function getApplicationDetail(id, includeCodes = false) {
 
 export async function approveApplication(id) {
   const application = await prisma.branchAdmin.findUnique({
-    where: { id: parsed.id },
+    where: { id },
   });
 
   if (!application) throw new ApplicationNotFound();
@@ -178,7 +178,7 @@ export async function approveApplication(id) {
 
 export async function rejectApplication(id, reason) {
   const application = await prisma.branchAdmin.findUnique({
-    where: { id: parsed.id },
+    where: { id },
   });
 
   if (!application) throw new ApplicationNotFound();
@@ -190,7 +190,7 @@ export async function rejectApplication(id, reason) {
     where: { id: application.id },
     data: {
       status: ApplicationStatus.REJECTED,
-      rejectionReason: parsed.reason,
+      rejectionReason: reason,
     },
   });
 
@@ -219,7 +219,7 @@ export async function listPendingServices() {
 export async function approveService(id) {
 
   const service = await prisma.service.findUnique({
-    where: { id: parsed.id },
+    where: { id },
   });
 
   if (!service) throw new ServiceNotFound();
@@ -257,7 +257,7 @@ export async function approveService(id) {
 export async function rejectService(id, reason) {
 
   const service = await prisma.service.findUnique({
-    where: { id: parsed.id },
+    where: { id },
   });
 
   if (!service) throw new ServiceNotFound();
@@ -269,7 +269,7 @@ export async function rejectService(id, reason) {
     where: { id: service.id },
     data: {
       status: ServiceApprovalStatus.REJECTED,
-      rejectionReason: parsed.reason,
+      rejectionReason: reason,
       approvedAt: null,
     },
     select: {

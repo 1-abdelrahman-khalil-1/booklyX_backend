@@ -17,16 +17,18 @@ export const errorHandler = (
             res,
             err.statusCode,
             t(err.message, lang, err.params) || err.message,
-            err.params
+            err.params,
+            err.data
         );
     }
 
     if (err instanceof ZodError) {
         const firstIssue = err.issues[0];
+        const message = firstIssue?.message ?? "Invalid input";
         return void errorResponse(
             res,
             400,
-            t(firstIssue.message, lang) || firstIssue.message
+            t(message, lang) || message
         );
     }
 

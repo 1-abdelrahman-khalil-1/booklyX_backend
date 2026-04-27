@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
     loginHandler,
+    logoutHandler,
     refreshHandler,
     registerHandler,
     requestPasswordResetHandler,
@@ -27,6 +28,7 @@ router.post("/verify-phone", verifyPhoneHandler);
 
 router.post("/login", loginHandler);
 router.post("/refresh", refreshHandler);
+router.post("/logout", logoutHandler);
 router.post("/resend-code", resendCodeHandler);
 
 router.post("/request-password-reset", requestPasswordResetHandler);

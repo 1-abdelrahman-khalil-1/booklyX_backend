@@ -945,12 +945,13 @@ export async function updateBranchAdminProfile(body, branchAdminUserId) {
   if (!branchAdmin || !branchAdmin.user) {
     throw new ApplicationNotFound();
   }
+  const branchAdminUser = branchAdmin.user;
 
   if (data.phone && data.phone !== branchAdmin.phone) {
     const duplicateUser = await prisma.user.findFirst({
       where: {
         phone: data.phone,
-        NOT: { id: branchAdmin.user.id },
+        NOT: { id: branchAdminUser.id },
       },
       select: { id: true },
     });
@@ -964,7 +965,7 @@ export async function updateBranchAdminProfile(body, branchAdminUserId) {
   if (data.currentPassword && data.newPassword) {
     const isCurrentPasswordValid = await bcrypt.compare(
       data.currentPassword,
-      branchAdmin.user.password,
+      branchAdminUser.password,
     );
 
     if (!isCurrentPasswordValid) {
@@ -976,7 +977,7 @@ export async function updateBranchAdminProfile(body, branchAdminUserId) {
 
   const updatedBranchAdmin = await prisma.$transaction(async (tx) => {
     await tx.user.update({
-      where: { id: branchAdmin.user.id },
+      where: { id: branchAdminUser.id },
       data: {
         ...(data.name !== undefined ? { name: data.name } : {}),
         ...(data.phone !== undefined ? { phone: data.phone } : {}),

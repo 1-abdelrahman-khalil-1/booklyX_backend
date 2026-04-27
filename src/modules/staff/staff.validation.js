@@ -12,14 +12,9 @@ class StaffValidationError extends AppError {
 
 // ─── Schedule Query ──────────────────────────────────────────────────────
 export const scheduleQuerySchema = z.object({
-  date: z
-    .string()
-    .refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
-      message: tr.INVALID_DATE_FORMAT_USE_ISO_STRING,
-    })
-    .refine((val) => !Number.isNaN(Date.parse(val)), {
-      message: tr.INVALID_DATE_FORMAT_USE_ISO_STRING,
-    }),
+  date: z.coerce.date({
+    error: tr.INVALID_DATE_FORMAT_USE_ISO_STRING,
+  }),
 });
 
 // ─── Availability Schemas ───────────────────────────────────────────────
@@ -122,6 +117,9 @@ export function validateStaffInput(schema, data) {
   const result = schema.safeParse(data);
   if (!result.success) {
     const firstIssue = result.error.issues[0];
+    if (!firstIssue) {
+      throw new StaffValidationError("Invalid input", 400);
+    }
     if (firstIssue.code === "invalid_enum_value" || firstIssue.code === "invalid_value") {
       const enumValues = firstIssue.options ?? firstIssue.values;
       throw new StaffValidationError(tr.INVALID_ENUM_VALUE, 400, {

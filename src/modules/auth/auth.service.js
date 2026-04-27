@@ -61,6 +61,9 @@ export class PlatformAccessDeniedError extends AppError {
 }
 
 export class InactiveUserError extends AppError {
+  /**
+   * @param {unknown} [data]
+   */
   constructor(data = null) {
     super(tr.INACTIVE_USER, 403, undefined, data);
     this.name = "InactiveUserError";
@@ -108,6 +111,9 @@ export class MaxAttemptsExceededError extends AppError {
  * the user to the correct verification screen.
  */
 export class EmailNotVerifiedError extends AppError {
+  /**
+   * @param {unknown} [data]
+   */
   constructor(data = null) {
     super(tr.EMAIL_NOT_VERIFIED, 403, undefined, data);
     this.name = "EmailNotVerifiedError";
@@ -120,6 +126,9 @@ export class EmailNotVerifiedError extends AppError {
  * client distinguish which step is pending.
  */
 export class PhoneNotVerifiedError extends AppError {
+  /**
+   * @param {unknown} [data]
+   */
   constructor(data = null) {
     super(tr.PHONE_NOT_VERIFIED, 403, undefined, data);
     this.name = "PhoneNotVerifiedError";
@@ -371,10 +380,10 @@ export async function register(data, platform) {
     ) {
       const target = error.meta?.target;
 
-      if (target?.includes("email"))
+      if (Array.isArray(target) && target.includes("email"))
         throw new DuplicateAccountError(tr.DUPLICATE_EMAIL);
 
-      if (target?.includes("phone"))
+      if (Array.isArray(target) && target.includes("phone"))
         throw new DuplicateAccountError(tr.DUPLICATE_PHONE);
       throw new DuplicateAccountError(tr.DUPLICATE_ACCOUNT);
     }
@@ -620,4 +629,19 @@ export async function refresh(refreshToken, platform) {
     record.loginSequence,
   );
   return { ...tokens, role: user.role };
+}
+
+export async function logout(refreshToken) {
+  if (!refreshToken || typeof refreshToken !== "string") {
+    throw new InvalidTokenError();
+  }
+
+  const tokenHash = crypto
+    .createHash("sha256")
+    .update(refreshToken)
+    .digest("hex");
+
+  await prisma.refreshToken.deleteMany({
+    where: { tokenHash },
+  });
 }

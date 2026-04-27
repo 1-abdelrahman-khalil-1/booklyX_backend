@@ -36,7 +36,7 @@ export const getProfileHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const userId = req.user.sub;
 
-  const profile = await getStaffProfile(userId, lang);
+  const profile = await getStaffProfile(userId);
   successResponse(res, 200, t(tr.PROFILE_RETRIEVED_SUCCESSFULLY, lang), profile);
 });
 
@@ -47,7 +47,7 @@ export const getScheduleHandler = asyncHandler(async (req, res) => {
 
   const { date } = validateStaffInput(scheduleQuerySchema, req.query);
 
-  const schedule = await getStaffSchedule(userId, date, lang);
+  const schedule = await getStaffSchedule(userId, date);
   successResponse(res, 200, t(tr.SCHEDULE_RETRIEVED_SUCCESSFULLY, lang), schedule);
 });
 
@@ -56,7 +56,7 @@ export const getPendingRequestsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const userId = req.user.sub;
 
-  const requests = await getPendingRequests(userId, lang);
+  const requests = await getPendingRequests(userId);
   successResponse(res, 200, t(tr.REQUESTS_RETRIEVED_SUCCESSFULLY, lang), requests);
 });
 
@@ -67,7 +67,7 @@ export const acceptAppointmentHandler = asyncHandler(async (req, res) => {
 
   const { appointmentId } = validateStaffInput(appointmentIdSchema, req.params);
 
-  const appointment = await acceptAppointment(userId, appointmentId, lang);
+  const appointment = await acceptAppointment(userId, appointmentId);
   successResponse(res, 200, t(tr.APPOINTMENT_ACCEPTED, lang), appointment);
 });
 
@@ -78,7 +78,7 @@ export const rejectAppointmentHandler = asyncHandler(async (req, res) => {
 
   const { appointmentId } = validateStaffInput(appointmentIdSchema, req.params);
 
-  const appointment = await rejectAppointment(userId, appointmentId, lang);
+  const appointment = await rejectAppointment(userId, appointmentId);
   successResponse(res, 200, t(tr.APPOINTMENT_REJECTED, lang), appointment);
 });
 
@@ -89,7 +89,7 @@ export const startAppointmentHandler = asyncHandler(async (req, res) => {
 
   const { appointmentId } = validateStaffInput(appointmentIdSchema, req.params);
 
-  const appointment = await startAppointment(userId, appointmentId, lang);
+  const appointment = await startAppointment(userId, appointmentId);
   successResponse(res, 200, t(tr.APPOINTMENT_STARTED, lang), appointment);
 });
 
@@ -112,7 +112,7 @@ export const getIncomeStatsHandler = asyncHandler(async (req, res) => {
 
   const { range } = validateStaffInput(incomeQuerySchema, req.query);
 
-  const stats = await getIncomeStats(userId, range, lang);
+  const stats = await getIncomeStats(userId, range);
   successResponse(res, 200, t(tr.INCOME_RETRIEVED_SUCCESSFULLY, lang), stats);
 });
 
@@ -121,7 +121,7 @@ export const listServicesHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const userId = req.user.sub;
 
-  const services = await listStaffServices(userId, lang);
+  const services = await listStaffServices(userId);
   successResponse(res, 200, t(tr.SERVICES_RETRIEVED_SUCCESSFULLY, lang), services);
 });
 
@@ -132,7 +132,7 @@ export const addServiceHandler = asyncHandler(async (req, res) => {
 
   const { serviceId } = validateStaffInput(serviceIdSchema, req.body);
 
-  const result = await addStaffService(userId, serviceId, lang);
+  const result = await addStaffService(userId, serviceId);
   successResponse(res, 201, t(tr.SERVICE_ADDED, lang), result);
 });
 
@@ -141,7 +141,7 @@ export const listAvailabilityHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const userId = req.user.sub;
 
-  const availabilities = await listStaffAvailability(userId, lang);
+  const availabilities = await listStaffAvailability(userId);
   successResponse(res, 200, t(tr.AVAILABILITY_RETRIEVED_SUCCESSFULLY, lang), availabilities);
 });
 
@@ -152,7 +152,7 @@ export const createAvailabilityHandler = asyncHandler(async (req, res) => {
 
   const data = validateStaffInput(createAvailabilitySchema, req.body);
 
-  const availability = await createStaffAvailability(userId, data, lang);
+  const availability = await createStaffAvailability(userId, data);
   successResponse(res, 201, t(tr.AVAILABILITY_CREATED, lang), availability);
 });
 
@@ -164,7 +164,7 @@ export const updateAvailabilityHandler = asyncHandler(async (req, res) => {
   const { availabilityId } = validateStaffInput(availabilityIdSchema, req.params);
   const data = validateStaffInput(updateAvailabilitySchema, req.body);
 
-  const availability = await updateStaffAvailability(userId, availabilityId, data, lang);
+  const availability = await updateStaffAvailability(userId, availabilityId, data);
   successResponse(res, 200, t(tr.AVAILABILITY_UPDATED, lang), availability);
 });
 
@@ -175,7 +175,7 @@ export const deleteAvailabilityHandler = asyncHandler(async (req, res) => {
 
   const { availabilityId } = validateStaffInput(availabilityIdSchema, req.params);
 
-  const result = await deleteStaffAvailability(userId, availabilityId, lang);
+  const result = await deleteStaffAvailability(userId, availabilityId);
   successResponse(res, 200, t(tr.AVAILABILITY_DELETED, lang), result);
 });
 
@@ -186,6 +186,6 @@ export const getAvailableSlotsHandler = asyncHandler(async (req, res) => {
 
   const { date, serviceId } = validateStaffInput(availableSlotsQuerySchema, req.query);
 
-  const slots = await getAvailableSlots(userId, date, serviceId, lang);
+  const slots = await getAvailableSlots(userId, date, serviceId);
   successResponse(res, 200, t(tr.SLOTS_RETRIEVED_SUCCESSFULLY, lang), slots);
 });

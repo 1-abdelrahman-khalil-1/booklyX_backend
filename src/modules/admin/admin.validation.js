@@ -7,6 +7,9 @@ export function validateAdminInput(schema, data) {
     if (result.success) return result.data;
 
     const firstIssue = result.error.issues[0];
+    if (!firstIssue) {
+        throw new AdminValidationError("Invalid input");
+    }
 
     if (firstIssue.code === "invalid_enum_value" || firstIssue.code === "invalid_value") {
         const enumValues = firstIssue.options ?? firstIssue.values;

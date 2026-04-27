@@ -4,6 +4,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
   login,
+  logout,
   refresh,
   register,
   requestPasswordReset,
@@ -17,6 +18,7 @@ import {
   loginSchema,
   registerSchema,
   requestPasswordResetSchema,
+  platformSchema,
   resendCodeSchema,
   resetPasswordSchema,
   validateAuthInput,
@@ -42,8 +44,8 @@ export const loginHandler = asyncHandler(async (req, res) => {
       sameSite: "strict",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
-    // Remove refreshToken from body response for web
-    delete result.refreshToken;
+    const { refreshToken: _refreshToken, ...responseBody } = result;
+    return void successResponse(res, 200, t(tr.LOGIN_SUCCESS, lang), responseBody);
   }
 
   successResponse(res, 200, t(tr.LOGIN_SUCCESS, lang), result);
@@ -80,7 +82,8 @@ export const verifyPhoneHandler = asyncHandler(async (req, res) => {
       sameSite: "strict",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    delete result.refreshToken;
+    const { refreshToken: _refreshToken, ...responseBody } = result;
+    return void successResponse(res, 200, t(tr.PHONE_VERIFIED_SUCCESS, lang), responseBody);
   }
 
   successResponse(res, 200, t(tr.PHONE_VERIFIED_SUCCESS, lang), result);
@@ -136,8 +139,32 @@ export const refreshHandler = asyncHandler(async (req, res) => {
       sameSite: "strict",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    delete result.refreshToken;
+    const { refreshToken: _refreshToken, ...responseBody } = result;
+    return void successResponse(res, 200, t(tr.LOGIN_SUCCESS, lang), responseBody);
   }
 
   successResponse(res, 200, t(tr.LOGIN_SUCCESS, lang), result);
+});
+
+export const logoutHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const platformHeader = req.headers["platform"];
+  validateAuthInput(platformSchema, platformHeader);
+
+  const refreshToken =
+    platformHeader === Platform.WEB
+      ? req.cookies.refreshToken
+      : req.body.refreshToken;
+
+  await logout(refreshToken);
+
+  if (platformHeader === Platform.WEB) {
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+  }
+
+  successResponse(res, 200, t("Logged out successfully.", lang));
 });

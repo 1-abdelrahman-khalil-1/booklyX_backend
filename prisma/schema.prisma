@@ -441,6 +441,8 @@ model Appointment {
   @@index([serviceId])
   @@index([branchId])
   @@index([status])
+
+  
 }
 
 model StaffAvailability {

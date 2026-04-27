@@ -103,7 +103,11 @@ async function gracefulShutdown(signal, exitCode = 0) {
 
 process.on("unhandledRejection", (err) => {
   console.error("UNHANDLED REJECTION! 💥 Shutting down...");
-  console.error(err.name, err.message);
+  if (err instanceof Error) {
+    console.error(err.name, err.message);
+  } else {
+    console.error(err);
+  }
   void gracefulShutdown("UNHANDLED_REJECTION", 1);
 });
 

@@ -101,6 +101,7 @@ function resolveDiscountAmount(basePrice, offer) {
 
 export async function createOffer(body, branchAdminUserId) {
   const branchAdmin = await getApprovedBranchAdmin(branchAdminUserId);
+  const data = body;
   const serviceIds = await validateApprovedBranchServices(body.serviceIds, branchAdmin.id);
 
   const offer = await prisma.offer.create({
@@ -139,13 +140,12 @@ export async function createOffer(body, branchAdminUserId) {
 }
 
 export async function updateOffer(id, body, branchAdminUserId) {
-  const parsedId = validateOffersInput(offerIdSchema, { id });
-  const data = validateOffersInput(updateOfferSchema, body);
+  const data = body;
   const branchAdmin = await getApprovedBranchAdmin(branchAdminUserId);
 
   const existingOffer = await prisma.offer.findFirst({
     where: {
-      id: parsedId.id,
+      id,
       branchId: branchAdmin.id,
     },
     select: {
@@ -229,12 +229,11 @@ export async function updateOffer(id, body, branchAdminUserId) {
 }
 
 export async function toggleOffer(id, branchAdminUserId) {
-  const parsedId = validateOffersInput(offerIdSchema, { id });
   const branchAdmin = await getApprovedBranchAdmin(branchAdminUserId);
 
   const offer = await prisma.offer.findFirst({
     where: {
-      id: parsedId.id,
+      id,
       branchId: branchAdmin.id,
     },
     select: {
@@ -375,10 +374,8 @@ export async function calculateBestOfferForService(serviceId, now = new Date()) 
 }
 
 export async function incrementOfferUsedCount(offerId, now = new Date()) {
-  const parsedId = validateOffersInput(offerIdSchema, { id: offerId });
-
   const offer = await prisma.offer.findUnique({
-    where: { id: parsedId.id },
+    where: { id: offerId },
     select: {
       id: true,
       isActive: true,
@@ -401,7 +398,7 @@ export async function incrementOfferUsedCount(offerId, now = new Date()) {
 
   const updated = await prisma.offer.updateMany({
     where: {
-      id: parsedId.id,
+      id: offerId,
       usedCount: offer.usedCount,
     },
     data: {
@@ -416,7 +413,7 @@ export async function incrementOfferUsedCount(offerId, now = new Date()) {
   }
 
   return prisma.offer.findUnique({
-    where: { id: parsedId.id },
+    where: { id: offerId },
     select: {
       id: true,
       usedCount: true,

@@ -49,6 +49,9 @@ const locales = { en, ar };
  *
  * // Request header: Accept-Language: fr
  * getLanguage(req) // → "en" (unsupported → fallback)
+ *
+ * @param {any} req
+ * @returns {"en" | "ar"}
  */
 export function getLanguage(req) {
   const header = req.headers["accept-language"];
@@ -63,9 +66,9 @@ export function getLanguage(req) {
 /**
  * Translate a message key into the requested language.
  *
- * @param key    - A message key (e.g. `M.EMAIL_REQUIRED` → `"EMAIL_REQUIRED"`).
- * @param lang   - Target language (default `"en"`).
- * @param params - Optional dynamic values to interpolate into `{{placeholders}}`.
+ * @param {string} key    - A message key (e.g. `M.EMAIL_REQUIRED` → `"EMAIL_REQUIRED"`).
+ * @param {"en" | "ar"} [lang]   - Target language (default `"en"`).
+ * @param {Record<string, string | number | boolean> | null} [params] - Optional dynamic values to interpolate into `{{placeholders}}`.
  * @returns The translated string — or the raw key if no translation is found.
  *
  * ### Fallback chain
@@ -84,7 +87,7 @@ export function t(
   // Replace {{placeholder}} tokens with actual values
   if (params) {
     for (const [k, v] of Object.entries(params)) {
-      message = message.replace(`{{${k}}}`, v);
+      message = message.replace(`{{${k}}}`, String(v));
     }
   }
 

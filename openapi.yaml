@@ -158,6 +158,9 @@ components:
         data:
           nullable: true
           example: null
+        params:
+          nullable: true
+          example: null
 
     VerificationFlags:
       type: object
@@ -265,7 +268,7 @@ components:
           type: string
           nullable: false
           description: Access token formatted as `<loginSequence>|<jwt>`.
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.access-token
+          example: 15|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.access-token
         refreshToken:
           type: string
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh-token
@@ -278,7 +281,7 @@ components:
             user:
               $ref: "#/components/schemas/User"
       example:
-        token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
+        token: 15|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
         refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
         user:
           id: 2
@@ -417,6 +420,188 @@ components:
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
       example:
         refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
+
+    Pagination:
+      type: object
+      required: [page, limit, total, totalPages]
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 1
+        totalPages:
+          type: integer
+          example: 1
+
+    Review:
+      type: object
+      required: [id, rating, createdAt, reviewer, service, staff]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 2f5100e4-6400-4db4-9172-7abdc18b0f88
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+        comment:
+          type: string
+          nullable: true
+          example: Great experience
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-04-21T10:00:00.000Z
+        reviewer:
+          type: object
+          required: [id, name, role]
+          properties:
+            id:
+              type: integer
+              example: 3
+            name:
+              type: string
+              example: Abdo Khalil
+            role:
+              type: string
+              enum: [client, staff, branch_admin, super_admin]
+              example: client
+        service:
+          type: object
+          required: [id, name]
+          properties:
+            id:
+              type: integer
+              example: 1
+            name:
+              type: string
+              example: Haircut
+        staff:
+          type: object
+          required: [id, user]
+          properties:
+            id:
+              type: integer
+              example: 7
+            user:
+              type: object
+              required: [id, name]
+              properties:
+                id:
+                  type: integer
+                  example: 6
+                name:
+                  type: string
+                  example: Mazen Tamer
+
+    OfferServiceSummary:
+      type: object
+      required: [id, name, price, status]
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Haircut
+        price:
+          type: number
+          example: 150
+        status:
+          type: string
+          enum: [PENDING_APPROVAL, APPROVED, REJECTED]
+          example: APPROVED
+
+    Offer:
+      type: object
+      required:
+        - id
+        - title
+        - discountType
+        - discountValue
+        - startDate
+        - endDate
+        - isActive
+        - usedCount
+        - branchId
+        - createdAt
+        - updatedAt
+        - services
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 7f6d2f79-34f7-4f01-b9fb-6f8d71f618f9
+        title:
+          type: string
+          example: Weekend Offer
+        description:
+          type: string
+          nullable: true
+          example: 20 percent discount this weekend
+        discountType:
+          type: string
+          enum: [PERCENTAGE, FIXED]
+          example: PERCENTAGE
+        discountValue:
+          type: number
+          example: 20
+        startDate:
+          type: string
+          format: date-time
+          example: 2026-04-24T00:00:00.000Z
+        endDate:
+          type: string
+          format: date-time
+          example: 2026-04-26T23:59:59.000Z
+        isActive:
+          type: boolean
+          example: true
+        usageLimit:
+          type: integer
+          nullable: true
+          example: 100
+        usedCount:
+          type: integer
+          example: 0
+        branchId:
+          type: integer
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-04-20T09:00:00.000Z
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2026-04-20T09:00:00.000Z
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfferServiceSummary"
+
+    StaffIncomeDailyStat:
+      type: object
+      required: [date, earnings, serviceCount]
+      properties:
+        date:
+          type: string
+          format: date
+          description: Local calendar date formatted as YYYY-MM-DD.
+          example: 2026-04-15
+        earnings:
+          type: number
+          example: 80
+        serviceCount:
+          type: integer
+          example: 2
 
     BranchAdminApplyRequestJson:
       type: object
@@ -1556,7 +1741,7 @@ components:
         error: false
         message: Login successful.
         data:
-          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
+          token: 15|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
           refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
           user:
             id: 3
@@ -1573,7 +1758,7 @@ components:
         error: false
         message: Login successful.
         data:
-          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-access-token
+          token: 16|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-access-token
           refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-refresh-token
           user:
             id: 6
@@ -1590,7 +1775,7 @@ components:
         error: false
         message: Login successful.
         data:
-          branchToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-access-token
+          token: 17|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-access-token
           refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-refresh-token
           user:
             id: 4
@@ -1607,7 +1792,7 @@ components:
         error: false
         message: Login successful.
         data:
-          superAdminToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin-access-token
+          token: 18|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin-access-token
           user:
             id: 1
             name: super_admin
@@ -1629,7 +1814,7 @@ components:
         error: false
         message: Phone verified successfully.
         data:
-          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
+          token: 19|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
           refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
           user:
             id: 2
@@ -1653,7 +1838,7 @@ components:
         error: false
         message: Login successful.
         data:
-          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token-next
+          token: 15|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token-next
           refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token-next
           role: client
     RefreshStaffSuccessResponse:
@@ -1662,7 +1847,7 @@ components:
         error: false
         message: Login successful.
         data:
-          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-access-token-next
+          token: 16|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-access-token-next
           refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-refresh-token-next
           role: staff
     RefreshBranchAdminSuccessResponse:
@@ -1671,7 +1856,7 @@ components:
         error: false
         message: Login successful.
         data:
-          branchToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-access-token-next
+          token: 17|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-access-token-next
           refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-refresh-token-next
           role: branch_admin
     RefreshSuperAdminSuccessResponse:
@@ -1680,7 +1865,7 @@ components:
         error: false
         message: Login successful.
         data:
-          superAdminToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin-access-token-next
+          token: 18|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin-access-token-next
           refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin-refresh-token-next
           role: super_admin
     LoginEmailNotVerifiedErrorResponse:
@@ -2401,6 +2586,45 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
+  /auth/logout:
+    post:
+      tags: [Auth/Session]
+      summary: Logout
+      description: |
+        Revoke the current refresh token. APP clients send `refreshToken` in the body.
+        WEB clients can rely on the `refreshToken` cookie, which is cleared by the server.
+      operationId: postAuthLogout
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenRequest"
+            examples:
+              app:
+                $ref: "#/components/examples/RefreshTokenRequest"
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
+              examples:
+                default:
+                  value:
+                    status: 200
+                    error: false
+                    message: Logged out successfully.
+                    data: null
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
 
   /branch-admin/apply:
     post:
@@ -3496,7 +3720,7 @@ paths:
                           dailyStats:
                             type: array
                             items:
-                              type: object
+                              $ref: "#/components/schemas/StaffIncomeDailyStat"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4208,7 +4432,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
+                        $ref: "#/components/schemas/Offer"
               examples:
                 default:
                   value:
@@ -4218,9 +4442,22 @@ paths:
                     data:
                       id: 7f6d2f79-34f7-4f01-b9fb-6f8d71f618f9
                       title: Weekend Offer
+                      description: 20 percent discount this weekend
                       discountType: PERCENTAGE
                       discountValue: 20
+                      startDate: 2026-04-24T00:00:00.000Z
+                      endDate: 2026-04-26T23:59:59.000Z
                       isActive: true
+                      usageLimit: 100
+                      usedCount: 0
+                      branchId: 1
+                      createdAt: 2026-04-20T09:00:00.000Z
+                      updatedAt: 2026-04-20T09:00:00.000Z
+                      services:
+                        - id: 1
+                          name: Haircut
+                          price: 150
+                          status: APPROVED
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4251,7 +4488,7 @@ paths:
                       data:
                         type: array
                         items:
-                          type: object
+                          $ref: "#/components/schemas/Offer"
               examples:
                 default:
                   value:
@@ -4261,8 +4498,22 @@ paths:
                     data:
                       - id: 7f6d2f79-34f7-4f01-b9fb-6f8d71f618f9
                         title: Weekend Offer
+                        description: 20 percent discount this weekend
                         discountType: PERCENTAGE
                         discountValue: 20
+                        startDate: 2026-04-24T00:00:00.000Z
+                        endDate: 2026-04-26T23:59:59.000Z
+                        isActive: true
+                        usageLimit: 100
+                        usedCount: 0
+                        branchId: 1
+                        createdAt: 2026-04-20T09:00:00.000Z
+                        updatedAt: 2026-04-20T09:00:00.000Z
+                        services:
+                          - id: 1
+                            name: Haircut
+                            price: 150
+                            status: APPROVED
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -4336,7 +4587,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
+                        $ref: "#/components/schemas/Offer"
               examples:
                 default:
                   value:
@@ -4346,8 +4597,22 @@ paths:
                     data:
                       id: 7f6d2f79-34f7-4f01-b9fb-6f8d71f618f9
                       title: Updated Weekend Offer
+                      description: 20 percent discount this weekend
                       discountType: PERCENTAGE
                       discountValue: 25
+                      startDate: 2026-04-24T00:00:00.000Z
+                      endDate: 2026-04-26T23:59:59.000Z
+                      isActive: true
+                      usageLimit: 100
+                      usedCount: 0
+                      branchId: 1
+                      createdAt: 2026-04-20T09:00:00.000Z
+                      updatedAt: 2026-04-20T10:00:00.000Z
+                      services:
+                        - id: 1
+                          name: Haircut
+                          price: 150
+                          status: APPROVED
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4451,29 +4716,9 @@ paths:
                           reviews:
                             type: array
                             items:
-                              type: object
-                              properties:
-                                id:
-                                  type: integer
-                                rating:
-                                  type: integer
-                                comment:
-                                  type: string
-                                  nullable: true
-                                createdAt:
-                                  type: string
-                                  format: date-time
+                              $ref: "#/components/schemas/Review"
                           pagination:
-                            type: object
-                            properties:
-                              page:
-                                type: integer
-                              limit:
-                                type: integer
-                              total:
-                                type: integer
-                              totalPages:
-                                type: integer
+                            $ref: "#/components/schemas/Pagination"
               examples:
                 default:
                   value:
@@ -4482,9 +4727,22 @@ paths:
                     message: Reviews fetched successfully
                     data:
                       reviews:
-                        - id: 14
+                        - id: 2f5100e4-6400-4db4-9172-7abdc18b0f88
                           rating: 5
                           comment: Great experience
+                          createdAt: 2026-04-21T10:00:00.000Z
+                          reviewer:
+                            id: 3
+                            name: Abdo Khalil
+                            role: client
+                          service:
+                            id: 1
+                            name: Haircut
+                          staff:
+                            id: 7
+                            user:
+                              id: 6
+                              name: Mazen Tamer
                       pagination:
                         page: 1
                         limit: 20
@@ -4551,9 +4809,9 @@ paths:
                           reviews:
                             type: array
                             items:
-                              type: object
+                              $ref: "#/components/schemas/Review"
                           pagination:
-                            type: object
+                            $ref: "#/components/schemas/Pagination"
               examples:
                 default:
                   value:
@@ -4562,9 +4820,22 @@ paths:
                     message: My reviews fetched successfully
                     data:
                       reviews:
-                        - id: 20
+                        - id: 5f61524e-158d-45bc-8a30-36a7fd03a2e1
                           rating: 4
                           comment: Nice service
+                          createdAt: 2026-04-22T09:30:00.000Z
+                          reviewer:
+                            id: 3
+                            name: Abdo Khalil
+                            role: client
+                          service:
+                            id: 8
+                            name: Hair Coloring
+                          staff:
+                            id: 7
+                            user:
+                              id: 6
+                              name: Mazen Tamer
                       pagination:
                         page: 1
                         limit: 20
