@@ -27,7 +27,7 @@ class AppointmentNotFoundError extends AppError {
 
 class AppointmentAccessError extends AppError {
   constructor() {
-    super(tr.APPOINTMENT_NOT_FOUND, 403);
+    super(tr.APPOINTMENT_ACCESS_DENIED, 403);
     this.name = "AppointmentAccessError";
   }
 }

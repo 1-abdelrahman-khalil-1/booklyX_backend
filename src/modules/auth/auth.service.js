@@ -2,16 +2,16 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import {
-    ApplicationStatus,
-    Prisma,
-    Role,
-    UserStatus,
-    VerificationType
+  ApplicationStatus,
+  Prisma,
+  Role,
+  UserStatus,
+  VerificationType
 } from "../../generated/prisma/client.js";
 import {
-    sendEmailVerification,
-    sendPasswordResetEmail,
-    sendPhoneVerificationCode,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  sendPhoneVerificationCode,
 } from "../../lib/email.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
@@ -41,7 +41,7 @@ export class AuthValidationError extends AppError {
 
 export class UserNotFound extends AppError {
   constructor() {
-    super(tr.USER_NOT_FOUND, 404);
+    super(tr.USER_NOT_FOUND, 401);
     this.name = "UserNotFound";
   }
 }
@@ -86,14 +86,14 @@ export class DuplicateAccountError extends AppError {
 
 export class TokenExpiredError extends AppError {
   constructor() {
-    super(tr.TOKEN_EXPIRED, 400);
+    super(tr.TOKEN_EXPIRED, 401);
     this.name = "TokenExpiredError";
   }
 }
 
 export class InvalidTokenError extends AppError {
   constructor() {
-    super(tr.INVALID_TOKEN, 400);
+    super(tr.INVALID_TOKEN, 401);
     this.name = "InvalidTokenError";
   }
 }

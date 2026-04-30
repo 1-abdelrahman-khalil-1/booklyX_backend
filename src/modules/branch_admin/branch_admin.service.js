@@ -62,7 +62,7 @@ export class DuplicateBranchAdminUserError extends AppError {
 
 export class ApplicationNotPendingError extends AppError {
   constructor() {
-    super(tr.APPLICATION_IS_UNDER_REVIEW, 400);
+    super(tr.APPLICATION_IS_UNDER_REVIEW, 409);
     this.name = "ApplicationNotPendingError";
   }
 }
@@ -90,7 +90,7 @@ export class MaxAttemptsExceededError extends AppError {
 
 export class ServiceCategoryNotFoundError extends AppError {
   constructor() {
-    super(tr.CATEGORY_REQUIRED, 404);
+    super(tr.CATEGORY_REQUIRED, 400);
     this.name = "ServiceCategoryNotFoundError";
   }
 }

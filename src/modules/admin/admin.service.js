@@ -27,7 +27,7 @@ export class ApplicationNotFound extends AppError {
 
 export class ApplicationNotPendingError extends AppError {
   constructor() {
-    super(tr.APPLICATION_IS_NOT_PENDING_APPROVAL, 400);
+    super(tr.APPLICATION_IS_NOT_PENDING_APPROVAL, 409);
     this.name = "ApplicationIsNotPendingError";
   }
 }
@@ -41,7 +41,7 @@ export class ServiceNotFound extends AppError {
 
 export class ServiceNotPendingError extends AppError {
   constructor() {
-    super(tr.SERVICE_IS_NOT_PENDING_APPROVAL, 400);
+    super(tr.SERVICE_IS_NOT_PENDING_APPROVAL, 409);
     this.name = "ServiceNotPendingError";
   }
 }

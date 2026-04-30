@@ -172,6 +172,7 @@ const ar = {
   STAFF_TIME_FORMAT_INVALID: "يجب أن يكون الوقت بصيغة HH:MM.",
   STAFF_END_TIME_AFTER_START_TIME: "يجب أن يكون وقت النهاية بعد وقت البداية.",
   STAFF_INCOME_RANGE_REQUIRED: "نطاق الدخل مطلوب.",
+  APPOINTMENT_ACCESS_DENIED: "تم رفض الوصول إلى الموعد",
 };
 
 export default ar;

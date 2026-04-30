@@ -181,6 +181,7 @@ const en = {
   STAFF_TIME_FORMAT_INVALID: "Time must be in HH:MM format.",
   STAFF_END_TIME_AFTER_START_TIME: "End time must be after start time.",
   STAFF_INCOME_RANGE_REQUIRED: "Income range is required.",
+  APPOINTMENT_ACCESS_DENIED: "APPOINTMENT_ACCESS_DENIED",
 };
 
 export default en;
