@@ -516,7 +516,7 @@ Error example (`400`):
 }
 ```
 
-## 4) branch_admin Onboarding (`/branch-admin`)
+## 5) branch_admin Onboarding (`/branch-admin`)
 
 ### POST `/branch-admin/apply`
 
@@ -704,7 +704,91 @@ Success example (`201`):
 }
 ```
 
-## 5) super_admin Management (`/admin`)
+## 6) Staff endpoints (`/staff`)
+
+Requires `staff` role.
+
+### GET `/staff/profile`
+
+Returns the profile of the authenticated staff member, including their role, branch, and commission.
+
+### GET `/staff/schedule`
+
+Returns the staff's schedule, grouped into today's and upcoming appointments.
+
+### GET `/staff/appointments`
+
+Returns all `PENDING` appointments for the authenticated staff member.
+
+### PATCH `/staff/appointments/:appointmentId/accept`
+
+Accepts a pending appointment.
+
+- `:appointmentId`: **Integer** (ID of the appointment).
+
+### PATCH `/staff/appointments/:appointmentId/reject`
+
+Rejects a pending appointment.
+
+- `:appointmentId`: **Integer** (ID of the appointment).
+
+### PATCH `/staff/appointments/:appointmentId/start`
+
+Marks a confirmed appointment as `IN_PROGRESS`.
+
+- `:appointmentId`: **Integer** (ID of the appointment).
+
+### PATCH `/staff/appointments/:appointmentId/complete`
+
+Marks an appointment as `COMPLETED` and creates a service execution record.
+
+- `:appointmentId`: **Integer** (ID of the appointment).
+
+Request body:
+
+```json
+{
+  "price": 150,
+  "notes": "Used premium hair wax."
+}
+```
+
+### GET `/staff/income`
+
+Returns income statistics including total earnings, service count, and daily breakdowns.
+
+### GET `/staff/services`
+
+Lists all services that the authenticated staff member is assigned to.
+
+### GET `/staff/availability`
+
+Lists all availability slots for the authenticated staff member.
+
+### POST `/staff/availability`
+
+Creates a new availability slot.
+
+Request body:
+
+```json
+{
+  "dayOfWeek": 1,
+  "startTime": "09:00",
+  "endTime": "17:00",
+  "status": "AVAILABLE"
+}
+```
+
+### PUT `/staff/availability/:availabilityId`
+
+Updates an existing availability slot.
+
+### DELETE `/staff/availability/:availabilityId`
+
+Deletes an availability slot.
+
+## 7) super_admin Management (`/admin`)
 
 Requires `super_admin` role.
 
@@ -837,7 +921,7 @@ Success example (`200`):
 }
 ```
 
-## 6) Quick test order
+## 8) Quick test order
 
 ### For Client Registration & Login
 
@@ -859,12 +943,12 @@ Success example (`200`):
    ```
 3. Use returned token in admin-only endpoints like `GET /admin/applications`
 
-## 7) Postman files in repo
+## 9) Postman files in repo
 
 - Collection: `docs/postman/booklyx-backend.postman_collection.json`
 - Environment: `docs/postman/booklyx-backend.postman_environment.json`
 
-## 8) Sync to Postman Cloud
+## 10) Sync to Postman Cloud
 
 `postman:sync` reads from `.env` automatically.
 

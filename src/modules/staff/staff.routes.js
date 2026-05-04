@@ -2,21 +2,21 @@ import { Router } from "express";
 import { Role } from "../../generated/prisma/client.js";
 import { authenticate, authorize } from "../../middleware/authenticate.js";
 import {
-    acceptAppointmentHandler,
-    addServiceHandler,
-    completeAppointmentHandler,
-    createAvailabilityHandler,
-    deleteAvailabilityHandler,
-    getAvailableSlotsHandler,
-    getIncomeStatsHandler,
-    getPendingRequestsHandler,
-    getProfileHandler,
-    getScheduleHandler,
-    listAvailabilityHandler,
-    listServicesHandler,
-    rejectAppointmentHandler,
-    startAppointmentHandler,
-    updateAvailabilityHandler,
+  acceptAppointmentHandler,
+  addServiceHandler,
+  completeAppointmentHandler,
+  createAvailabilityHandler,
+  deleteAvailabilityHandler,
+  getAppointmentsHandler,
+  getAvailableSlotsHandler,
+  getIncomeStatsHandler,
+  getProfileHandler,
+  getScheduleHandler,
+  listAvailabilityHandler,
+  listServicesHandler,
+  rejectAppointmentHandler,
+  startAppointmentHandler,
+  updateAvailabilityHandler,
 } from "./staff.controller.js";
 
 const staffRouter = Router();
@@ -37,12 +37,12 @@ staffRouter.get(
   getScheduleHandler,
 );
 
-// ─── Requests ──────────────────────────────────────────────────────────
+// ─── Appointments ──────────────────────────────────────────────────────────
 staffRouter.get(
-  "/requests",
+  "/appointments",
   authenticate,
   authorize(Role.staff),
-  getPendingRequestsHandler,
+  getAppointmentsHandler,
 );
 
 // ─── Appointments ─────────────────────────────────────────────────────

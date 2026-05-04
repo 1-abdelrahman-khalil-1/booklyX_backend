@@ -7,9 +7,10 @@ import {
   completeAppointment,
   createStaffAvailability,
   deleteStaffAvailability,
+  getAppointmentDetails,
+  getAppointments,
   getAvailableSlots,
   getIncomeStats,
-  getPendingRequests,
   getStaffProfile,
   getStaffSchedule,
   listStaffAvailability,
@@ -51,13 +52,37 @@ export const getScheduleHandler = asyncHandler(async (req, res) => {
   successResponse(res, 200, t(tr.SCHEDULE_RETRIEVED_SUCCESSFULLY, lang), schedule);
 });
 
-// ─── Pending Requests Handler ──────────────────────────────────────────
-export const getPendingRequestsHandler = asyncHandler(async (req, res) => {
+// ─── Appointmets Handler ──────────────────────────────────────────
+export const getAppointmentsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const userId = req.user.sub;
+  const statusFilter = req.query.status; // Optional status filter
+  const validStatuses = ["pending", "accepted", "rejected", "started", "completed"];
 
-  const requests = await getPendingRequests(userId);
+  // Validate status filter if provided
+  if (statusFilter && !validStatuses.includes(statusFilter.toLowerCase())) {
+    return res.status(400).json({
+      success: false,
+      message: t(tr.INVALID_STATUS_FILTER, lang),
+    });
+  }
+
+  const requests = await getAppointments(userId, statusFilter ? statusFilter.toUpperCase() : undefined);
   successResponse(res, 200, t(tr.REQUESTS_RETRIEVED_SUCCESSFULLY, lang), requests);
+});
+
+export const getAppointmentsDetailsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const userId = req.user.sub;
+  const requestId = req.params.id;
+  if (!requestId) {
+    return res.status(400).json({
+      success: false,
+      message: t(tr.REQUEST_ID_REQUIRED, lang),
+    });
+  }
+  const appointment = await getAppointmentDetails(userId, requestId);
+  successResponse(res, 200, t(tr.REQUEST_DETAILS_RETRIEVED_SUCCESSFULLY, lang), appointment);
 });
 
 // ─── Accept Appointment Handler ────────────────────────────────────────

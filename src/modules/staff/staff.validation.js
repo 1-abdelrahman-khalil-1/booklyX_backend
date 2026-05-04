@@ -36,7 +36,7 @@ export const createAvailabilitySchema = availabilitySchemaBase
   .superRefine((data, ctx) => {
     if (data.startTime >= data.endTime) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["endTime"],
         message: tr.STAFF_END_TIME_AFTER_START_TIME,
       });
@@ -52,7 +52,7 @@ export const updateAvailabilitySchema = availabilitySchemaBase
       data.startTime >= data.endTime
     ) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["endTime"],
         message: tr.STAFF_END_TIME_AFTER_START_TIME,
       });
@@ -95,8 +95,10 @@ export const availableSlotsQuerySchema = z.object({
 
 // ─── ID Schemas ─────────────────────────────────────────────────────────
 export const appointmentIdSchema = z.object({
-  appointmentId: z.string().uuid({ message: tr.INVALID_ID }),
+  appointmentId: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
 });
+
+
 
 export const availabilityIdSchema = z.object({
   availabilityId: z.coerce

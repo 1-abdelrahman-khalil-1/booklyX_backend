@@ -28,8 +28,7 @@ tags:
   - name: branch_admin/Offers
   - name: staff/Profile
   - name: staff/Schedule
-  - name: staff/Requests
-  - name: staff/Appointments
+  - name: staff/appointments
   - name: staff/Income
   - name: staff/Services
   - name: staff/Availability
@@ -443,9 +442,9 @@ components:
       required: [id, rating, createdAt, reviewer, service, staff]
       properties:
         id:
-          type: string
-          format: uuid
-          example: 2f5100e4-6400-4db4-9172-7abdc18b0f88
+          type: integer
+          minimum: 1
+          example: 15
         rating:
           type: integer
           minimum: 1
@@ -536,9 +535,9 @@ components:
         - services
       properties:
         id:
-          type: string
-          format: uuid
-          example: 7f6d2f79-34f7-4f01-b9fb-6f8d71f618f9
+          type: integer
+          minimum: 1
+          example: 7
         title:
           type: string
           example: Weekend Offer
@@ -602,6 +601,88 @@ components:
         serviceCount:
           type: integer
           example: 2
+
+    StaffAppointment:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientName:
+          type: string
+        serviceName:
+          type: string
+        scheduledAt:
+          type: string
+          format: date-time
+        duration:
+          type: integer
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, CANCELED, IN_PROGRESS, COMPLETED]
+
+    StaffService:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        durationMinutes:
+          type: integer
+        imageUrl:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [PENDING_APPROVAL, APPROVED, REJECTED]
+
+    StaffSchedule:
+      type: object
+      properties:
+        today:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffAppointment"
+        upcoming:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffAppointment"
+
+    StaffProfile:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        profileImageUrl:
+          type: string
+          nullable: true
+        staffRole:
+          type: string
+          enum: [DOCTOR, BARBER, SPA_SPECIALIST]
+        age:
+          type: integer
+        commissionPercentage:
+          type: number
+        branch:
+          type: object
+          properties:
+            businessName:
+              type: string
+            category:
+              type: string
+        professionalProfile:
+          type: object
+          nullable: true
+        averageRating:
+          type: number
+        reviewCount:
+          type: integer
 
     BranchAdminApplyRequestJson:
       type: object
@@ -1560,31 +1641,31 @@ components:
         message: Schedule retrieved successfully.
         data:
           today:
-            - id: 8a1be4b3-c1d7-4a96-8c8b-6e87e5bd3a31
+            - id: 1
               clientName: Abdo Khalil
               serviceName: Haircut
               scheduledAt: 2026-04-21T10:00:00.000Z
               duration: 30
               status: CONFIRMED
           upcoming:
-            - id: bbe0cc3f-c49a-45eb-b2d4-a03ea3afd6e9
+            - id: 2
               clientName: Eslam Wael
               serviceName: Hair Coloring
               scheduledAt: 2026-04-24T13:30:00.000Z
               duration: 60
               status: CONFIRMED
-    StaffRequestsResponse:
+    StaffAppointmentsResponse:
       value:
         status: 200
         error: false
-        message: Appointment requests retrieved successfully.
+        message: Appointments retrieved successfully.
         data:
-          - id: 4d827f47-8aaf-4480-a8c4-d53ccf7b2af0
+          - id: 1
             clientName: Abdo Khalil
             serviceName: Haircut
             scheduledAt: 2026-04-22T11:00:00.000Z
             duration: 30
-          - id: 6eecf393-131e-4869-a474-f50afba95e9f
+          - id: 2
             clientName: Eslam Wael
             serviceName: Hair Coloring
             scheduledAt: 2026-04-22T14:00:00.000Z
@@ -1595,7 +1676,7 @@ components:
         error: false
         message: Appointment accepted successfully.
         data:
-          id: 4d827f47-8aaf-4480-a8c4-d53ccf7b2af0
+          id: 1
           status: CONFIRMED
     StaffAppointmentRejectedResponse:
       value:
@@ -1603,7 +1684,7 @@ components:
         error: false
         message: Appointment rejected successfully.
         data:
-          id: 6eecf393-131e-4869-a474-f50afba95e9f
+          id: 2
           status: CANCELED
     StaffAppointmentStartedResponse:
       value:
@@ -1611,7 +1692,7 @@ components:
         error: false
         message: Appointment started successfully.
         data:
-          id: 8a1be4b3-c1d7-4a96-8c8b-6e87e5bd3a31
+          id: 3
           status: IN_PROGRESS
     StaffAppointmentCompletedResponse:
       value:
@@ -1619,7 +1700,7 @@ components:
         error: false
         message: Appointment completed successfully.
         data:
-          id: 8a1be4b3-c1d7-4a96-8c8b-6e87e5bd3a31
+          id: 3
           status: COMPLETED
     StaffIncomeResponse:
       value:
@@ -3422,36 +3503,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        properties:
-                          name:
-                            type: string
-                          phone:
-                            type: string
-                          profileImageUrl:
-                            type: string
-                            nullable: true
-                          staffRole:
-                            type: string
-                            enum: [DOCTOR, BARBER, SPA_SPECIALIST]
-                          age:
-                            type: integer
-                          commissionPercentage:
-                            type: number
-                          branch:
-                            type: object
-                            properties:
-                              businessName:
-                                type: string
-                              category:
-                                type: string
-                          professionalProfile:
-                            type: object
-                            nullable: true
-                          averageRating:
-                            type: number
-                          reviewCount:
-                            type: integer
+                        $ref: "#/components/schemas/StaffProfile"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -3488,16 +3540,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        properties:
-                          today:
-                            type: array
-                            items:
-                              type: object
-                          upcoming:
-                            type: array
-                            items:
-                              type: object
+                        $ref: "#/components/schemas/StaffSchedule"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -3505,12 +3548,12 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
-  /staff/requests:
+  /staff/appointments:
     get:
-      tags: [staff/Requests]
-      summary: List pending appointment requests
-      description: List pending appointment requests.
-      operationId: getStaffRequests
+      tags: [staff/appointments]
+      summary: List pending appointments
+      description: List pending appointments.
+      operationId: getStaffAppointments
       security:
         - bearerAuth: []
       parameters:
@@ -3523,7 +3566,7 @@ paths:
             application/json:
               examples:
                 default:
-                  $ref: "#/components/examples/StaffRequestsResponse"
+                  $ref: "#/components/examples/StaffAppointmentsResponse"
               schema:
                 allOf:
                   - $ref: "#/components/schemas/ApiSuccess"
@@ -3532,7 +3575,7 @@ paths:
                       data:
                         type: array
                         items:
-                          type: object
+                          $ref: "#/components/schemas/StaffAppointment"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -3540,10 +3583,10 @@ paths:
 
   /staff/appointments/{appointmentId}/accept:
     patch:
-      tags: [staff/Appointments]
+      tags: [staff/appointments]
       summary: Accept a pending appointment
       description: Accept a pending appointment.
-      operationId: patchStaffAppointmentsByAppointmentIdAccept
+      operationId: acceptAppointment
       security:
         - bearerAuth: []
       parameters:
@@ -3551,8 +3594,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeader"
       responses:
@@ -3572,10 +3614,10 @@ paths:
 
   /staff/appointments/{appointmentId}/reject:
     patch:
-      tags: [staff/Appointments]
+      tags: [staff/appointments]
       summary: Reject a pending appointment
       description: Reject a pending appointment.
-      operationId: patchStaffAppointmentsByAppointmentIdReject
+      operationId: rejectAppointment
       security:
         - bearerAuth: []
       parameters:
@@ -3583,8 +3625,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeader"
       responses:
@@ -3604,10 +3645,10 @@ paths:
 
   /staff/appointments/{appointmentId}/start:
     patch:
-      tags: [staff/Appointments]
+      tags: [staff/appointments]
       summary: Mark an appointment as in progress
       description: Mark an appointment as in progress.
-      operationId: patchStaffAppointmentsByAppointmentIdStart
+      operationId: startAppointment
       security:
         - bearerAuth: []
       parameters:
@@ -3615,8 +3656,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeader"
       responses:
@@ -3636,10 +3676,10 @@ paths:
 
   /staff/appointments/{appointmentId}/complete:
     patch:
-      tags: [staff/Appointments]
+      tags: [staff/appointments]
       summary: Mark an appointment as completed
       description: Mark an appointment as completed.
-      operationId: patchStaffAppointmentsByAppointmentIdComplete
+      operationId: completeAppointment
       security:
         - bearerAuth: []
       parameters:
@@ -3647,8 +3687,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeader"
       requestBody:
@@ -3755,7 +3794,7 @@ paths:
                       data:
                         type: array
                         items:
-                          type: object
+                          $ref: "#/components/schemas/StaffService"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -3884,7 +3923,7 @@ paths:
       tags: [staff/Availability]
       summary: Update a staff availability slot
       description: Update a staff availability slot.
-      operationId: putStaffAvailabilityByAvailabilityId
+      operationId: updateStaffAvailability
       security:
         - bearerAuth: []
       parameters:
@@ -3927,7 +3966,7 @@ paths:
       tags: [staff/Availability]
       summary: Delete a staff availability slot
       description: Delete a staff availability slot.
-      operationId: deleteStaffAvailabilityByAvailabilityId
+      operationId: deleteStaffAvailability
       security:
         - bearerAuth: []
       parameters:
@@ -4532,8 +4571,8 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
+            minimum: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeader"
       requestBody:
@@ -4595,7 +4634,7 @@ paths:
                     error: false
                     message: Offer updated
                     data:
-                      id: 7f6d2f79-34f7-4f01-b9fb-6f8d71f618f9
+                      id: 7
                       title: Updated Weekend Offer
                       description: 20 percent discount this weekend
                       discountType: PERCENTAGE
@@ -4635,8 +4674,8 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
+            minimum: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeader"
       responses:
@@ -4653,7 +4692,7 @@ paths:
                     error: false
                     message: Offer toggled
                     data:
-                      id: 7f6d2f79-34f7-4f01-b9fb-6f8d71f618f9
+                      id: 7
                       isActive: false
         "401":
           $ref: "#/components/responses/Unauthorized"

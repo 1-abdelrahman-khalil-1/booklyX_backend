@@ -2,16 +2,16 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import {
-  ApplicationStatus,
-  Prisma,
-  Role,
-  UserStatus,
-  VerificationType
+    ApplicationStatus,
+    Prisma,
+    Role,
+    UserStatus,
+    VerificationType
 } from "../../generated/prisma/client.js";
 import {
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  sendPhoneVerificationCode,
+    sendEmailVerification,
+    sendPasswordResetEmail,
+    sendPhoneVerificationCode,
 } from "../../lib/email.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
@@ -265,6 +265,14 @@ async function ensureClientProfile(user) {
 // ─── Auth Services ────────────────────────────────────────────────────────────
 
 export async function login(data, platform) {
+  // Early validation: platform and required login fields
+  if (!platform) {
+    throw new AuthValidationError(tr.INVALID_PLATFORM_HEADER || "INVALID_PLATFORM");
+  }
+  if (!data || !data.email || !data.password || !data.role) {
+    throw new AuthValidationError(tr.INVALID_LOGIN_INPUT || "INVALID_LOGIN");
+  }
+
   const { email, role, password } = data;
 
   const user = await prisma.user.findUnique({

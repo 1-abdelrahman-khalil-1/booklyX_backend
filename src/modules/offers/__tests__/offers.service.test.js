@@ -124,6 +124,7 @@ describe("Offers Service", () => {
 
   it("should increment usage count for available offer", async () => {
     const findUniqueSpy = jest.spyOn(prisma.offer, "findUnique");
+    const now = new Date("2026-04-15T00:00:00.000Z");
     findUniqueSpy
       .mockResolvedValueOnce({
         id: "offer-id",
@@ -140,7 +141,7 @@ describe("Offers Service", () => {
       });
     jest.spyOn(prisma.offer, "updateMany").mockResolvedValue({ count: 1 });
 
-    const result = await incrementOfferUsedCount("c9f8d678-6e2a-4a74-a305-57c2e07868bf");
+    const result = await incrementOfferUsedCount("c9f8d678-6e2a-4a74-a305-57c2e07868bf", now);
 
     expect(result.usedCount).toBe(2);
   });

@@ -19,7 +19,7 @@ const endpointOverwriteBehavior = allowedOverwriteBehaviors.has(
   process.env.APIDOG_ENDPOINT_OVERWRITE_BEHAVIOR,
 )
   ? process.env.APIDOG_ENDPOINT_OVERWRITE_BEHAVIOR
-  : "KEEP_EXISTING";
+  : "AUTO_MERGE";
 
 const schemaOverwriteBehavior = allowedOverwriteBehaviors.has(
   process.env.APIDOG_SCHEMA_OVERWRITE_BEHAVIOR,

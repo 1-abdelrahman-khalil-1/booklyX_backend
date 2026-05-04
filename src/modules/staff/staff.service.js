@@ -1,9 +1,9 @@
 import dayjs from "dayjs";
 import {
-  AppointmentStatus,
-  AvailabilityStatus,
-  ServiceApprovalStatus,
-  StaffRole,
+    AppointmentStatus,
+    AvailabilityStatus,
+    ServiceApprovalStatus,
+    StaffRole,
 } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
@@ -223,13 +223,13 @@ export async function getStaffSchedule(userId, dateStr) {
 }
 
 // ─── Pending Requests ───────────────────────────────────────────────────
-export async function getPendingRequests(userId) {
+export async function getAppointments(userId, statusFilter) {
   const staffId = await getStaffIdByUserId(userId);
 
-  const pendingAppointments = await prisma.appointment.findMany({
+  const appointments = await prisma.appointment.findMany({
     where: {
       staffId,
-      status: AppointmentStatus.PENDING,
+      status: statusFilter || AppointmentStatus.PENDING,
     },
     select: {
       id: true,
@@ -251,7 +251,7 @@ export async function getPendingRequests(userId) {
     orderBy: { scheduledAt: "asc" },
   });
 
-  return pendingAppointments.map((apt) => ({
+  return appointments.map((apt) => ({
     id: apt.id,
     clientName: apt.client.user.name,
     serviceName: apt.service.name,
@@ -260,6 +260,37 @@ export async function getPendingRequests(userId) {
   }));
 }
 
+export async function getPendingRequests(userId) {
+  return getAppointments(userId, AppointmentStatus.PENDING);
+}
+
+export async function getAppointmentDetails(userId, appointmentId) {
+  const staffId = await getStaffIdByUserId(userId);
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    select: {
+      id: true,
+      client: {
+        select: {
+          user: {
+            select: { name: true, phone: true },
+          },
+        },
+      },
+      service: {
+        select: {
+          name: true,
+          description: true,
+          price: true,
+          durationMinutes: true,
+        },
+      },
+      scheduledAt: true,
+      status: true,
+    },
+  });
+  return appointment;
+}
 // ─── Accept/Reject Appointment ──────────────────────────────────────────
 export async function acceptAppointment(userId, appointmentId) {
   const staffId = await getStaffIdByUserId(userId);
@@ -368,7 +399,18 @@ export async function startAppointment(userId, appointmentId) {
 }
 
 export async function completeAppointment(userId, appointmentId, data) {
-  const staff = await getStaffProfile(userId);
+  const staffRecord = await prisma.staff.findUnique({
+    where: { userId },
+    select: {
+      id: true,
+      staffRole: true,
+    },
+  });
+
+  if (!staffRecord) {
+    throw new StaffNotFoundError();
+  }
+
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     select: {
@@ -382,7 +424,7 @@ export async function completeAppointment(userId, appointmentId, data) {
     throw new AppointmentNotFoundError();
   }
 
-  if (appointment.staffId !== staff.id) {
+  if (appointment.staffId !== staffRecord.id) {
     throw new AppointmentAccessError();
   }
 
@@ -405,7 +447,7 @@ export async function completeAppointment(userId, appointmentId, data) {
     },
   });
 
-  if (staff.staffRole === StaffRole.DOCTOR) {
+  if (staffRecord.staffRole === StaffRole.DOCTOR) {
     return {
       ...updated,
       notes: excution.notes,

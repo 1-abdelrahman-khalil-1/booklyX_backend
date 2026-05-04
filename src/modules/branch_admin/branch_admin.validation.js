@@ -147,7 +147,7 @@ export const updateStaffSchema = z
 
     if (!hasUpdatableField) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["id"],
         message: tr.STAFF_UPDATE_FIELDS_REQUIRED,
       });
@@ -183,7 +183,7 @@ export const createServiceSchema = z.object({
 }).superRefine((data, ctx) => {
   if (!data.categoryId && !data.categoryName) {
     ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: "custom",
       path: ["category"],
       message: tr.CATEGORY_REQUIRED,
     });
@@ -234,7 +234,7 @@ export const updateBranchAdminProfileSchema = z
   .superRefine((data, ctx) => {
     if (data.currentPassword && !data.newPassword) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["newPassword"],
         message: tr.NEW_PASSWORD_REQUIRED,
       });
@@ -242,7 +242,7 @@ export const updateBranchAdminProfileSchema = z
 
     if (!data.currentPassword && data.newPassword) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["currentPassword"],
         message: tr.CURRENT_PASSWORD_REQUIRED,
       });
@@ -250,7 +250,7 @@ export const updateBranchAdminProfileSchema = z
 
     if (data.currentPassword && data.newPassword && data.currentPassword === data.newPassword) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["newPassword"],
         message: tr.NEW_PASSWORD_MUST_BE_DIFFERENT,
       });
@@ -268,7 +268,7 @@ export const updateBranchAdminProfileSchema = z
 
     if (!hasUpdatableField) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["name"],
         message: tr.PROFILE_UPDATE_FIELDS_REQUIRED,
       });

@@ -188,6 +188,17 @@ Access token format: `<loginSequence>|<jwt>` (example: `15|eyJ...`).
 5. POST /auth/login with role=branch_admin
 6. POST /branch-admin/create-staff
 7. POST /branch-admin/services
+
+### Staff typical flow
+
+```text
+1. POST /auth/login with role=staff
+2. GET /staff/profile
+3. GET /staff/requests (to see pending requests)
+4. PATCH /staff/appointments/:id/accept
+5. GET /staff/schedule (to see daily plan)
+6. PATCH /staff/appointments/:id/start
+7. PATCH /staff/appointments/:id/complete
 ```
 
 ## Useful Commands

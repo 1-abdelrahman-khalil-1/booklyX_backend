@@ -1,6 +1,9 @@
 import bcrypt from "bcrypt";
+import dayjs from "dayjs";
 import {
   ApplicationStatus,
+  AppointmentStatus,
+  AvailabilityStatus,
   BusinessCategory,
   PrismaClient,
   Role,
@@ -251,6 +254,58 @@ const SEED_STAFF = [
     profileImageUrl: null,
     staffRole: "SPA_SPECIALIST",
     commissionPercentage: 22.5,
+  },
+];
+
+// Staff Availability (working hours per day of week: 1=Monday, 7=Sunday)
+const SEED_STAFF_AVAILABILITY = [
+  // Mazen Tamer - Working days Monday (1) to Friday (5)
+  { email: "mazen.tamer@booklyx.com", dayOfWeek: 1, startTime: "09:00", endTime: "17:00" },
+  { email: "mazen.tamer@booklyx.com", dayOfWeek: 2, startTime: "09:00", endTime: "17:00" },
+  { email: "mazen.tamer@booklyx.com", dayOfWeek: 3, startTime: "09:00", endTime: "17:00" },
+  { email: "mazen.tamer@booklyx.com", dayOfWeek: 4, startTime: "09:00", endTime: "17:00" },
+  { email: "mazen.tamer@booklyx.com", dayOfWeek: 5, startTime: "09:00", endTime: "17:00" },
+  // Abdo Badr - Working days Tuesday (2) to Saturday (6)
+  { email: "abdo.badr@booklyx.com", dayOfWeek: 2, startTime: "10:00", endTime: "18:00" },
+  { email: "abdo.badr@booklyx.com", dayOfWeek: 3, startTime: "10:00", endTime: "18:00" },
+  { email: "abdo.badr@booklyx.com", dayOfWeek: 4, startTime: "10:00", endTime: "18:00" },
+  { email: "abdo.badr@booklyx.com", dayOfWeek: 5, startTime: "10:00", endTime: "18:00" },
+  { email: "abdo.badr@booklyx.com", dayOfWeek: 6, startTime: "10:00", endTime: "18:00" },
+];
+
+// Staff Certificates
+const SEED_STAFF_CERTIFICATES = [
+  {
+    staffEmail: "mazen.tamer@booklyx.com",
+    title: "Advanced Hair Styling Certification",
+    issuer: "International Beauty Association",
+    issueDate: new Date("2023-06-15"),
+    expiryDate: new Date("2026-06-15"),
+    verified: true,
+  },
+  {
+    staffEmail: "mazen.tamer@booklyx.com",
+    title: "Barbering Excellence Certificate",
+    issuer: "Professional Barber Council",
+    issueDate: new Date("2022-03-10"),
+    expiryDate: null,
+    verified: true,
+  },
+  {
+    staffEmail: "abdo.badr@booklyx.com",
+    title: "Medical License - General Practice",
+    issuer: "Ministry of Health",
+    issueDate: new Date("2020-01-20"),
+    expiryDate: new Date("2027-01-20"),
+    verified: true,
+  },
+  {
+    staffEmail: "abdo.badr@booklyx.com",
+    title: "Dermatology Specialization",
+    issuer: "Egyptian Medical Association",
+    issueDate: new Date("2021-09-05"),
+    expiryDate: null,
+    verified: true,
   },
 ];
 
@@ -872,12 +927,204 @@ async function main() {
     console.log(`      Status:   ${app.status}`);
   });
 
-  console.log("\n✨ LINKAGES CREATED:");
+  console.log(
+    "\n✨ LINKAGES CREATED:",
+  );
   console.log("   ✓ Branch Admin Users linked with BranchAdmin applications");
   console.log("   ✓ Service Categories linked with respective branches");
   console.log("   ✓ Services linked with categories and branches");
   console.log("   ✓ Staff members linked with branches");
   console.log("   ✓ Professional profiles created for all staff");
+  console.log("\n────────────────────────────────────────────────────────────\n");
+
+  // Seed Staff Availability
+  console.log("⏰ Seeding staff availability...\n");
+
+  for (const availability of SEED_STAFF_AVAILABILITY) {
+    const staff = await prisma.staff.findFirst({
+      where: {
+        user: { email: availability.email },
+      },
+    });
+
+    if (staff) {
+      await prisma.staffAvailability.upsert({
+        where: {
+          staffId_dayOfWeek: {
+            staffId: staff.id,
+            dayOfWeek: availability.dayOfWeek,
+          },
+        },
+        update: {
+          startTime: availability.startTime,
+          endTime: availability.endTime,
+          status: AvailabilityStatus.AVAILABLE,
+        },
+        create: {
+          staffId: staff.id,
+          dayOfWeek: availability.dayOfWeek,
+          startTime: availability.startTime,
+          endTime: availability.endTime,
+          status: AvailabilityStatus.AVAILABLE,
+        },
+      });
+      console.log(
+        `  ✅ Day ${availability.dayOfWeek}: ${availability.startTime} - ${availability.endTime}`,
+      );
+    }
+  }
+
+  console.log("✅ Staff availability seeded successfully!\n");
+
+  // Seed Staff Certificates
+  console.log("🎓 Seeding staff certificates...\n");
+
+  for (const cert of SEED_STAFF_CERTIFICATES) {
+    const staff = await prisma.staff.findFirst({
+      where: {
+        user: { email: cert.staffEmail },
+      },
+    });
+
+    if (staff) {
+      await prisma.staffCertificate.create({
+        data: {
+          staffId: staff.id,
+          title: cert.title,
+          issuer: cert.issuer,
+          issueDate: cert.issueDate,
+          expiryDate: cert.expiryDate,
+          fileUrl: `https://api.booklyx.com/certificates/${staff.id}/${cert.title.replace(/\s+/g, "_")}.pdf`,
+          verified: cert.verified,
+        },
+      });
+      console.log(`✅ Added certificate: ${cert.title} for ${cert.staffEmail}`);
+    }
+  }
+
+  console.log("\n");
+
+  // Seed Appointments
+  console.log("📅 Seeding appointments...\n");
+
+  const clients = await prisma.client.findMany({ include: { user: true } });
+  const staffMembers = await prisma.staff.findMany({ include: { user: true } });
+
+  if (clients.length > 0 && staffMembers.length > 0) {
+    // Create appointments for each client
+    for (let i = 0; i < clients.length; i++) {
+      const client = clients[i];
+      const staff = staffMembers[i % staffMembers.length]; // Cycle through staff
+
+      // Get a service from the staff member's assigned services
+      const staffService = await prisma.staffService.findFirst({
+        where: { staffId: staff.id },
+        include: { service: true },
+      });
+
+      if (staffService) {
+        const service = staffService.service;
+        const branch = await prisma.branchAdmin.findUnique({
+          where: { id: staff.branchId },
+        });
+
+        const appointmentStatuses = [
+          AppointmentStatus.COMPLETED,
+          AppointmentStatus.CONFIRMED,
+          AppointmentStatus.PENDING,
+        ];
+
+        // Create 2-3 appointments per client with different statuses
+        for (let j = 0; j < 3; j++) {
+          const scheduledDate = dayjs()
+            .add(j - 1, "day")
+            .hour(9 + j * 2)
+            .minute(0)
+            .toDate();
+          const status = appointmentStatuses[j % appointmentStatuses.length];
+
+          const appointment = await prisma.appointment.create({
+            data: {
+              clientId: client.id,
+              staffId: staff.id,
+              serviceId: service.id,
+              branchId: branch.id,
+              scheduledAt: scheduledDate,
+              status: status,
+            },
+          });
+
+          console.log(
+            `  📅 Created appointment: ${client.user.name} → ${staff.user.name} (${service.name}) - Status: ${status}`,
+          );
+
+          // Add review for completed appointments
+          if (status === AppointmentStatus.COMPLETED) {
+            const rating = 4 + Math.floor(Math.random() * 2); // Random rating between 4-5
+            const comments = [
+              "Excellent service, very professional!",
+              "Great experience, will come again!",
+              "Highly recommend this staff member!",
+              "Professional and friendly service.",
+              "Very satisfied with the service quality.",
+            ];
+
+            const review = await prisma.review.create({
+              data: {
+                clientId: client.id,
+                reviewerId: client.userId,
+                serviceId: service.id,
+                branchId: branch.id,
+                staffId: staff.id,
+                appointmentId: appointment.id,
+                rating: rating,
+                comment: comments[Math.floor(Math.random() * comments.length)],
+                isVisible: true,
+                reviewerRole: Role.client,
+              },
+            });
+
+            // Update staff average rating
+            const staffRatings = await prisma.review.findMany({
+              where: { staffId: staff.id },
+              select: { rating: true },
+            });
+
+            const avgRating =
+              staffRatings.length > 0
+                ? staffRatings.reduce((sum, r) => sum + r.rating, 0) /
+                  staffRatings.length
+                : 0;
+
+            await prisma.staff.update({
+              where: { id: staff.id },
+              data: {
+                averageRating: Math.round(avgRating * 10) / 10,
+                reviewCount: staffRatings.length,
+              },
+            });
+
+            console.log(
+              `    ⭐ Added review (${rating}/5): ${review.comment}`,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  console.log("\n✅ Appointments seeded successfully!\n");
+
+  console.log("────────────────────────────────────────────────────────────");
+  console.log("📋 SEED COMPLETED");
+  console.log("────────────────────────────────────────────────────────────");
+
+  console.log("\n✨ FEATURES SEEDED:");
+  console.log("   ✓ Staff Availability (working hours)");
+  console.log("   ✓ Staff Certificates (licenses & qualifications)");
+  console.log("   ✓ Appointments (PENDING, CONFIRMED, COMPLETED statuses)");
+  console.log("   ✓ Reviews & Ratings (for completed appointments)");
+  console.log("   ✓ Staff Average Ratings (calculated from reviews)");
   console.log("\n────────────────────────────────────────────────────────────\n");
 }
 

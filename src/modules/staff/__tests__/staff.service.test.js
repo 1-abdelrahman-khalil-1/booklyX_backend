@@ -40,6 +40,10 @@ beforeEach(() => {
   prisma.service = {
     findUnique: jest.fn(),
   };
+
+  prisma.serviceExecution = {
+    create: jest.fn(),
+  };
 });
 
 describe("Staff Service", () => {
@@ -97,7 +101,7 @@ describe("Staff Service", () => {
   // ─── Appointment Tests ──────────────────────────────────────────────
   describe("acceptAppointment", () => {
     it("should accept appointment successfully", async () => {
-      const appointmentId = "apt-123";
+      const appointmentId = 1;
 
       // Mock getStaffIdByUserId
       prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
@@ -129,50 +133,53 @@ describe("Staff Service", () => {
       prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
       prisma.appointment.findUnique.mockResolvedValueOnce(null);
 
-      await expect(staffService.acceptAppointment(1, "apt-999", "en")).rejects.toThrow();
+      await expect(staffService.acceptAppointment(1, 999, "en")).rejects.toThrow();
     });
 
     it("should reject if staff does not own appointment", async () => {
       prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
       prisma.appointment.findUnique.mockResolvedValueOnce({
-        id: "apt-123",
-        staffId: 10, // Different staff
-        status: "PENDING",
-      });
-
-      await expect(staffService.acceptAppointment(1, "apt-123", "en")).rejects.toThrow();
+      await expect(staffService.acceptAppointment(1, 1, "en")).rejects.toThrow();
     });
 
     it("should reject if appointment not in PENDING status", async () => {
       prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
       prisma.appointment.findUnique.mockResolvedValueOnce({
-        id: "apt-123",
+        id: 1,
         staffId: 5,
         status: "CONFIRMED", // Already confirmed
       });
 
-      await expect(staffService.acceptAppointment(1, "apt-123", "en")).rejects.toThrow();
+      await expect(staffService.acceptAppointment(1, 1, "en")).rejects.toThrow();
     });
   });
 
   describe("completeAppointment", () => {
     it("should complete appointment successfully", async () => {
-      const appointmentId = "apt-456";
+      const appointmentId = 2;
 
-      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
+      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5, staffRole: "DOCTOR" });
       prisma.appointment.findUnique.mockResolvedValueOnce({
         id: appointmentId,
         staffId: 5,
         status: "IN_PROGRESS",
+      });
+      prisma.serviceExecution.create.mockResolvedValueOnce({
+        notes: "Optional notes",
+        attachments: ["file1.jpg"],
       });
       prisma.appointment.update.mockResolvedValueOnce({
         id: appointmentId,
         status: "COMPLETED",
       });
 
-      const result = await staffService.completeAppointment(1, appointmentId, "Optional notes", "en");
+      const result = await staffService.completeAppointment(1, appointmentId, {
+        notes: "Optional notes",
+        attachments: ["file1.jpg"],
+      });
 
       expect(result.status).toBe("COMPLETED");
+      expect(prisma.serviceExecution.create).toHaveBeenCalled();
       expect(prisma.appointment.update).toHaveBeenCalledWith({
         where: { id: appointmentId },
         data: { status: "COMPLETED" },
@@ -317,12 +324,12 @@ describe("Staff Service", () => {
 
       prisma.appointment.findMany.mockResolvedValueOnce([
         {
-          id: "apt-1",
+          id: 1,
           service: { price: 100 },
           scheduledAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
         },
         {
-          id: "apt-2",
+          id: 2,
           service: { price: 200 },
           scheduledAt: now,
         },
@@ -346,7 +353,7 @@ describe("Staff Service", () => {
       prisma.appointment.findMany
         .mockResolvedValueOnce([ // Today's appointments
           {
-            id: "apt-1",
+            id: 1,
             client: { user: { name: "Client 1" } },
             service: { name: "Service 1", durationMinutes: 30 },
             scheduledAt: new Date("2026-04-21T10:00:00"),
@@ -355,7 +362,7 @@ describe("Staff Service", () => {
         ])
         .mockResolvedValueOnce([ // Upcoming appointments
           {
-            id: "apt-2",
+            id: 2,
             client: { user: { name: "Client 2" } },
             service: { name: "Service 2", durationMinutes: 60 },
             scheduledAt: new Date("2026-04-25T14:00:00"),
@@ -380,13 +387,13 @@ describe("Staff Service", () => {
 
       prisma.appointment.findMany.mockResolvedValueOnce([
         {
-          id: "apt-1",
+          id: 1,
           client: { user: { name: "Client 1" } },
           service: { name: "Service 1", durationMinutes: 30 },
           scheduledAt: new Date("2026-04-21T10:00:00"),
         },
         {
-          id: "apt-2",
+          id: 2,
           client: { user: { name: "Client 2" } },
           service: { name: "Service 2", durationMinutes: 60 },
           scheduledAt: new Date("2026-04-22T14:00:00"),

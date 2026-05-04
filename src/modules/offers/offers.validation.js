@@ -10,7 +10,7 @@ const isoDateSchema = z
   });
 
 export const offerIdSchema = z.object({
-  id: z.string({ error: tr.INVALID_ID }).uuid(tr.INVALID_ID),
+  id: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
 });
 
 export const createOfferSchema = z
@@ -33,7 +33,7 @@ export const createOfferSchema = z
   .superRefine((data, ctx) => {
     if (new Date(data.endDate) <= new Date(data.startDate)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["endDate"],
         message: tr.OFFER_END_DATE_AFTER_START_DATE,
       });
@@ -41,7 +41,7 @@ export const createOfferSchema = z
 
     if (data.discountType === OfferDiscountType.PERCENTAGE && data.discountValue > 100) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["discountValue"],
         message: tr.OFFER_PERCENTAGE_RANGE,
       });
@@ -76,7 +76,7 @@ export const updateOfferSchema = z
       && data.discountValue > 100
     ) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["discountValue"],
         message: tr.OFFER_PERCENTAGE_RANGE,
       });
@@ -84,7 +84,7 @@ export const updateOfferSchema = z
 
     if (data.startDate && data.endDate && new Date(data.endDate) <= new Date(data.startDate)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["endDate"],
         message: tr.OFFER_END_DATE_AFTER_START_DATE,
       });
@@ -104,7 +104,7 @@ export const updateOfferSchema = z
 
     if (!hasUpdatableField) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["title"],
         message: tr.OFFER_UPDATE_FIELDS_REQUIRED,
       });

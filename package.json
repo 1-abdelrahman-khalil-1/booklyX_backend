@@ -60,7 +60,9 @@
   },
   "homepage": "https://github.com/1-abdelrahman-khalil-1/booklyX_backend#readme",
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^25.6.0",
+    "jest": "^30.3.0",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"

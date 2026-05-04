@@ -342,7 +342,7 @@ model Service {
 
 model ServiceExecution {
   id            Int         @id @default(autoincrement())
-  appointmentId String      @unique
+  appointmentId Int         @unique
   notes         String?
   attachments   Json?
   createdAt     DateTime    @default(now())
@@ -353,7 +353,7 @@ model ServiceExecution {
 }
 
 model Offer {
-  id            String            @id @default(uuid())
+  id            Int               @id @default(autoincrement())
   branchId      Int
   title         String
   description   String?
@@ -376,7 +376,7 @@ model Offer {
 }
 
 model OfferService {
-  offerId   String
+  offerId   Int
   serviceId Int
   createdAt DateTime @default(now())
 
@@ -394,7 +394,7 @@ model Review {
   serviceId     Int
   branchId      Int
   staffId       Int
-  appointmentId String?  @unique
+  appointmentId Int?     @unique
   rating        Int
   comment       String?
   isVisible     Boolean  @default(true)
@@ -419,7 +419,7 @@ model Review {
 }
 
 model Appointment {
-  id          String            @id @default(uuid())
+  id          Int               @id @default(autoincrement())
   clientId    Int
   staffId     Int
   serviceId   Int
