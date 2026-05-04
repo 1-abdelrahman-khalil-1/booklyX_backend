@@ -74,7 +74,7 @@ export const getAppointmentsHandler = asyncHandler(async (req, res) => {
 export const getAppointmentsDetailsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const userId = req.user.sub;
-  const requestId = req.params.id;
+  const requestId = Number(req.params.id);
   if (!requestId) {
     return res.status(400).json({
       success: false,

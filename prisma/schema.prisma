@@ -388,7 +388,7 @@ model OfferService {
 }
 
 model Review {
-  id            String   @id @default(uuid())
+  id            Int      @id @default(autoincrement())
   clientId      Int?
   reviewerId    Int
   serviceId     Int
