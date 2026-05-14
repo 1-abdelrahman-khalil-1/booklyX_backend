@@ -9,6 +9,7 @@ import {
     createStaffHandler,
     deleteServiceHandler,
     deleteStaffHandler,
+    getBranchAdminProfileHandler,
     getMyServiceCategoriesHandler,
     getMyServicesHandler,
     getMyStaffByIdHandler,
@@ -41,6 +42,13 @@ branchAdminRouter.post("/verify-email", verifyEmailHandler);
 branchAdminRouter.post("/verify-phone", verifyPhoneHandler);
 
 branchAdminRouter.post("/resend-code", resendCodeHandler);
+
+branchAdminRouter.get(
+  "/profile",
+  authenticate,
+  authorize(Role.branch_admin),
+  getBranchAdminProfileHandler,
+);
 
 branchAdminRouter.post(
   "/services",

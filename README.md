@@ -31,7 +31,7 @@ Backend API for BooklyX, built with Node.js, Express 5, Prisma, Zod, and MySQL.
 - API style: JSON REST API
 - Auth: Bearer JWT
 - Localization: `Accept-Language: en` or `ar`
-- Platform header: `platform: APP` or `WEB`
+- Platform header: `platform: APP` or `WEB` (some endpoints are `WEB` only, for example `/admin/*` and most `/branch-admin/*`)
 
 Core route groups:
 
@@ -194,11 +194,10 @@ Access token format: `<loginSequence>|<jwt>` (example: `15|eyJ...`).
 ```text
 1. POST /auth/login with role=staff
 2. GET /staff/profile
-3. GET /staff/requests (to see pending requests)
-4. PATCH /staff/appointments/:id/accept
-5. GET /staff/schedule (to see daily plan)
-6. PATCH /staff/appointments/:id/start
-7. PATCH /staff/appointments/:id/complete
+3. GET /staff/appointments (defaults to pending appointments)
+4. GET /staff/schedule (to see daily plan)
+5. PATCH /staff/appointments/:id/start
+6. PATCH /staff/appointments/:id/complete
 ```
 
 ## Useful Commands

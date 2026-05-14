@@ -1,15 +1,15 @@
 import bcrypt from "bcrypt";
 import dayjs from "dayjs";
 import {
-  ApplicationStatus,
-  AppointmentStatus,
-  AvailabilityStatus,
-  BusinessCategory,
-  PrismaClient,
-  Role,
-  ServiceApprovalStatus,
-  StaffRole,
-  UserStatus,
+    ApplicationStatus,
+    AppointmentStatus,
+    AvailabilityStatus,
+    BusinessCategory,
+    PrismaClient,
+    Role,
+    ServiceApprovalStatus,
+    StaffRole,
+    UserStatus,
 } from "../src/generated/prisma/client.js";
 
 const SUPER_ADMIN_EMAIL = "admin@booklyx.com";
@@ -195,7 +195,7 @@ const STAFF_BRANCH_MAPPING = [
     staffEmail: "mazen.tamer@booklyx.com",
     branchEmail: "mahmoud.ibrahim@booklyx.com",
     age: 22,
-    startDate: new Date("2026-01-05"),
+    startDateOffsetDays: 120,
     profileImageUrl: null,
     staffRole: StaffRole.BARBER,
     commissionPercentage: 15,
@@ -205,7 +205,7 @@ const STAFF_BRANCH_MAPPING = [
     staffEmail: "abdo.badr@booklyx.com",
     branchEmail: "ahmed.samir@booklyx.com",
     age: 30,
-    startDate: new Date("2026-01-12"),
+    startDateOffsetDays: 105,
     profileImageUrl: null,
     staffRole: StaffRole.DOCTOR,
     commissionPercentage: 20,
@@ -239,9 +239,9 @@ const SEED_STAFF = [
     phone: "01000000030",
     password: "12345678",
     age: 26,
-    startDate: new Date("2026-01-15"),
+    startDateOffsetDays: 90,
     profileImageUrl: null,
-    staffRole: "SPA_SPECIALIST",
+    staffRole: StaffRole.SPA_SPECIALIST,
     commissionPercentage: 25,
   },
   {
@@ -250,9 +250,9 @@ const SEED_STAFF = [
     phone: "01000000031",
     password: "12345678",
     age: 28,
-    startDate: new Date("2026-02-01"),
+    startDateOffsetDays: 75,
     profileImageUrl: null,
-    staffRole: "SPA_SPECIALIST",
+    staffRole: StaffRole.SPA_SPECIALIST,
     commissionPercentage: 22.5,
   },
 ];
@@ -279,15 +279,15 @@ const SEED_STAFF_CERTIFICATES = [
     staffEmail: "mazen.tamer@booklyx.com",
     title: "Advanced Hair Styling Certification",
     issuer: "International Beauty Association",
-    issueDate: new Date("2023-06-15"),
-    expiryDate: new Date("2026-06-15"),
+    issueDateOffsetMonths: 30,
+    expiryDateOffsetMonths: 18,
     verified: true,
   },
   {
     staffEmail: "mazen.tamer@booklyx.com",
     title: "Barbering Excellence Certificate",
     issuer: "Professional Barber Council",
-    issueDate: new Date("2022-03-10"),
+    issueDateOffsetMonths: 42,
     expiryDate: null,
     verified: true,
   },
@@ -295,21 +295,103 @@ const SEED_STAFF_CERTIFICATES = [
     staffEmail: "abdo.badr@booklyx.com",
     title: "Medical License - General Practice",
     issuer: "Ministry of Health",
-    issueDate: new Date("2020-01-20"),
-    expiryDate: new Date("2027-01-20"),
+    issueDateOffsetMonths: 60,
+    expiryDateOffsetMonths: 24,
     verified: true,
   },
   {
     staffEmail: "abdo.badr@booklyx.com",
     title: "Dermatology Specialization",
     issuer: "Egyptian Medical Association",
-    issueDate: new Date("2021-09-05"),
+    issueDateOffsetMonths: 48,
     expiryDate: null,
     verified: true,
   },
 ];
 
 const prisma = new PrismaClient();
+
+const SEED_CLIENT_EMAILS = SEED_USERS
+  .filter((user) => user.role === Role.client)
+  .map((user) => user.email);
+
+const SEED_STAFF_EMAILS = [
+  ...SEED_INITIAL_STAFF_USERS.map((staff) => staff.email),
+  ...SEED_STAFF.map((staff) => staff.email),
+];
+
+function daysAgo(days) {
+  return dayjs().subtract(days, "day").startOf("day").toDate();
+}
+
+function monthsAgo(months) {
+  return dayjs().subtract(months, "month").startOf("day").toDate();
+}
+
+function monthsFromNow(months) {
+  return dayjs().add(months, "month").startOf("day").toDate();
+}
+
+function appointmentDate(dayOffset, hour, minute = 0) {
+  return dayjs()
+    .add(dayOffset, "day")
+    .hour(hour)
+    .minute(minute)
+    .second(0)
+    .millisecond(0)
+    .toDate();
+}
+
+async function resetSeededAppointmentsAndReviews() {
+  const seededClients = await prisma.client.findMany({
+    where: { user: { email: { in: SEED_CLIENT_EMAILS } } },
+    select: { id: true },
+  });
+
+  const clientIds = seededClients.map((client) => client.id);
+  if (clientIds.length === 0) {
+    return;
+  }
+
+  const appointments = await prisma.appointment.findMany({
+    where: { clientId: { in: clientIds } },
+    select: { id: true },
+  });
+  const appointmentIds = appointments.map((appointment) => appointment.id);
+
+  await prisma.review.deleteMany({
+    where: {
+      OR: [
+        { clientId: { in: clientIds } },
+        { appointmentId: { in: appointmentIds } },
+      ],
+    },
+  });
+
+  await prisma.serviceExecution.deleteMany({
+    where: { appointmentId: { in: appointmentIds } },
+  });
+
+  await prisma.appointment.deleteMany({
+    where: { id: { in: appointmentIds } },
+  });
+}
+
+async function refreshStaffRating(staffId) {
+  const aggregate = await prisma.review.aggregate({
+    where: { staffId, isVisible: true },
+    _avg: { rating: true },
+    _count: { rating: true },
+  });
+
+  await prisma.staff.update({
+    where: { id: staffId },
+    data: {
+      averageRating: Number((aggregate._avg.rating ?? 0).toFixed(2)),
+      reviewCount: aggregate._count.rating,
+    },
+  });
+}
 
 async function main() {
   console.log("🌱 Starting database seed...\n");
@@ -358,7 +440,7 @@ async function main() {
 
   for (const user of SEED_USERS) {
     const userPasswordHash = await bcrypt.hash(user.password, SALT_ROUNDS);
-    await prisma.user.upsert({
+    const seededUser = await prisma.user.upsert({
       where: { email: user.email },
       update: {
         name: user.name,
@@ -380,6 +462,14 @@ async function main() {
         phoneVerified: true,
       },
     });
+
+    if (user.role === Role.client) {
+      await prisma.client.upsert({
+        where: { userId: seededUser.id },
+        update: {},
+        create: { userId: seededUser.id },
+      });
+    }
 
     console.log(`👤 Seeded user: ${user.email} (${user.role})`);
   }
@@ -620,7 +710,7 @@ async function main() {
           data: {
             branchId: branch.id,
             age: staffMapping.age,
-            startDate: staffMapping.startDate,
+            startDate: daysAgo(staffMapping.startDateOffsetDays),
             profileImageUrl: staffMapping.profileImageUrl,
             staffRole: staffMapping.staffRole,
             commissionPercentage: staffMapping.commissionPercentage,
@@ -632,7 +722,7 @@ async function main() {
             userId: staff.id,
             branchId: branch.id,
             age: staffMapping.age,
-            startDate: staffMapping.startDate,
+            startDate: daysAgo(staffMapping.startDateOffsetDays),
             profileImageUrl: staffMapping.profileImageUrl,
             staffRole: staffMapping.staffRole,
             commissionPercentage: staffMapping.commissionPercentage,
@@ -834,7 +924,7 @@ async function main() {
         where: { userId: staffUser.id },
         update: {
           age: staffData.age,
-          startDate: staffData.startDate,
+          startDate: daysAgo(staffData.startDateOffsetDays),
           profileImageUrl: staffData.profileImageUrl,
           staffRole: staffData.staffRole,
           commissionPercentage: staffData.commissionPercentage,
@@ -843,7 +933,7 @@ async function main() {
           userId: staffUser.id,
           branchId: approvedBranch.id,
           age: staffData.age,
-          startDate: staffData.startDate,
+          startDate: daysAgo(staffData.startDateOffsetDays),
           profileImageUrl: staffData.profileImageUrl,
           staffRole: staffData.staffRole,
           commissionPercentage: staffData.commissionPercentage,
@@ -894,9 +984,9 @@ async function main() {
     "\n✅ All entities linked successfully!\n",
   );
 
-  console.log("────────────────────────────────────────────────────────────");
+  console.log("────────");
   console.log("📋 SEEDED DATA SUMMARY");
-  console.log("────────────────────────────────────────────────────────────");
+  console.log("────────");
   console.log("\n🔐 SUPER ADMIN:");
   console.log(`   Email:    ${SUPER_ADMIN_EMAIL}`);
   console.log(`   Password: ${SUPER_ADMIN_PASSWORD}`);
@@ -935,7 +1025,7 @@ async function main() {
   console.log("   ✓ Services linked with categories and branches");
   console.log("   ✓ Staff members linked with branches");
   console.log("   ✓ Professional profiles created for all staff");
-  console.log("\n────────────────────────────────────────────────────────────\n");
+  console.log("\n────────\n");
 
   // Seed Staff Availability
   console.log("⏰ Seeding staff availability...\n");
@@ -987,13 +1077,22 @@ async function main() {
     });
 
     if (staff) {
+      await prisma.staffCertificate.deleteMany({
+        where: {
+          staffId: staff.id,
+          title: cert.title,
+        },
+      });
+
       await prisma.staffCertificate.create({
         data: {
           staffId: staff.id,
           title: cert.title,
           issuer: cert.issuer,
-          issueDate: cert.issueDate,
-          expiryDate: cert.expiryDate,
+          issueDate: monthsAgo(cert.issueDateOffsetMonths),
+          expiryDate: cert.expiryDateOffsetMonths
+            ? monthsFromNow(cert.expiryDateOffsetMonths)
+            : null,
           fileUrl: `https://api.booklyx.com/certificates/${staff.id}/${cert.title.replace(/\s+/g, "_")}.pdf`,
           verified: cert.verified,
         },
@@ -1007,11 +1106,51 @@ async function main() {
   // Seed Appointments
   console.log("📅 Seeding appointments...\n");
 
-  const clients = await prisma.client.findMany({ include: { user: true } });
-  const staffMembers = await prisma.staff.findMany({ include: { user: true } });
+  await resetSeededAppointmentsAndReviews();
+
+  const clients = await prisma.client.findMany({
+    where: { user: { email: { in: SEED_CLIENT_EMAILS } } },
+    include: { user: true },
+    orderBy: { id: "asc" },
+  });
+  const staffMembers = await prisma.staff.findMany({
+    where: { user: { email: { in: SEED_STAFF_EMAILS } } },
+    include: { user: true },
+    orderBy: { id: "asc" },
+  });
 
   if (clients.length > 0 && staffMembers.length > 0) {
-    // Create appointments for each client
+    const appointmentPlan = [
+      {
+        dayOffset: -6,
+        hour: 10,
+        status: AppointmentStatus.COMPLETED,
+        rating: 5,
+        comment: "Excellent service and friendly staff.",
+      },
+      {
+        dayOffset: -3,
+        hour: 12,
+        status: AppointmentStatus.COMPLETED,
+        rating: 4,
+        comment: "Great experience, would book again.",
+      },
+      { dayOffset: -1, hour: 14, status: AppointmentStatus.CANCELED },
+      {
+        dayOffset: -1,
+        hour: 16,
+        status: AppointmentStatus.COMPLETED,
+        rating: 5,
+        comment: "Smooth visit and clean place.",
+      },
+      { dayOffset: 0, hour: 11, status: AppointmentStatus.CONFIRMED },
+      { dayOffset: 0, hour: 15, status: AppointmentStatus.PENDING },
+      { dayOffset: 0, hour: 17, status: AppointmentStatus.IN_PROGRESS },
+      { dayOffset: 1, hour: 10, status: AppointmentStatus.CONFIRMED },
+      { dayOffset: 4, hour: 13, status: AppointmentStatus.PENDING },
+      { dayOffset: 10, hour: 16, status: AppointmentStatus.PENDING },
+    ];
+
     for (let i = 0; i < clients.length; i++) {
       const client = clients[i];
       const staff = staffMembers[i % staffMembers.length]; // Cycle through staff
@@ -1028,20 +1167,15 @@ async function main() {
           where: { id: staff.branchId },
         });
 
-        const appointmentStatuses = [
-          AppointmentStatus.COMPLETED,
-          AppointmentStatus.CONFIRMED,
-          AppointmentStatus.PENDING,
-        ];
+        if (!branch) {
+          continue;
+        }
 
-        // Create 2-3 appointments per client with different statuses
-        for (let j = 0; j < 3; j++) {
-          const scheduledDate = dayjs()
-            .add(j - 1, "day")
-            .hour(9 + j * 2)
-            .minute(0)
-            .toDate();
-          const status = appointmentStatuses[j % appointmentStatuses.length];
+        for (const plan of appointmentPlan) {
+          const scheduledDate = appointmentDate(
+            plan.dayOffset,
+            plan.hour + i,
+          );
 
           const appointment = await prisma.appointment.create({
             data: {
@@ -1050,26 +1184,12 @@ async function main() {
               serviceId: service.id,
               branchId: branch.id,
               scheduledAt: scheduledDate,
-              status: status,
+              status: plan.status,
             },
           });
 
-          console.log(
-            `  📅 Created appointment: ${client.user.name} → ${staff.user.name} (${service.name}) - Status: ${status}`,
-          );
-
-          // Add review for completed appointments
-          if (status === AppointmentStatus.COMPLETED) {
-            const rating = 4 + Math.floor(Math.random() * 2); // Random rating between 4-5
-            const comments = [
-              "Excellent service, very professional!",
-              "Great experience, will come again!",
-              "Highly recommend this staff member!",
-              "Professional and friendly service.",
-              "Very satisfied with the service quality.",
-            ];
-
-            const review = await prisma.review.create({
+          if (plan.status === AppointmentStatus.COMPLETED) {
+            await prisma.review.create({
               data: {
                 clientId: client.id,
                 reviewerId: client.userId,
@@ -1077,47 +1197,31 @@ async function main() {
                 branchId: branch.id,
                 staffId: staff.id,
                 appointmentId: appointment.id,
-                rating: rating,
-                comment: comments[Math.floor(Math.random() * comments.length)],
-                isVisible: true,
+                rating: plan.rating,
+                comment: plan.comment,
                 reviewerRole: Role.client,
+                createdAt: dayjs(scheduledDate).add(1, "hour").toDate(),
               },
             });
-
-            // Update staff average rating
-            const staffRatings = await prisma.review.findMany({
-              where: { staffId: staff.id },
-              select: { rating: true },
-            });
-
-            const avgRating =
-              staffRatings.length > 0
-                ? staffRatings.reduce((sum, r) => sum + r.rating, 0) /
-                  staffRatings.length
-                : 0;
-
-            await prisma.staff.update({
-              where: { id: staff.id },
-              data: {
-                averageRating: Math.round(avgRating * 10) / 10,
-                reviewCount: staffRatings.length,
-              },
-            });
-
-            console.log(
-              `    ⭐ Added review (${rating}/5): ${review.comment}`,
-            );
           }
+
+          console.log(
+            `✅ Created appointment for client ${client.user.email} with staff ${staff.user.email} on ${scheduledDate} (Status: ${plan.status})`,
+          );
         }
       }
+    }
+
+    for (const staff of staffMembers) {
+      await refreshStaffRating(staff.id);
     }
   }
 
   console.log("\n✅ Appointments seeded successfully!\n");
 
-  console.log("────────────────────────────────────────────────────────────");
+  console.log("────────");
   console.log("📋 SEED COMPLETED");
-  console.log("────────────────────────────────────────────────────────────");
+  console.log("────────");
 
   console.log("\n✨ FEATURES SEEDED:");
   console.log("   ✓ Staff Availability (working hours)");
@@ -1125,7 +1229,7 @@ async function main() {
   console.log("   ✓ Appointments (PENDING, CONFIRMED, COMPLETED statuses)");
   console.log("   ✓ Reviews & Ratings (for completed appointments)");
   console.log("   ✓ Staff Average Ratings (calculated from reviews)");
-  console.log("\n────────────────────────────────────────────────────────────\n");
+  console.log("\n────────\n");
 }
 
 main()

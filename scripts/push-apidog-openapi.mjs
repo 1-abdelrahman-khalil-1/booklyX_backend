@@ -19,14 +19,13 @@ const endpointOverwriteBehavior = allowedOverwriteBehaviors.has(
   process.env.APIDOG_ENDPOINT_OVERWRITE_BEHAVIOR,
 )
   ? process.env.APIDOG_ENDPOINT_OVERWRITE_BEHAVIOR
-  : "AUTO_MERGE";
+  : "OVERWRITE_EXISTING";
 
 const schemaOverwriteBehavior = allowedOverwriteBehaviors.has(
   process.env.APIDOG_SCHEMA_OVERWRITE_BEHAVIOR,
 )
   ? process.env.APIDOG_SCHEMA_OVERWRITE_BEHAVIOR
-  : "AUTO_MERGE";
-
+  : "OVERWRITE_EXISTING";
 const debugSync = process.env.APIDOG_SYNC_DEBUG === "1";
 
 if (!token) {

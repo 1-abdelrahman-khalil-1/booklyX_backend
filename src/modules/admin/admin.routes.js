@@ -5,6 +5,7 @@ import {
     approveApplicationHandler,
     approveServiceHandler,
     getApplicationDetailHandler,
+    getUserProfileHandler,
     listApplicationsHandler,
     listPendingServicesHandler,
     rejectApplicationHandler,
@@ -19,6 +20,8 @@ const adminRouter = Router();
 adminRouter.use(authenticate, authorize(Role.super_admin));
 
 adminRouter.get("/applications", listApplicationsHandler);
+
+adminRouter.get("/users/:id", getUserProfileHandler);
 
 adminRouter.get("/applications/:id", getApplicationDetailHandler);
 

@@ -1,15 +1,15 @@
 import {
-  ApplicationStatus,
-  Role,
-  ServiceApprovalStatus,
-  UserStatus,
+    ApplicationStatus,
+    Role,
+    ServiceApprovalStatus,
+    UserStatus,
 } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 // Validation is now handled in admin.controller.js
 
-// ─── Domain Error Classes ─────────────────────────────────────────────────────
+// ─── Domain Error Classes ─
 
 export class AdminValidationError extends AppError {
   constructor(message, params) {
@@ -47,6 +47,7 @@ export class ServiceNotPendingError extends AppError {
 }
 
 export async function listApplications(status) {
+  
   const applications = await prisma.branchAdmin.findMany({
     where: status ? { status } : { status: ApplicationStatus.PENDING_APPROVAL },
     select: {
@@ -290,4 +291,39 @@ export async function rejectService(id, reason) {
   });
 
   return { message: tr.SERVICE_REJECTED, service: updatedService };
+}
+
+export async function getUserProfile(userId) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      status: true,
+      emailVerified: true,
+      phoneVerified: true,
+      createdAt: true,
+      updatedAt: true,
+      staff: {
+        select: {
+          id: true,
+          branchId: true,
+          profileImageUrl: true,
+          age: true,
+          staffRole: true,
+          commissionPercentage: true,
+          professionalProfile: true,
+          averageRating: true,
+          reviewCount: true,
+        },
+      },
+    },
+  });
+
+  if (!user) throw new AppError(tr.USER_NOT_FOUND, 404);
+
+  return { user };
 }

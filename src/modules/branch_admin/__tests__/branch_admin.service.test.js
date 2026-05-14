@@ -1,26 +1,26 @@
 import {
-    afterEach,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    jest
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest
 } from "@jest/globals";
 import bcrypt from "bcrypt";
 import {
-    ApplicationStatus,
-    Role,
-    StaffRole,
-    UserStatus,
+  ApplicationStatus,
+  Role,
+  StaffRole,
+  UserStatus,
 } from "../../../generated/prisma/client.js";
 import prisma from "../../../lib/prisma.js";
 import {
-    ApplicationNotFound,
-    BranchAdminValidationError,
-    createStaff,
-    deleteStaff,
-    StaffNotFoundError,
-    updateBranchAdminProfile,
+  ApplicationNotFound,
+  BranchAdminValidationError,
+  createStaff,
+  deleteStaff,
+  StaffNotFoundError,
+  updateBranchAdminProfile,
 } from "../branch_admin.service.js";
 
 describe("Branch Admin Service - createStaff", () => {

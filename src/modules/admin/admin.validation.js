@@ -21,24 +21,22 @@ export function validateAdminInput(schema, data) {
     throw new AdminValidationError(firstIssue.message);
 }
 
-export const approveApplicationSchema = z.object({
-    id: z.number(),
-});
-
-export const applicationParamSchema = z.object({
+export const idParamSchema = z.object({
     id: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
 });
 
-export const rejectApplicationSchema = z.object({
-    id: z.number(),
-    reason: z.string({ error: tr.REJECTION_REASON_REQUIRED }),
+export const listApplicationsQuerySchema = z.object({
+    status: z.enum(["PENDING_APPROVAL", "APPROVED", "REJECTED"]).optional(),
+});
+export const rejectReasonSchema = z.object({
+    reason: z
+        .string()
+        .trim()
+        .min(1, {
+            message: tr.REJECTION_REASON_REQUIRED,
+        }),
 });
 
-export const approveServiceSchema = z.object({
-    id: z.number(),
-});
-
-export const rejectServiceSchema = z.object({
-    id: z.number(),
-    reason: z.string({ error: tr.REJECTION_REASON_REQUIRED }),
+export const includeCodesQuerySchema = z.object({
+    includeCodes: z.enum(["true", "false"]).optional(),
 });

@@ -506,6 +506,33 @@
           }
         },
         {
+          "name": "Get Branch Profile",
+          "request": {
+            "method": "GET",
+            "description": "Get authenticated branch admin profile.",
+            "header": [
+              { "key": "Accept-Language", "value": "{{lang}}" },
+              { "key": "Authorization", "value": "Bearer {{branchToken}}" },
+              { "key": "platform", "value": "{{platform}}" }
+            ],
+            "url": "{{baseUrl}}/branch-admin/profile"
+          },
+          "response": [
+            {
+              "name": "default",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/branch-admin/profile"
+              },
+              "status": "OK",
+              "code": 200,
+              "_body": "{\n  \"status\": 200,\n  \"error\": false,\n  \"message\": \"Profile retrieved successfully.\",\n  \"data\": {\n    \"user\": {\n      \"id\": 1,\n      \"ownerName\": \"Prime Salon\",\n      \"email\": \"branch@example.com\",\n      \"phone\": \"01000000022\",\n      \"businessName\": \"Prime Salon\",\n      \"category\": \"SALON\"\n    }\n  }\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
           "name": "Create Service",
           "request": {
             "method": "POST",

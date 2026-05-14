@@ -88,7 +88,7 @@ enum OfferDiscountType {
   FIXED
 }
 
-// ─── User & Verification ─────────────────────────────────────────────────────
+// ─── User & Verification ─
 
 model User {
   id       Int        @id @default(autoincrement())
@@ -419,15 +419,15 @@ model Review {
 }
 
 model Appointment {
-  id          Int               @id @default(autoincrement())
-  clientId    Int
-  staffId     Int
-  serviceId   Int
-  branchId    Int
-  scheduledAt DateTime
-  status      AppointmentStatus @default(PENDING)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id            Int               @id @default(autoincrement())
+  clientId      Int
+  staffId       Int
+  serviceId     Int
+  branchId      Int
+  scheduledAt   DateTime
+  status        AppointmentStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   client           Client             @relation(fields: [clientId], references: [id])
   staff            Staff              @relation(fields: [staffId], references: [id])
@@ -441,8 +441,6 @@ model Appointment {
   @@index([serviceId])
   @@index([branchId])
   @@index([status])
-
-  
 }
 
 model StaffAvailability {

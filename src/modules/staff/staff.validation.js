@@ -10,7 +10,7 @@ class StaffValidationError extends AppError {
   }
 }
 
-// ─── Schedule Query ──────────────────────────────────────────────────────
+// ─── Schedule Query ──
 export const scheduleQuerySchema = z.object({
   date: z.coerce.date({
     error: tr.INVALID_DATE_FORMAT_USE_ISO_STRING,
@@ -59,7 +59,7 @@ export const updateAvailabilitySchema = availabilitySchemaBase
     }
   });
 
-// ─── Income Query ───────────────────────────────────────────────────────
+// ─── Income Query ───
 export const incomeQuerySchema = z.object({
   range: z.enum(IncomeRangeValues, {
     error: tr.STAFF_INCOME_RANGE_REQUIRED,
@@ -75,6 +75,14 @@ export const appointmentActionSchema = z.object({
     })
     .optional()
     .nullable(),
+});
+
+export const appointmentsQuerySchema = z.object({
+  status: z
+    .enum(["pending", "open", "closed"], {
+      error: tr.INVALID_STATUS_FILTER,
+    })
+    .optional(),
 });
 
 // ─── Available Slots Query ──────────────────────────────────────────────
@@ -93,7 +101,7 @@ export const availableSlotsQuerySchema = z.object({
     .positive({ message: tr.INVALID_ID }),
 });
 
-// ─── ID Schemas ─────────────────────────────────────────────────────────
+// ─── ID Schemas ─────
 export const appointmentIdSchema = z.object({
   appointmentId: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
 });

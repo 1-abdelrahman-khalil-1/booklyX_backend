@@ -81,10 +81,12 @@ describe("Staff Service", () => {
 
       const result = await staffService.getStaffProfile(1, "en");
 
-      expect(result).toHaveProperty("name", "Dr. Ahmed");
-      expect(result).toHaveProperty("phone", "01234567890");
-      expect(result).toHaveProperty("staffRole", "DOCTOR");
-      expect(result).toHaveProperty("averageRating", 4.5);
+      // service now returns nested shape { user: { ... } }
+      expect(result).toHaveProperty("user");
+      expect(result.user).toHaveProperty("name", "Dr. Ahmed");
+      expect(result.user).toHaveProperty("phone", "01234567890");
+      expect(result.user.staff).toHaveProperty("staffRole", "DOCTOR");
+      expect(result.user.staff).toHaveProperty("averageRating", 4.5);
       expect(prisma.staff.findUnique).toHaveBeenCalledWith({
         where: { userId: 1 },
         select: expect.any(Object),
@@ -98,61 +100,6 @@ describe("Staff Service", () => {
     });
   });
 
-  // ─── Appointment Tests ──────────────────────────────────────────────
-  describe("acceptAppointment", () => {
-    it("should accept appointment successfully", async () => {
-      const appointmentId = 1;
-
-      // Mock getStaffIdByUserId
-      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
-
-      // Mock findUnique for appointment check
-      prisma.appointment.findUnique.mockResolvedValueOnce({
-        id: appointmentId,
-        staffId: 5,
-        status: "PENDING",
-      });
-
-      // Mock update
-      prisma.appointment.update.mockResolvedValueOnce({
-        id: appointmentId,
-        status: "CONFIRMED",
-      });
-
-      const result = await staffService.acceptAppointment(1, appointmentId, "en");
-
-      expect(result.status).toBe("CONFIRMED");
-      expect(prisma.appointment.update).toHaveBeenCalledWith({
-        where: { id: appointmentId },
-        data: { status: "CONFIRMED" },
-        select: expect.any(Object),
-      });
-    });
-
-    it("should reject if appointment not found", async () => {
-      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
-      prisma.appointment.findUnique.mockResolvedValueOnce(null);
-
-      await expect(staffService.acceptAppointment(1, 999, "en")).rejects.toThrow();
-    });
-
-    it("should reject if staff does not own appointment", async () => {
-      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
-      prisma.appointment.findUnique.mockResolvedValueOnce({
-      await expect(staffService.acceptAppointment(1, 1, "en")).rejects.toThrow();
-    });
-
-    it("should reject if appointment not in PENDING status", async () => {
-      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
-      prisma.appointment.findUnique.mockResolvedValueOnce({
-        id: 1,
-        staffId: 5,
-        status: "CONFIRMED", // Already confirmed
-      });
-
-      await expect(staffService.acceptAppointment(1, 1, "en")).rejects.toThrow();
-    });
-  });
 
   describe("completeAppointment", () => {
     it("should complete appointment successfully", async () => {
@@ -189,6 +136,43 @@ describe("Staff Service", () => {
   });
 
   // ─── Availability Tests ─────────────────────────────────────────────
+  describe("startAppointment", () => {
+    it("should start a confirmed appointment successfully", async () => {
+      const appointmentId = 1;
+
+      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
+      prisma.appointment.findUnique.mockResolvedValueOnce({
+        id: appointmentId,
+        staffId: 5,
+        status: "CONFIRMED",
+      });
+      prisma.appointment.update.mockResolvedValueOnce({
+        id: appointmentId,
+        status: "IN_PROGRESS",
+      });
+
+      const result = await staffService.startAppointment(1, appointmentId);
+
+      expect(result.status).toBe("IN_PROGRESS");
+      expect(prisma.appointment.update).toHaveBeenCalledWith({
+        where: { id: appointmentId },
+        data: { status: "IN_PROGRESS" },
+        select: expect.any(Object),
+      });
+    });
+
+    it("should reject if appointment is not confirmed", async () => {
+      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
+      prisma.appointment.findUnique.mockResolvedValueOnce({
+        id: 1,
+        staffId: 5,
+        status: "PENDING",
+      });
+
+      await expect(staffService.startAppointment(1, 1)).rejects.toThrow();
+    });
+  });
+
   describe("createStaffAvailability", () => {
     it("should create availability successfully", async () => {
       const availabilityData = {
@@ -310,7 +294,7 @@ describe("Staff Service", () => {
     });
   });
 
-  // ─── Income Tests ────────────────────────────────────────────────────
+  // ─── Income Tests 
   describe("getIncomeStats", () => {
     it("should calculate income for weekly range", async () => {
       prisma.staff.findUnique.mockResolvedValueOnce({
@@ -372,16 +356,15 @@ describe("Staff Service", () => {
 
       const result = await staffService.getStaffSchedule(1, dateStr, "en");
 
-      expect(result).toHaveProperty("today");
-      expect(result).toHaveProperty("upcoming");
-      expect(result.today).toHaveLength(1);
-      expect(result.upcoming).toHaveLength(1);
-      expect(result.today[0]).toHaveProperty("clientName", "Client 1");
+      // service returns appointments array
+      expect(result).toHaveProperty("appointments");
+      expect(result.appointments).toHaveLength(1);
+      expect(result.appointments[0]).toHaveProperty("clientName", "Client 1");
     });
   });
 
   // ─── Pending Requests Tests ─────────────────────────────────────────
-  describe("getPendingRequests", () => {
+  describe("getAppointments", () => {
     it("should retrieve only PENDING appointments", async () => {
       prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
 
@@ -400,7 +383,7 @@ describe("Staff Service", () => {
         },
       ]);
 
-      const result = await staffService.getPendingRequests(1, "en");
+      const result = await staffService.getAppointments(1);
 
       expect(result).toHaveLength(2);
       expect(result[0]).toHaveProperty("clientName", "Client 1");
@@ -408,6 +391,21 @@ describe("Staff Service", () => {
         expect.objectContaining({
           where: expect.objectContaining({
             status: "PENDING",
+          }),
+        })
+      );
+    });
+
+    it("should use the provided appointment status filter", async () => {
+      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
+      prisma.appointment.findMany.mockResolvedValueOnce([]);
+
+      await staffService.getAppointments(1, "CONFIRMED");
+
+      expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: "CONFIRMED",
           }),
         })
       );

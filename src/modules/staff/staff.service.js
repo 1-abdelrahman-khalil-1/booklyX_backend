@@ -1,14 +1,15 @@
 import dayjs from "dayjs";
 import {
-    AppointmentStatus,
-    AvailabilityStatus,
-    ServiceApprovalStatus,
-    StaffRole,
+  AppointmentStatus,
+  AvailabilityStatus,
+  ServiceApprovalStatus,
+  StaffRole,
 } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import { IncomeRange } from "../../utils/enums.js";
+export { getStaffProfile } from "./staff.profile.js";
 
 // ─── Custom Error Classes ───────────────────────────────────────────────
 class StaffNotFoundError extends AppError {
@@ -60,152 +61,57 @@ class InvalidAppointmentStatusError extends AppError {
   }
 }
 
-// ─── Helper: Get Staff ID from User ID ──────────────────────────────────
 async function getStaffIdByUserId(userId) {
   const staff = await prisma.staff.findUnique({
     where: { userId },
     select: { id: true },
   });
+
   if (!staff) {
     throw new StaffNotFoundError();
   }
+
   return staff.id;
-}
-
-// ─── Staff Profile ──────────────────────────────────────────────────────
-export async function getStaffProfile(userId) {
-  const staff = await prisma.staff.findUnique({
-    where: { userId },
-    select: {
-      id: true,
-      profileImageUrl: true,
-      age: true,
-      staffRole: true,
-      commissionPercentage: true,
-      averageRating: true,
-      reviewCount: true,
-      user: {
-        select: {
-          name: true,
-          phone: true,
-        },
-      },
-      branch: {
-        select: {
-          businessName: true,
-          category: true,
-        },
-      },
-      professionalProfile: {
-        select: {
-          bio: true,
-          yearsOfExperience: true,
-          specialization: true,
-        },
-      },
-    },
-  });
-
-  if (!staff) {
-    throw new StaffNotFoundError();
-  }
-
-  return {
-    id: staff.id,
-    name: staff.user.name,
-    phone: staff.user.phone,
-    profileImageUrl: staff.profileImageUrl,
-    staffRole: staff.staffRole,
-    age: staff.age,
-    commissionPercentage: staff.commissionPercentage,
-    branch: {
-      businessName: staff.branch.businessName,
-      category: staff.branch.category,
-    },
-    professionalProfile: staff.professionalProfile
-      ? {
-        bio: staff.professionalProfile.bio,
-        experience: staff.professionalProfile.yearsOfExperience,
-        specialization: staff.professionalProfile.specialization,
-      }
-      : null,
-    averageRating: staff.averageRating,
-    reviewCount: staff.reviewCount,
-  };
 }
 
 // ─── Staff Schedule ─────────────────────────────────────────────────────
 export async function getStaffSchedule(userId, dateStr) {
-  // Get staff ID from userId
   const staffId = await getStaffIdByUserId(userId);
 
   const targetDate = dayjs(dateStr).toDate();
   const dayStart = dayjs(targetDate).startOf("day").toDate();
   const dayEnd = dayjs(targetDate).endOf("day").toDate();
 
-  // Get future appointments (next 30 days from target date)
-  const futureStart = dayjs(targetDate).add(1, "day").startOf("day").toDate();
-  const futureEnd = dayjs(targetDate).add(30, "day").endOf("day").toDate();
-
-  const [todayAppointments, upcomingAppointments] = await Promise.all([
-    prisma.appointment.findMany({
-      where: {
-        staffId,
-        scheduledAt: {
-          gte: dayStart,
-          lte: dayEnd,
-        },
+  const appointments = await prisma.appointment.findMany({
+    where: {
+      staffId,
+      status: AppointmentStatus.CONFIRMED || AppointmentStatus.IN_PROGRESS,
+      scheduledAt: {
+        gte: dayStart,
+        lte: dayEnd,
       },
-      select: {
-        id: true,
-        client: {
-          select: {
-            user: {
-              select: { name: true },
-            },
+    },
+    select: {
+      id: true,
+      client: {
+        select: {
+          user: {
+            select: { name: true },
           },
         },
-        service: {
-          select: {
-            name: true,
-            durationMinutes: true,
-            price: true,
-          },
-        },
-        scheduledAt: true,
-        status: true,
       },
-      orderBy: { scheduledAt: "asc" },
-    }),
-    prisma.appointment.findMany({
-      where: {
-        staffId,
-        scheduledAt: {
-          gte: futureStart,
-          lte: futureEnd,
+      service: {
+        select: {
+          name: true,
+          durationMinutes: true,
+          price: true,
         },
       },
-      select: {
-        id: true,
-        client: {
-          select: {
-            user: {
-              select: { name: true },
-            },
-          },
-        },
-        service: {
-          select: {
-            name: true,
-            durationMinutes: true,
-          },
-        },
-        scheduledAt: true,
-        status: true,
-      },
-      orderBy: { scheduledAt: "asc" },
-    }),
-  ]);
+      scheduledAt: true,
+      status: true,
+    },
+    orderBy: { scheduledAt: "asc" },
+  });
 
   const formatAppointment = (apt) => ({
     id: apt.id,
@@ -217,19 +123,29 @@ export async function getStaffSchedule(userId, dateStr) {
   });
 
   return {
-    today: todayAppointments.map(formatAppointment),
-    upcoming: upcomingAppointments.map(formatAppointment),
+    appointments: appointments.map(formatAppointment),
   };
 }
 
-// ─── Pending Requests ───────────────────────────────────────────────────
+
 export async function getAppointments(userId, statusFilter) {
   const staffId = await getStaffIdByUserId(userId);
+  let statusCondition;
+
+  if (statusFilter === "pending") {
+    statusCondition = AppointmentStatus.CONFIRMED;
+  } else if (statusFilter === "open") {
+    statusCondition = AppointmentStatus.IN_PROGRESS;
+  } else if (statusFilter === "closed") {
+    statusCondition = {
+      in: [AppointmentStatus.COMPLETED, AppointmentStatus.CANCELED],
+    };
+  }
 
   const appointments = await prisma.appointment.findMany({
     where: {
       staffId,
-      status: statusFilter || AppointmentStatus.PENDING,
+      ...(statusCondition && { status: statusCondition }),
     },
     select: {
       id: true,
@@ -247,6 +163,7 @@ export async function getAppointments(userId, statusFilter) {
         },
       },
       scheduledAt: true,
+      status: true,
     },
     orderBy: { scheduledAt: "asc" },
   });
@@ -257,15 +174,12 @@ export async function getAppointments(userId, statusFilter) {
     serviceName: apt.service.name,
     scheduledAt: apt.scheduledAt.toISOString(),
     duration: apt.service.durationMinutes,
+    status: apt.status,
   }));
 }
 
-export async function getPendingRequests(userId) {
-  return getAppointments(userId, AppointmentStatus.PENDING);
-}
-
 export async function getAppointmentDetails(userId, appointmentId) {
-  const staffId = await getStaffIdByUserId(userId);
+  await getStaffIdByUserId(userId);
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     select: {
@@ -273,12 +187,13 @@ export async function getAppointmentDetails(userId, appointmentId) {
       client: {
         select: {
           user: {
-            select: { name: true, phone: true },
+            select: { id: true, name: true, phone: true },
           },
         },
       },
       service: {
         select: {
+          id: true,
           name: true,
           description: true,
           price: true,
@@ -289,77 +204,8 @@ export async function getAppointmentDetails(userId, appointmentId) {
       status: true,
     },
   });
+
   return appointment;
-}
-// ─── Accept/Reject Appointment ──────────────────────────────────────────
-export async function acceptAppointment(userId, appointmentId) {
-  const staffId = await getStaffIdByUserId(userId);
-  const appointment = await prisma.appointment.findUnique({
-    where: { id: appointmentId },
-    select: {
-      id: true,
-      staffId: true,
-      status: true,
-    },
-  });
-
-  if (!appointment) {
-    throw new AppointmentNotFoundError();
-  }
-
-  if (appointment.staffId !== staffId) {
-    throw new AppointmentAccessError();
-  }
-
-  if (appointment.status !== AppointmentStatus.PENDING) {
-    throw new InvalidAppointmentStatusError();
-  }
-
-  const updated = await prisma.appointment.update({
-    where: { id: appointmentId },
-    data: { status: AppointmentStatus.CONFIRMED },
-    select: {
-      id: true,
-      status: true,
-    },
-  });
-
-  return updated;
-}
-
-export async function rejectAppointment(userId, appointmentId) {
-  const staffId = await getStaffIdByUserId(userId);
-  const appointment = await prisma.appointment.findUnique({
-    where: { id: appointmentId },
-    select: {
-      id: true,
-      staffId: true,
-      status: true,
-    },
-  });
-
-  if (!appointment) {
-    throw new AppointmentNotFoundError();
-  }
-
-  if (appointment.staffId !== staffId) {
-    throw new AppointmentAccessError();
-  }
-
-  if (appointment.status !== AppointmentStatus.PENDING) {
-    throw new InvalidAppointmentStatusError();
-  }
-
-  const updated = await prisma.appointment.update({
-    where: { id: appointmentId },
-    data: { status: AppointmentStatus.CANCELED },
-    select: {
-      id: true,
-      status: true,
-    },
-  });
-
-  return updated;
 }
 
 // ─── Service Execution ──────────────────────────────────────────────────
@@ -431,6 +277,7 @@ export async function completeAppointment(userId, appointmentId, data) {
   if (appointment.status !== AppointmentStatus.IN_PROGRESS) {
     throw new InvalidAppointmentStatusError();
   }
+
   const excution = await prisma.serviceExecution.create({
     data: {
       appointmentId,
@@ -452,13 +299,13 @@ export async function completeAppointment(userId, appointmentId, data) {
       ...updated,
       notes: excution.notes,
       attachments: excution.attachments,
-    }
-  } else {
-    return {
-      ...updated,
-      notes: excution.notes,
     };
   }
+
+  return {
+    ...updated,
+    notes: excution.notes,
+  };
 }
 
 // ─── Income Tracking ────────────────────────────────────────────────────
@@ -577,7 +424,7 @@ export async function listStaffServices(userId) {
     name: link.service.name,
     description: link.service.description,
     price: link.service.price,
-    durationMinutes: link.service.durationMinutes,
+    duration_minutes: link.service.durationMinutes,
     imageUrl: link.service.imageUrl,
     status: link.service.status,
   }));
@@ -646,14 +493,13 @@ export async function listStaffAvailability(userId) {
   const staffId = await getStaffIdByUserId(userId);
 
   const availabilities = await prisma.staffAvailability.findMany({
-    where: { staffId },
+    where: { staffId, status: AvailabilityStatus.AVAILABLE },
     orderBy: { dayOfWeek: "asc" },
     select: {
       id: true,
       dayOfWeek: true,
       startTime: true,
       endTime: true,
-      status: true,
     },
   });
 

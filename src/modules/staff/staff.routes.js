@@ -2,26 +2,25 @@ import { Router } from "express";
 import { Role } from "../../generated/prisma/client.js";
 import { authenticate, authorize } from "../../middleware/authenticate.js";
 import {
-  acceptAppointmentHandler,
-  addServiceHandler,
-  completeAppointmentHandler,
-  createAvailabilityHandler,
-  deleteAvailabilityHandler,
-  getAppointmentsHandler,
-  getAvailableSlotsHandler,
-  getIncomeStatsHandler,
-  getProfileHandler,
-  getScheduleHandler,
-  listAvailabilityHandler,
-  listServicesHandler,
-  rejectAppointmentHandler,
-  startAppointmentHandler,
-  updateAvailabilityHandler,
+    addServiceHandler,
+    completeAppointmentHandler,
+    createAvailabilityHandler,
+    deleteAvailabilityHandler,
+    getAppointmentsDetailsHandler,
+    getAppointmentsHandler,
+    getAvailableSlotsHandler,
+    getIncomeStatsHandler,
+    getProfileHandler,
+    getScheduleHandler,
+    listAvailabilityHandler,
+    listServicesHandler,
+    startAppointmentHandler,
+    updateAvailabilityHandler,
 } from "./staff.controller.js";
 
 const staffRouter = Router();
 
-// ─── Profile ───────────────────────────────────────────────────────────
+// ─── Profile ───────
 staffRouter.get(
   "/profile",
   authenticate,
@@ -29,7 +28,7 @@ staffRouter.get(
   getProfileHandler,
 );
 
-// ─── Schedule ──────────────────────────────────────────────────────────
+// ─── Schedule ──────
 staffRouter.get(
   "/schedule",
   authenticate,
@@ -37,7 +36,7 @@ staffRouter.get(
   getScheduleHandler,
 );
 
-// ─── Appointments ──────────────────────────────────────────────────────────
+// ─── Appointments ──────
 staffRouter.get(
   "/appointments",
   authenticate,
@@ -45,19 +44,11 @@ staffRouter.get(
   getAppointmentsHandler,
 );
 
-// ─── Appointments ─────────────────────────────────────────────────────
-staffRouter.patch(
-  "/appointments/:appointmentId/accept",
+staffRouter.get(
+  "/appointments/:id",
   authenticate,
   authorize(Role.staff),
-  acceptAppointmentHandler,
-);
-
-staffRouter.patch(
-  "/appointments/:appointmentId/reject",
-  authenticate,
-  authorize(Role.staff),
-  rejectAppointmentHandler,
+  getAppointmentsDetailsHandler,
 );
 
 staffRouter.patch(
@@ -74,7 +65,7 @@ staffRouter.patch(
   completeAppointmentHandler,
 );
 
-// ─── Income ───────────────────────────────────────────────────────────
+// ─── Income ───────
 staffRouter.get(
   "/income",
   authenticate,
@@ -82,7 +73,7 @@ staffRouter.get(
   getIncomeStatsHandler,
 );
 
-// ─── Services ──────────────────────────────────────────────────────────
+// ─── Services ──────
 staffRouter.get(
   "/services",
   authenticate,
@@ -97,7 +88,7 @@ staffRouter.post(
   addServiceHandler,
 );
 
-// ─── Availability ─────────────────────────────────────────────────────
+// ─── Availability ─
 staffRouter.get(
   "/availability",
   authenticate,

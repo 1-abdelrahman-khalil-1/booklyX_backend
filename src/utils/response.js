@@ -1,3 +1,27 @@
+function toSnakeCaseKey(key) {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .replace(/[-\s]+/g, "_")
+    .toLowerCase();
+}
+
+function toSnakeCaseDeep(value) {
+  if (Array.isArray(value)) {
+    return value.map(toSnakeCaseDeep);
+  }
+
+  if (!value || typeof value !== "object" || value instanceof Date) {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, nestedValue]) => [
+      toSnakeCaseKey(key),
+      toSnakeCaseDeep(nestedValue),
+    ]),
+  );
+}
+
 /**
  * @param {any} res
  * @param {number} status
@@ -9,7 +33,7 @@ export function successResponse(res, status, message, data = null) {
     status,
     error: false,
     message,
-    data,
+    data: toSnakeCaseDeep(data),
   });
 }
 
@@ -25,7 +49,7 @@ export function errorResponse(res, status, message, params = null, data = null) 
     status,
     error: true,
     message,
-    data,
-    params,
+    data: toSnakeCaseDeep(data),
+    params: toSnakeCaseDeep(params),
   });
 }

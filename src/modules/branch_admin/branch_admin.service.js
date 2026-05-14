@@ -39,6 +39,26 @@ const CODE_EXPIRES_MINUTES = parseInt(
 );
 const MAX_ATTEMPTS = 5;
 
+function mapServiceResponse(service) {
+  return {
+    id: service.id,
+    branchId: service.branchId,
+    serviceCategoryId: service.serviceCategoryId,
+    name: service.name,
+    description: service.description,
+    price: service.price,
+    duration_minutes: service.durationMinutes,
+    duration: service.duration ?? service.durationMinutes,
+    imageUrl: service.imageUrl,
+    status: service.status,
+    rejectionReason: service.rejectionReason ?? null,
+    approvedAt: service.approvedAt ?? null,
+    updatedAt: service.updatedAt ?? null,
+    createdAt: service.createdAt ?? null,
+    category: service.category ?? null,
+  };
+}
+
 export class BranchAdminValidationError extends AppError {
   constructor(message, params) {
     super(message, 400, params);
@@ -491,7 +511,7 @@ export async function getMyStaff(branchAdminUserId) {
     throw new ApplicationNotFound();
   }
 
-  return prisma.user.findMany({
+  const users = await prisma.user.findMany({
     where: {
       role: Role.staff,
       staff: {
@@ -504,6 +524,8 @@ export async function getMyStaff(branchAdminUserId) {
     select: staffUserSelect,
     orderBy: { createdAt: "desc" },
   });
+
+  return users;
 }
 
 export async function getMyStaffById(staffId, branchAdminUserId) {
@@ -818,7 +840,7 @@ export async function createService(body, branchAdminUserId) {
     },
   });
 
-  return service;
+  return mapServiceResponse(service);
 }
 
 export async function getMyServices(branchAdminUserId, query) {
@@ -832,7 +854,7 @@ export async function getMyServices(branchAdminUserId, query) {
     throw new ApplicationNotFound();
   }
 
-  return prisma.service.findMany({
+  const services = await prisma.service.findMany({
     where: {
       branchId: branchAdmin.id,
       ...(parsedQuery.status ? { status: parsedQuery.status } : {}),
@@ -842,6 +864,8 @@ export async function getMyServices(branchAdminUserId, query) {
     },
     orderBy: { createdAt: "desc" },
   });
+
+  return services.map(mapServiceResponse);
 }
 
 export async function updateService(body, branchAdminUserId) {
@@ -924,7 +948,7 @@ export async function updateService(body, branchAdminUserId) {
     },
   });
 
-  return updatedService;
+  return mapServiceResponse(updatedService);
 }
 
 export async function updateBranchAdminProfile(body, branchAdminUserId) {
@@ -1016,6 +1040,34 @@ export async function updateBranchAdminProfile(body, branchAdminUserId) {
   });
 
   return updatedBranchAdmin;
+}
+
+export async function getBranchAdminProfile(branchAdminUserId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: {
+      id: true,
+      ownerName: true,
+      email: true,
+      phone: true,
+      businessName: true,
+      category: true,
+      logoUrl: true,
+      operatingHours: true,
+      address: true,
+      city: true,
+      district: true,
+      status: true,
+      emailVerified: true,
+      phoneVerified: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  if (!branchAdmin) throw new ApplicationNotFound();
+
+  return { user: branchAdmin };
 }
 
 export async function deleteService(body, branchAdminUserId) {

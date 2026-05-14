@@ -30,6 +30,7 @@ const en = {
   PHONE_INVALID: "Phone must be a valid 11-digit number.",
   PHONE_MUST_BE_STRING: "Phone must be a string.",
   INVALID_ENUM_VALUE: "Enum must be one of: {{values}}.",
+  TOKEN_REFRESHED_SUCCESSFULLY: "Token refreshed successfully.",
   PLATFORM_HEADER_REQUIRED: "Platform header is required.",
   PLATFORM_MUST_BE_ONE_OF: "Platform must be one of: {{values}}.",
   ROLE_REQUIRED: "Role is required.",

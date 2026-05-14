@@ -30,7 +30,7 @@ const CODE_EXPIRES_MINUTES = parseInt(
 
 const MAX_ATTEMPTS = 5;
 
-// ─── Domain Error Classes ─────────────────────────────────────────────────────
+// ─── Domain Error Classes ─
 
 export class AuthValidationError extends AppError {
   constructor(message, params) {
@@ -142,7 +142,7 @@ function getVerificationFlags(user) {
   };
 }
 
-// ─── Parse Helper ─────────────────────────────────────────────────────────────
+// ─── Parse Helper ─────────
 
 /**
  * Runs Zod validation on `data` against `schema`.
@@ -151,7 +151,7 @@ function getVerificationFlags(user) {
  * (an i18n key), so the controller can translate it per the user's language.
  */
 
-// ─── OTP Helpers ─────────────────────────────────────────────────────────────
+// ─── OTP Helpers ─────────
 
 function generateOtpCode() {
   // TODO: Replace with secure random OTP generation once verification providers are finalized.
@@ -213,7 +213,7 @@ async function consumeVerificationCode(userId, type, code) {
   });
 }
 
-// ─── JWT Helper ──────────────────────────────────────────────────────────────
+// ─── JWT Helper ──────────
 
 async function issueAuthTokens(userId, role, platform, loginSequence) {
   const jwtSecret = process.env.JWT_SECRET;
@@ -262,7 +262,7 @@ async function ensureClientProfile(user) {
   });
 }
 
-// ─── Auth Services ────────────────────────────────────────────────────────────
+// ─── Auth Services ────────
 
 export async function login(data, platform) {
   // Early validation: platform and required login fields

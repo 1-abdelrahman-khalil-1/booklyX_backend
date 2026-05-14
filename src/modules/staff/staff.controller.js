@@ -2,7 +2,6 @@ import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
-  acceptAppointment,
   addStaffService,
   completeAppointment,
   createStaffAvailability,
@@ -15,13 +14,13 @@ import {
   getStaffSchedule,
   listStaffAvailability,
   listStaffServices,
-  rejectAppointment,
   startAppointment,
   updateStaffAvailability,
 } from "./staff.service.js";
 import {
   appointmentActionSchema,
   appointmentIdSchema,
+  appointmentsQuerySchema,
   availabilityIdSchema,
   availableSlotsQuerySchema,
   createAvailabilitySchema,
@@ -56,18 +55,9 @@ export const getScheduleHandler = asyncHandler(async (req, res) => {
 export const getAppointmentsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const userId = req.user.sub;
-  const statusFilter = req.query.status; // Optional status filter
-  const validStatuses = ["pending", "accepted", "rejected", "started", "completed"];
+  const { status } = validateStaffInput(appointmentsQuerySchema, req.query );
 
-  // Validate status filter if provided
-  if (statusFilter && !validStatuses.includes(statusFilter.toLowerCase())) {
-    return res.status(400).json({
-      success: false,
-      message: t(tr.INVALID_STATUS_FILTER, lang),
-    });
-  }
-
-  const requests = await getAppointments(userId, statusFilter ? statusFilter.toUpperCase() : undefined);
+  const requests = await getAppointments(userId, status);
   successResponse(res, 200, t(tr.REQUESTS_RETRIEVED_SUCCESSFULLY, lang), requests);
 });
 
@@ -85,27 +75,6 @@ export const getAppointmentsDetailsHandler = asyncHandler(async (req, res) => {
   successResponse(res, 200, t(tr.REQUEST_DETAILS_RETRIEVED_SUCCESSFULLY, lang), appointment);
 });
 
-// ─── Accept Appointment Handler ────────────────────────────────────────
-export const acceptAppointmentHandler = asyncHandler(async (req, res) => {
-  const lang = getLanguage(req);
-  const userId = req.user.sub;
-
-  const { appointmentId } = validateStaffInput(appointmentIdSchema, req.params);
-
-  const appointment = await acceptAppointment(userId, appointmentId);
-  successResponse(res, 200, t(tr.APPOINTMENT_ACCEPTED, lang), appointment);
-});
-
-// ─── Reject Appointment Handler ────────────────────────────────────────
-export const rejectAppointmentHandler = asyncHandler(async (req, res) => {
-  const lang = getLanguage(req);
-  const userId = req.user.sub;
-
-  const { appointmentId } = validateStaffInput(appointmentIdSchema, req.params);
-
-  const appointment = await rejectAppointment(userId, appointmentId);
-  successResponse(res, 200, t(tr.APPOINTMENT_REJECTED, lang), appointment);
-});
 
 // ─── Start Appointment Handler ─────────────────────────────────────────
 export const startAppointmentHandler = asyncHandler(async (req, res) => {

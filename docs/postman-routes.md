@@ -7,6 +7,8 @@ This file is the single source of truth for:
 3. response examples,
 4. direct Postman sync.
 
+Response payload keys are returned in `snake_case` across the API.
+
 ## 1) Default Accounts (All Roles)
 
 Seed first:
@@ -17,18 +19,18 @@ npx prisma db seed
 
 Available test users after seed:
 
-| Role           | Email                     | Password | Phone       | Platform | Notes                               |
-| -------------- | ------------------------- | -------- | ----------- | -------- | ----------------------------------- |
-| `super_admin`  | admin@booklyx.com         | 12345678 | 01000000000 | WEB      | Full admin access                   |
-| `client`       | abdo.khalil@booklyx.com   | 12345678 | 01000000001 | WEB      | Abdo Khalil                         |
-| `client`       | eslam.wael@booklyx.com    | 12345678 | 01000000002 | WEB      | Eslam Wael                          |
+| Role           | Email                       | Password | Phone       | Platform | Notes                                 |
+| -------------- | --------------------------- | -------- | ----------- | -------- | ------------------------------------- |
+| `super_admin`  | admin@booklyx.com           | 12345678 | 01000000000 | WEB      | Full admin access                     |
+| `client`       | abdo.khalil@booklyx.com     | 12345678 | 01000000001 | WEB      | Abdo Khalil                           |
+| `client`       | eslam.wael@booklyx.com      | 12345678 | 01000000002 | WEB      | Eslam Wael                            |
 | `branch_admin` | mahmoud.ibrahim@booklyx.com | 12345678 | 01000000011 | WEB      | Mahmoud Ibrahim (Hassan Beauty Salon) |
-| `branch_admin` | ahmed.samir@booklyx.com   | 12345678 | 01000000012 | WEB      | Ahmed Samir (Samir Health Clinic)   |
-| `branch_admin` | eslam.branch@booklyx.com  | 12345678 | 01000000020 | WEB      | Eslam Wael (Eslam Premium Spa)     |
-| `staff`        | mazen.tamer@booklyx.com   | 12345678 | 01000000021 | WEB      | Mazen Tamer                         |
-| `staff`        | abdo.badr@booklyx.com     | 12345678 | 01000000022 | WEB      | Abdo Badr                           |
-| `staff`        | mahmoud.staff@booklyx.com | 12345678 | 01000000030 | WEB      | Mahmoud Ibrahim (Eslam Premium Spa) |
-| `staff`        | karim.staff@booklyx.com   | 12345678 | 01000000031 | WEB      | Karim Ahmed (Eslam Premium Spa)     |
+| `branch_admin` | ahmed.samir@booklyx.com     | 12345678 | 01000000012 | WEB      | Ahmed Samir (Samir Health Clinic)     |
+| `branch_admin` | eslam.branch@booklyx.com    | 12345678 | 01000000020 | WEB      | Eslam Wael (Eslam Premium Spa)        |
+| `staff`        | mazen.tamer@booklyx.com     | 12345678 | 01000000021 | WEB      | Mazen Tamer                           |
+| `staff`        | abdo.badr@booklyx.com       | 12345678 | 01000000022 | WEB      | Abdo Badr                             |
+| `staff`        | mahmoud.staff@booklyx.com   | 12345678 | 01000000030 | WEB      | Mahmoud Ibrahim (Eslam Premium Spa)   |
+| `staff`        | karim.staff@booklyx.com     | 12345678 | 01000000031 | WEB      | Karim Ahmed (Eslam Premium Spa)       |
 
 ## 2) Base setup
 
@@ -113,16 +115,16 @@ Success example (`200`):
   "error": false,
   "message": "Login successful.",
   "data": {
-    "clientToken": "<jwt>",
-    "refreshToken": "<jwt>",
+    "client_token": "<jwt>",
+    "refresh_token": "<jwt>",
     "user": {
       "id": 1,
       "email": "abdo.khalil@booklyx.com",
       "phone": "01000000001",
       "role": "client",
       "status": "ACTIVE",
-      "emailVerified": true,
-      "phoneVerified": true
+      "email_verified": true,
+      "phone_verified": true
     }
   }
 }
@@ -199,16 +201,16 @@ Success example (`200`):
   "error": false,
   "message": "Phone verified successfully.",
   "data": {
-    "clientToken": "<jwt>",
-    "refreshToken": "<jwt>",
+    "client_token": "<jwt>",
+    "refresh_token": "<jwt>",
     "user": {
       "id": 1,
       "email": "abdo.khalil@booklyx.com",
       "phone": "01000000001",
       "role": "client",
       "status": "ACTIVE",
-      "emailVerified": true,
-      "phoneVerified": true
+      "email_verified": true,
+      "phone_verified": true
     }
   }
 }
@@ -325,7 +327,7 @@ Success example (`200`):
         "id": 1,
         "rating": 5,
         "comment": "Great service",
-        "createdAt": "2026-03-20T03:40:00.000Z",
+        "created_at": "2026-03-20T03:40:00.000Z",
         "reviewer": {
           "id": 2,
           "name": "Abdo Khalil",
@@ -712,25 +714,64 @@ Requires `staff` role.
 
 Returns the profile of the authenticated staff member, including their role, branch, and commission.
 
+Success example (`200`):
+
+```json
+{
+  "status": 200,
+  "error": false,
+  "message": "Profile retrieved successfully.",
+  "data": {
+    "user": {
+      "id": 7,
+      "name": "Mazen Tamer",
+      "email": "mazen.tamer@booklyx.com",
+      "phone": "01000000021",
+      "role": "staff",
+      "status": "ACTIVE",
+      "created_at": "2026-04-01T10:00:00.000Z",
+      "updated_at": "2026-05-01T10:00:00.000Z",
+      "staff": {
+        "id": 7,
+        "profile_image_url": "https://cdn.booklyx.com/staff/mazen-tamer.png",
+        "staff_role": "BARBER",
+        "age": 28,
+        "commission_percentage": 15,
+        "isActive": true,
+        "created_at": "2026-04-01T10:00:00.000Z",
+        "updated_at": "2026-05-01T10:00:00.000Z",
+        "branch": {
+          "id": 1,
+          "business_name": "Hassan Beauty Salon",
+          "category": "SPA"
+        },
+        "professional_profile": {
+          "bio": "Senior stylist focused on modern cuts and beard shaping.",
+          "experience": 6,
+          "license_number": "BARB-7845",
+          "specialization": "BARBER",
+          "created_at": "2026-04-02T10:00:00.000Z",
+          "updated_at": "2026-05-02T10:00:00.000Z"
+        },
+        "certificates": [],
+        "availabilities": [],
+        "services": [],
+        "reviews": [],
+        "average_rating": 4.7,
+        "review_count": 34
+      }
+    }
+  }
+}
+```
+
 ### GET `/staff/schedule`
 
 Returns the staff's schedule, grouped into today's and upcoming appointments.
 
 ### GET `/staff/appointments`
 
-Returns all `PENDING` appointments for the authenticated staff member.
-
-### PATCH `/staff/appointments/:appointmentId/accept`
-
-Accepts a pending appointment.
-
-- `:appointmentId`: **Integer** (ID of the appointment).
-
-### PATCH `/staff/appointments/:appointmentId/reject`
-
-Rejects a pending appointment.
-
-- `:appointmentId`: **Integer** (ID of the appointment).
+Returns appointments for the authenticated staff member. Defaults to `PENDING`; optional `status` values are `PENDING`, `CONFIRMED`, `IN_PROGRESS`, `COMPLETED`, and `CANCELED`.
 
 ### PATCH `/staff/appointments/:appointmentId/start`
 
@@ -748,8 +789,8 @@ Request body:
 
 ```json
 {
-  "price": 150,
-  "notes": "Used premium hair wax."
+  "notes": "Used premium hair wax.",
+  "attachments": ["https://cdn.booklyx.com/executions/result-1.jpg"]
 }
 ```
 
@@ -769,6 +810,8 @@ Lists all availability slots for the authenticated staff member.
 
 Creates a new availability slot.
 
+`dayOfWeek` uses JavaScript/dayjs numbering: `0 = Sunday`, `1 = Monday`, `2 = Tuesday`, `3 = Wednesday`, `4 = Thursday`, `5 = Friday`, `6 = Saturday`.
+
 Request body:
 
 ```json
@@ -783,6 +826,8 @@ Request body:
 ### PUT `/staff/availability/:availabilityId`
 
 Updates an existing availability slot.
+
+`dayOfWeek` uses JavaScript/dayjs numbering: `0 = Sunday`, `1 = Monday`, `2 = Tuesday`, `3 = Wednesday`, `4 = Thursday`, `5 = Friday`, `6 = Saturday`.
 
 ### DELETE `/staff/availability/:availabilityId`
 
@@ -967,6 +1012,64 @@ Run:
 
 ```bash
 npm run postman:sync
+```
+
+## Additional endpoints
+
+### GET `/branch-admin/profile`
+
+Get authenticated branch admin profile.
+
+Response example:
+
+```json
+{
+  "status": 200,
+  "error": false,
+  "message": "Profile retrieved successfully.",
+  "data": {
+    "user": {
+      "id": 1,
+      "ownerName": "Prime Salon",
+      "email": "branch@example.com",
+      "phone": "01000000022",
+      "businessName": "Prime Salon",
+      "category": "SALON"
+    }
+  }
+}
+```
+
+### GET `/admin/users/:id`
+
+Super admin endpoint to fetch any user's public profile (staff nested under `user.staff` when applicable).
+
+Response example:
+
+```json
+{
+  "status": 200,
+  "error": false,
+  "message": "User profile retrieved successfully.",
+  "data": {
+    "user": {
+      "id": 7,
+      "name": "Mazen Tamer",
+      "email": "mazen.tamer@booklyx.com",
+      "phone": "01000000021",
+      "role": "staff",
+      "status": "ACTIVE",
+      "staff": {
+        "id": 7,
+        "branch_id": 1,
+        "profile_image_url": "https://cdn.booklyx.com/staff/mazen-tamer.png",
+        "age": 28,
+        "staff_role": "BARBER",
+        "commission_percentage": 15
+      }
+    }
+  }
+}
 ```
 
 After any update in collection JSON, run the same command to push changes to Postman directly.

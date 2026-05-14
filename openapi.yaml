@@ -11,6 +11,7 @@ info:
     - Protected endpoints require `Authorization: Bearer <token>`.
     - Access token format is `<loginSequence>|<jwt>` (example: `15|eyJ...`).
     - In development, OTP is commonly `333333`.
+    - Response payload keys are returned in `snake_case`.
 servers:
   - url: http://localhost:3000
     description: Local development server
@@ -21,19 +22,19 @@ tags:
   - name: Auth/Verification
   - name: Auth/Session
   - name: Auth/Password Reset
-  - name: branch_admin/Application
-  - name: branch_admin/Profile
-  - name: branch_admin/Staff
-  - name: branch_admin/Services
-  - name: branch_admin/Offers
-  - name: staff/Profile
-  - name: staff/Schedule
-  - name: staff/appointments
-  - name: staff/Income
-  - name: staff/Services
-  - name: staff/Availability
-  - name: super_admin/Applications
-  - name: super_admin/Services
+  - name: Branch_admin/Application
+  - name: Branch_admin/Profile
+  - name: Branch_admin/Staff
+  - name: Branch_admin/Services
+  - name: Branch_admin/Offers
+  - name: Staff/Profile
+  - name: Staff/Schedule
+  - name: Staff/appointments
+  - name: Staff/Income
+  - name: Staff/Services
+  - name: Staff/Availability
+  - name: Super_admin/Applications
+  - name: Super_admin/Services
   - name: Reviews
   - name: Files
 
@@ -81,19 +82,31 @@ components:
           summary: Web client
           value: WEB
 
-    ApplicationStatusQuery:
+    PlatformHeaderWebOnly:
+      name: platform
+      in: header
+      required: true
+      description: Platform where request is coming from.
+      schema:
+        type: string
+        enum: [WEB]
+        default: WEB
+        example: WEB
+      examples:
+        web:
+          summary: Web client
+          value: WEB
+
+    SuperAdminApplicationStatusQuery:
       name: status
       in: query
       required: false
       schema:
         type: string
-        enum: [PENDING_VERIFICATION, PENDING_APPROVAL, APPROVED, REJECTED]
+        enum: [PENDING_APPROVAL, APPROVED, REJECTED]
         default: PENDING_APPROVAL
         example: PENDING_APPROVAL
       examples:
-        pendingVerification:
-          summary: Pending verification applications
-          value: PENDING_VERIFICATION
         pendingApproval:
           summary: Pending approval applications
           value: PENDING_APPROVAL
@@ -257,8 +270,8 @@ components:
         phone: "01000000001"
         role: client
         status: ACTIVE
-        emailVerified: true
-        phoneVerified: true
+        email_verified: true
+        phone_verified: true
 
     AuthTokens:
       type: object
@@ -268,7 +281,7 @@ components:
           nullable: false
           description: Access token formatted as `<loginSequence>|<jwt>`.
           example: 15|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.access-token
-        refreshToken:
+        refresh_token:
           type: string
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh-token
 
@@ -281,7 +294,7 @@ components:
               $ref: "#/components/schemas/User"
       example:
         token: 15|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
-        refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
+        refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
         user:
           id: 2
           name: Abdo Khalil
@@ -289,8 +302,8 @@ components:
           phone: "01000000001"
           role: client
           status: ACTIVE
-          emailVerified: true
-          phoneVerified: true
+          email_verified: true
+          phone_verified: true
 
     RegisterRequest:
       type: object
@@ -643,11 +656,7 @@ components:
     StaffSchedule:
       type: object
       properties:
-        today:
-          type: array
-          items:
-            $ref: "#/components/schemas/StaffAppointment"
-        upcoming:
+        appointments:
           type: array
           items:
             $ref: "#/components/schemas/StaffAppointment"
@@ -655,34 +664,82 @@ components:
     StaffProfile:
       type: object
       properties:
-        name:
-          type: string
-        phone:
-          type: string
-        profileImageUrl:
-          type: string
-          nullable: true
-        staffRole:
-          type: string
-          enum: [DOCTOR, BARBER, SPA_SPECIALIST]
-        age:
-          type: integer
-        commissionPercentage:
-          type: number
-        branch:
+        user:
           type: object
           properties:
-            businessName:
+            id:
+              type: integer
+            name:
               type: string
-            category:
+            email:
               type: string
-        professionalProfile:
-          type: object
-          nullable: true
-        averageRating:
-          type: number
-        reviewCount:
-          type: integer
+            phone:
+              type: string
+            role:
+              type: string
+            status:
+              type: string
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+            staff:
+              type: object
+              properties:
+                id:
+                  type: integer
+                profileImageUrl:
+                  type: string
+                  nullable: true
+                staffRole:
+                  type: string
+                  enum: [DOCTOR, BARBER, SPA_SPECIALIST]
+                age:
+                  type: integer
+                commissionPercentage:
+                  type: number
+                isActive:
+                  type: boolean
+                createdAt:
+                  type: string
+                  format: date-time
+                updatedAt:
+                  type: string
+                  format: date-time
+                branch:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    businessName:
+                      type: string
+                    category:
+                      type: string
+                professionalProfile:
+                  type: object
+                  nullable: true
+                certificates:
+                  type: array
+                  items:
+                    type: object
+                availabilities:
+                  type: array
+                  items:
+                    type: object
+                services:
+                  type: array
+                  items:
+                    type: object
+                reviews:
+                  type: array
+                  items:
+                    type: object
+                averageRating:
+                  type: number
+                reviewCount:
+                  type: integer
 
     BranchAdminApplyRequestJson:
       type: object
@@ -954,9 +1011,9 @@ components:
       example:
         id: 1
         name: Hair Care
-        branchId: 1
-        createdAt: 2026-04-09T10:00:00.000Z
-        updatedAt: 2026-04-09T10:00:00.000Z
+        branch_id: 1
+        created_at: 2026-04-09T10:00:00.000Z
+        updated_at: 2026-04-09T10:00:00.000Z
 
     CreateServiceRequestJson:
       type: object
@@ -1127,23 +1184,23 @@ components:
               example: APPROVED
       example:
         id: 1
-        branchId: 1
-        serviceCategoryId: 1
+        branch_id: 1
+        service_category_id: 1
         name: Haircut
         description: Professional haircut with styling
         price: 150
-        durationMinutes: 30
-        imageUrl: https://cdn.booklyx.com/services/haircut.png
+        duration_minutes: 30
+        image_url: https://cdn.booklyx.com/services/haircut.png
         status: APPROVED
-        rejectionReason: null
-        createdAt: 2026-04-09T10:15:00.000Z
-        updatedAt: 2026-04-09T10:15:00.000Z
+        rejection_reason: null
+        created_at: 2026-04-09T10:15:00.000Z
+        updated_at: 2026-04-09T10:15:00.000Z
         category:
           id: 1
           name: Hair Care
-          branchId: 1
-          createdAt: 2026-04-09T10:00:00.000Z
-          updatedAt: 2026-04-09T10:00:00.000Z
+          branch_id: 1
+          created_at: 2026-04-09T10:00:00.000Z
+          updated_at: 2026-04-09T10:00:00.000Z
 
     RejectReasonRequest:
       type: object
@@ -1468,6 +1525,8 @@ components:
     StaffCompleteAppointmentRequest:
       value:
         notes: Client requested layered finish.
+        attachments:
+          - https://cdn.booklyx.com/executions/result-1.jpg
     StaffAddServiceRequest:
       value:
         serviceId: 1
@@ -1535,30 +1594,30 @@ components:
             phone: "01000000021"
             role: staff
             status: ACTIVE
-            emailVerified: true
-            phoneVerified: true
+            email_verified: true
+            phone_verified: true
             staff:
               id: 7
-              branchId: 1
-              profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
+              branch_id: 1
+              profile_image_url: https://cdn.booklyx.com/staff/mazen-tamer.png
               age: 28
-              staffRole: BARBER
-              commissionPercentage: 15
+              staff_role: BARBER
+              commission_percentage: 15
           - id: 8
             name: Abdo Badr
             email: abdo.badr@booklyx.com
             phone: "01000000022"
             role: staff
             status: ACTIVE
-            emailVerified: true
-            phoneVerified: true
+            email_verified: true
+            phone_verified: true
             staff:
               id: 8
-              branchId: 1
-              profileImageUrl: null
+              branch_id: 1
+              profile_image_url: null
               age: 30
-              staffRole: DOCTOR
-              commissionPercentage: 20
+              staff_role: DOCTOR
+              commission_percentage: 20
     BranchAdminStaffDetailResponse:
       value:
         status: 200
@@ -1571,15 +1630,15 @@ components:
           phone: "01000000021"
           role: staff
           status: ACTIVE
-          emailVerified: true
-          phoneVerified: true
+          email_verified: true
+          phone_verified: true
           staff:
             id: 7
-            branchId: 1
-            profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
+            branch_id: 1
+            profile_image_url: https://cdn.booklyx.com/staff/mazen-tamer.png
             age: 28
-            staffRole: BARBER
-            commissionPercentage: 15
+            staff_role: BARBER
+            commission_percentage: 15
     BranchAdminStaffUpdatedResponse:
       value:
         status: 200
@@ -1592,15 +1651,15 @@ components:
           phone: "01000000031"
           role: staff
           status: ACTIVE
-          emailVerified: true
-          phoneVerified: true
+          email_verified: true
+          phone_verified: true
           staff:
             id: 7
-            branchId: 1
-            profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer-v2.png
+            branch_id: 1
+            profile_image_url: https://cdn.booklyx.com/staff/mazen-tamer-v2.png
             age: 29
-            staffRole: BARBER
-            commissionPercentage: 20
+            staff_role: BARBER
+            commission_percentage: 20
     BranchAdminStaffDeletedResponse:
       value:
         status: 200
@@ -1619,40 +1678,83 @@ components:
         error: false
         message: Profile retrieved successfully.
         data:
-          name: Mazen Tamer
-          phone: "01000000021"
-          profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
-          staffRole: BARBER
-          age: 28
-          commissionPercentage: 15
-          branch:
-            businessName: Hassan Beauty Salon
-            category: SPA
-          professionalProfile:
-            bio: Senior stylist focused on modern cuts and beard shaping.
-            experience: 6
-            specialization: BARBER
-          averageRating: 4.7
-          reviewCount: 34
+          user:
+            id: 7
+            name: Mazen Tamer
+            email: mazen.tamer@booklyx.com
+            phone: "01000000021"
+            role: staff
+            status: ACTIVE
+            created_at: 2026-04-01T10:00:00.000Z
+            updated_at: 2026-05-01T10:00:00.000Z
+            staff:
+              id: 7
+              profile_image_url: https://cdn.booklyx.com/staff/mazen-tamer.png
+              staff_role: BARBER
+              age: 28
+              commission_percentage: 15
+              is_active: true
+              created_at: 2026-04-01T10:00:00.000Z
+              updated_at: 2026-05-01T10:00:00.000Z
+              branch:
+                id: 1
+                business_name: Hassan Beauty Salon
+                category: SPA
+              professional_profile:
+                bio: Senior stylist focused on modern cuts and beard shaping.
+                experience: 6
+                license_number: BARB-7845
+                specialization: BARBER
+                created_at: 2026-04-02T10:00:00.000Z
+                updated_at: 2026-05-02T10:00:00.000Z
+              certificates:
+                - id: 1
+                  title: Advanced Barber Certification
+                  issuer: International Barber Academy
+                  issue_date: 2025-01-10T00:00:00.000Z
+                  expiry_date: 2027-01-10T00:00:00.000Z
+                  file_url: https://cdn.booklyx.com/certificates/barber-cert.pdf
+                  verified: true
+                  created_at: 2025-01-10T00:00:00.000Z
+              availabilities:
+                - id: 1
+                  day_of_week: 1
+                  start_time: "09:00"
+                  end_time: "17:00"
+              services:
+                - id: 11
+                  name: Haircut
+                  description: Professional haircut with styling
+                  price: 150
+                  duration_minutes: 30
+                  image_url: https://cdn.booklyx.com/services/haircut.png
+              reviews:
+                - id: 21
+                  rating: 5
+                  comment: Great attention to detail.
+                  reviewer_role: CLIENT
+                  created_at: 2026-04-20T12:00:00.000Z
+                  client:
+                    name: Abdo Khalil
+                    phone: "01000000001"
+                  service:
+                    id: 11
+                    name: Haircut
+                  appointment_id: 31
+              average_rating: 4.7
+              review_count: 34
     StaffScheduleResponse:
       value:
         status: 200
         error: false
         message: Schedule retrieved successfully.
         data:
-          today:
+          appointments:
             - id: 1
               clientName: Abdo Khalil
               serviceName: Haircut
               scheduledAt: 2026-04-21T10:00:00.000Z
               duration: 30
-              status: CONFIRMED
-          upcoming:
-            - id: 2
-              clientName: Eslam Wael
-              serviceName: Hair Coloring
-              scheduledAt: 2026-04-24T13:30:00.000Z
-              duration: 60
               status: CONFIRMED
     StaffAppointmentsResponse:
       value:
@@ -1665,27 +1767,13 @@ components:
             serviceName: Haircut
             scheduledAt: 2026-04-22T11:00:00.000Z
             duration: 30
+            status: CONFIRMED
           - id: 2
             clientName: Eslam Wael
             serviceName: Hair Coloring
             scheduledAt: 2026-04-22T14:00:00.000Z
             duration: 60
-    StaffAppointmentAcceptedResponse:
-      value:
-        status: 200
-        error: false
-        message: Appointment accepted successfully.
-        data:
-          id: 1
-          status: CONFIRMED
-    StaffAppointmentRejectedResponse:
-      value:
-        status: 200
-        error: false
-        message: Appointment rejected successfully.
-        data:
-          id: 2
-          status: CANCELED
+            status: COMPLETED
     StaffAppointmentStartedResponse:
       value:
         status: 200
@@ -1734,16 +1822,14 @@ components:
             name: Haircut
             description: Professional haircut with styling
             price: 150
-            durationMinutes: 30
+            duration_minutes: 30
             imageUrl: https://cdn.booklyx.com/services/haircut.png
-            status: APPROVED
           - id: 8
             name: Hair Coloring
             description: Premium hair coloring service
             price: 300
-            durationMinutes: 60
+            duration_minutes: 60
             imageUrl: https://cdn.booklyx.com/services/hair-coloring.png
-            status: APPROVED
     StaffServiceAddedResponse:
       value:
         status: 201
@@ -1761,12 +1847,9 @@ components:
             dayOfWeek: 1
             startTime: "09:00"
             endTime: "17:00"
-            status: AVAILABLE
           - id: 2
             dayOfWeek: 3
             startTime: "10:00"
-            endTime: "18:00"
-            status: AVAILABLE
     StaffAvailabilityCreatedResponse:
       value:
         status: 201
@@ -1777,7 +1860,6 @@ components:
           dayOfWeek: 5
           startTime: "12:00"
           endTime: "20:00"
-          status: AVAILABLE
     StaffAvailabilityUpdatedResponse:
       value:
         status: 200
@@ -1788,7 +1870,6 @@ components:
           dayOfWeek: 5
           startTime: "13:00"
           endTime: "21:00"
-          status: AVAILABLE
     StaffAvailabilityDeletedResponse:
       value:
         status: 200
@@ -1823,7 +1904,7 @@ components:
         message: Login successful.
         data:
           token: 15|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
+          refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
           user:
             id: 3
             name: Abdo Khalil
@@ -1831,8 +1912,8 @@ components:
             phone: "01000000001"
             role: client
             status: ACTIVE
-            emailVerified: true
-            phoneVerified: true
+            email_verified: true
+            phone_verified: true
     LoginStaffSuccessResponse:
       value:
         status: 200
@@ -1840,7 +1921,7 @@ components:
         message: Login successful.
         data:
           token: 16|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-access-token
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-refresh-token
+          refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-refresh-token
           user:
             id: 6
             name: Mazen Tamer
@@ -1848,8 +1929,8 @@ components:
             phone: "01000000021"
             role: staff
             status: ACTIVE
-            emailVerified: true
-            phoneVerified: true
+            email_verified: true
+            phone_verified: true
     LoginBranchAdminSuccessResponse:
       value:
         status: 200
@@ -1857,7 +1938,7 @@ components:
         message: Login successful.
         data:
           token: 17|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-access-token
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-refresh-token
+          refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-refresh-token
           user:
             id: 4
             name: Mahmoud Ibrahim
@@ -1865,8 +1946,8 @@ components:
             phone: "01000000011"
             role: branch_admin
             status: ACTIVE
-            emailVerified: true
-            phoneVerified: true
+            email_verified: true
+            phone_verified: true
     LoginSuperAdminSuccessResponse:
       value:
         status: 200
@@ -1881,8 +1962,8 @@ components:
             phone: "01000000000"
             role: super_admin
             status: ACTIVE
-            emailVerified: true
-            phoneVerified: true
+            email_verified: true
+            phone_verified: true
     SimpleSuccessResponse:
       value:
         status: 200
@@ -1896,7 +1977,7 @@ components:
         message: Phone verified successfully.
         data:
           token: 19|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
+          refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
           user:
             id: 2
             name: Abdo Khalil
@@ -1904,8 +1985,8 @@ components:
             phone: "01000000001"
             role: client
             status: ACTIVE
-            emailVerified: true
-            phoneVerified: true
+            email_verified: true
+            phone_verified: true
     VerifyPasswordResetSuccessResponse:
       value:
         status: 200
@@ -1920,7 +2001,7 @@ components:
         message: Login successful.
         data:
           token: 15|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-access-token-next
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token-next
+          refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token-next
           role: client
     RefreshStaffSuccessResponse:
       value:
@@ -1929,7 +2010,7 @@ components:
         message: Login successful.
         data:
           token: 16|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-access-token-next
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-refresh-token-next
+          refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.staff-refresh-token-next
           role: staff
     RefreshBranchAdminSuccessResponse:
       value:
@@ -1938,7 +2019,7 @@ components:
         message: Login successful.
         data:
           token: 17|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-access-token-next
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-refresh-token-next
+          refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.branch-refresh-token-next
           role: branch_admin
     RefreshSuperAdminSuccessResponse:
       value:
@@ -1947,7 +2028,7 @@ components:
         message: Login successful.
         data:
           token: 18|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin-access-token-next
-          refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin-refresh-token-next
+          refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.admin-refresh-token-next
           role: super_admin
     LoginEmailNotVerifiedErrorResponse:
       value:
@@ -1955,24 +2036,24 @@ components:
         error: true
         message: Email is not verified.
         data:
-          emailVerified: false
-          phoneVerified: false
+          email_verified: false
+          phone_verified: false
     LoginPhoneNotVerifiedErrorResponse:
       value:
         status: 403
         error: true
         message: Phone is not verified.
         data:
-          emailVerified: true
-          phoneVerified: false
+          email_verified: true
+          phone_verified: false
     LoginInactiveErrorResponse:
       value:
         status: 403
         error: true
         message: User account is inactive.
         data:
-          emailVerified: false
-          phoneVerified: true
+          email_verified: false
+          phone_verified: true
     BranchApplicationSubmittedResponse:
       value:
         status: 201
@@ -1991,15 +2072,15 @@ components:
           phone: "01000000021"
           role: staff
           status: ACTIVE
-          emailVerified: false
-          phoneVerified: false
+          email_verified: false
+          phone_verified: false
           staff:
             id: 7
-            branchId: 1
-            profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
-            staffRole: BARBER
-            commissionPercentage: 15
-            isActive: true
+            branch_id: 1
+            profile_image_url: https://cdn.booklyx.com/staff/mazen-tamer.png
+            staff_role: BARBER
+            commission_percentage: 15
+            is_active: true
     ServiceCategoryCreatedResponse:
       value:
         status: 201
@@ -2008,9 +2089,9 @@ components:
         data:
           id: 1
           name: Hair Care
-          branchId: 1
-          createdAt: 2026-04-09T10:00:00.000Z
-          updatedAt: 2026-04-09T10:00:00.000Z
+          branch_id: 1
+          created_at: 2026-04-09T10:00:00.000Z
+          updated_at: 2026-04-09T10:00:00.000Z
     ServiceCategoriesListResponse:
       value:
         status: 200
@@ -2019,14 +2100,14 @@ components:
         data:
           - id: 1
             name: Hair Care
-            branchId: 1
-            createdAt: 2026-04-09T10:00:00.000Z
-            updatedAt: 2026-04-09T10:00:00.000Z
+            branch_id: 1
+            created_at: 2026-04-09T10:00:00.000Z
+            updated_at: 2026-04-09T10:00:00.000Z
           - id: 2
             name: Facial Treatments
-            branchId: 1
-            createdAt: 2026-04-09T10:01:00.000Z
-            updatedAt: 2026-04-09T10:01:00.000Z
+            branch_id: 1
+            created_at: 2026-04-09T10:01:00.000Z
+            updated_at: 2026-04-09T10:01:00.000Z
     ServiceCreatedResponse:
       value:
         status: 201
@@ -2034,23 +2115,23 @@ components:
         message: Service created successfully.
         data:
           id: 1
-          branchId: 1
-          serviceCategoryId: 1
+          branch_id: 1
+          service_category_id: 1
           name: Haircut
           description: Professional haircut with styling
           price: 150
-          durationMinutes: 30
-          imageUrl: https://cdn.booklyx.com/services/haircut.png
+          duration_minutes: 30
+          image_url: https://cdn.booklyx.com/services/haircut.png
           status: PENDING_APPROVAL
-          rejectionReason: null
-          createdAt: 2026-04-09T10:15:00.000Z
-          updatedAt: 2026-04-09T10:15:00.000Z
+          rejection_reason: null
+          created_at: 2026-04-09T10:15:00.000Z
+          updated_at: 2026-04-09T10:15:00.000Z
           category:
             id: 1
             name: Hair Care
-            branchId: 1
-            createdAt: 2026-04-09T10:00:00.000Z
-            updatedAt: 2026-04-09T10:00:00.000Z
+            branch_id: 1
+            created_at: 2026-04-09T10:00:00.000Z
+            updated_at: 2026-04-09T10:00:00.000Z
     ServicesListResponse:
       value:
         status: 200
@@ -2058,23 +2139,23 @@ components:
         message: Services retrieved successfully.
         data:
           - id: 1
-            branchId: 1
-            serviceCategoryId: 1
+            branch_id: 1
+            service_category_id: 1
             name: Haircut
             description: Professional haircut with styling
             price: 150
-            durationMinutes: 30
-            imageUrl: https://cdn.booklyx.com/services/haircut.png
+            duration_minutes: 30
+            image_url: https://cdn.booklyx.com/services/haircut.png
             status: APPROVED
-            rejectionReason: null
-            createdAt: 2026-04-09T10:15:00.000Z
-            updatedAt: 2026-04-09T10:15:00.000Z
+            rejection_reason: null
+            created_at: 2026-04-09T10:15:00.000Z
+            updated_at: 2026-04-09T10:15:00.000Z
             category:
               id: 1
               name: Hair Care
-              branchId: 1
-              createdAt: 2026-04-09T10:00:00.000Z
-              updatedAt: 2026-04-09T10:00:00.000Z
+              branch_id: 1
+              created_at: 2026-04-09T10:00:00.000Z
+              updated_at: 2026-04-09T10:00:00.000Z
     ServiceUpdatedResponse:
       value:
         status: 200
@@ -2082,23 +2163,23 @@ components:
         message: Service updated successfully.
         data:
           id: 1
-          branchId: 1
-          serviceCategoryId: 1
+          branch_id: 1
+          service_category_id: 1
           name: Premium Haircut
           description: Professional haircut with wash and styling
           price: 180
-          durationMinutes: 40
-          imageUrl: https://cdn.booklyx.com/services/premium-haircut.png
+          duration_minutes: 40
+          image_url: https://cdn.booklyx.com/services/premium-haircut.png
           status: PENDING_APPROVAL
-          rejectionReason: null
-          createdAt: 2026-04-09T10:15:00.000Z
-          updatedAt: 2026-04-09T10:25:00.000Z
+          rejection_reason: null
+          created_at: 2026-04-09T10:15:00.000Z
+          updated_at: 2026-04-09T10:25:00.000Z
           category:
             id: 1
             name: Hair Care
-            branchId: 1
-            createdAt: 2026-04-09T10:00:00.000Z
-            updatedAt: 2026-04-09T10:00:00.000Z
+            branch_id: 1
+            created_at: 2026-04-09T10:00:00.000Z
+            updated_at: 2026-04-09T10:00:00.000Z
     ApplicationsListResponse:
       value:
         status: 200
@@ -2112,19 +2193,19 @@ components:
             email: mahmoud.ibrahim@booklyx.com
             category: SPA
             description: Premium beauty and skincare services.
-            commercialRegisterNumber: CR-2026-001
-            taxId: TAX-2026-001
+            commercial_register_number: CR-2026-001
+            tax_id: TAX-2026-001
             city: Cairo
             district: Nasr City
             address: 12 Makram Ebeid Street
             latitude: 30.0626
             longitude: 31.3368
             status: APPROVED
-            emailVerified: true
-            phoneVerified: true
-            rejectionReason: null
-            createdAt: 2026-04-09T09:45:00.000Z
-            updatedAt: 2026-04-09T10:20:00.000Z
+            email_verified: true
+            phone_verified: true
+            rejection_reason: null
+            created_at: 2026-04-09T09:45:00.000Z
+            updated_at: 2026-04-09T10:20:00.000Z
     ApplicationDetailResponse:
       value:
         status: 200
@@ -2139,31 +2220,31 @@ components:
           phone: "01000000011"
           category: SPA
           description: Premium beauty and skincare services.
-          commercialRegisterNumber: CR-2026-001
-          taxId: TAX-2026-001
+          commercial_register_number: CR-2026-001
+          tax_id: TAX-2026-001
           city: Cairo
           district: Nasr City
           address: 12 Makram Ebeid Street
           latitude: 30.0626
           longitude: 31.3368
           status: APPROVED
-          emailVerified: true
-          phoneVerified: true
-          rejectionReason: null
-          createdAt: 2026-04-09T09:45:00.000Z
-          updatedAt: 2026-04-09T10:20:00.000Z
+          email_verified: true
+          phone_verified: true
+          rejection_reason: null
+          created_at: 2026-04-09T09:45:00.000Z
+          updated_at: 2026-04-09T10:20:00.000Z
           documents:
             - id: 1
               type: COMMERCIAL_REGISTER
               fileUrl: https://booklyxbackend-production.up.railway.app/files/download/commercial-register.pdf
-              createdAt: 2026-04-09T09:50:00.000Z
+              created_at: 2026-04-09T09:50:00.000Z
           verificationCodes:
             - id: 12
               type: EMAIL
               expiresAt: 2026-04-09T10:10:00.000Z
               used: true
               attempts: 1
-              createdAt: 2026-04-09T10:00:00.000Z
+              created_at: 2026-04-09T10:00:00.000Z
     ApplicationApprovedResponse:
       value:
         status: 200
@@ -2176,8 +2257,8 @@ components:
           phone: "01000000011"
           role: branch_admin
           status: ACTIVE
-          emailVerified: true
-          phoneVerified: true
+          email_verified: true
+          phone_verified: true
     ApplicationRejectedResponse:
       value:
         status: 200
@@ -2191,28 +2272,28 @@ components:
         message: Services retrieved successfully.
         data:
           - id: 8
-            branchId: 1
-            serviceCategoryId: 1
+            branch_id: 1
+            service_category_id: 1
             name: Hair Coloring
             description: Premium hair coloring service
             price: 300
-            durationMinutes: 60
-            imageUrl: https://cdn.booklyx.com/services/hair-coloring.png
+            duration_minutes: 60
+            image_url: https://cdn.booklyx.com/services/hair-coloring.png
             status: PENDING_APPROVAL
-            rejectionReason: null
-            createdAt: 2026-04-09T10:30:00.000Z
-            updatedAt: 2026-04-09T10:30:00.000Z
+            rejection_reason: null
+            created_at: 2026-04-09T10:30:00.000Z
+            updated_at: 2026-04-09T10:30:00.000Z
             category:
               id: 1
               name: Hair Care
-              branchId: 1
-              createdAt: 2026-04-09T10:00:00.000Z
-              updatedAt: 2026-04-09T10:00:00.000Z
+              branch_id: 1
+              created_at: 2026-04-09T10:00:00.000Z
+              updated_at: 2026-04-09T10:00:00.000Z
             branch:
               id: 1
-              businessName: Hassan Beauty Salon
-              ownerName: Mahmoud Ibrahim
-              userId: 5
+              business_name: Hassan Beauty Salon
+              owner_name: Mahmoud Ibrahim
+              user_id: 5
               status: APPROVED
     ServiceApprovedResponse:
       value:
@@ -2221,23 +2302,23 @@ components:
         message: Service approved successfully.
         data:
           id: 8
-          branchId: 1
-          serviceCategoryId: 1
+          branch_id: 1
+          service_category_id: 1
           name: Hair Coloring
           description: Premium hair coloring service
           price: 300
-          durationMinutes: 60
-          imageUrl: https://cdn.booklyx.com/services/hair-coloring.png
+          duration_minutes: 60
+          image_url: https://cdn.booklyx.com/services/hair-coloring.png
           status: APPROVED
-          rejectionReason: null
-          createdAt: 2026-04-09T10:30:00.000Z
-          updatedAt: 2026-04-09T10:35:00.000Z
+          rejection_reason: null
+          created_at: 2026-04-09T10:30:00.000Z
+          updated_at: 2026-04-09T10:35:00.000Z
           category:
             id: 1
             name: Hair Care
-            branchId: 1
-            createdAt: 2026-04-09T10:00:00.000Z
-            updatedAt: 2026-04-09T10:00:00.000Z
+            branch_id: 1
+            created_at: 2026-04-09T10:00:00.000Z
+            updated_at: 2026-04-09T10:00:00.000Z
     ServiceRejectedResponse:
       value:
         status: 200
@@ -2245,23 +2326,23 @@ components:
         message: Service rejected successfully.
         data:
           id: 8
-          branchId: 1
-          serviceCategoryId: 1
+          branch_id: 1
+          service_category_id: 1
           name: Hair Coloring
           description: Premium hair coloring service
           price: 300
-          durationMinutes: 60
-          imageUrl: https://cdn.booklyx.com/services/hair-coloring.png
+          duration_minutes: 60
+          image_url: https://cdn.booklyx.com/services/hair-coloring.png
           status: REJECTED
-          rejectionReason: Price not aligned with branch policy.
-          createdAt: 2026-04-09T10:30:00.000Z
-          updatedAt: 2026-04-09T10:36:00.000Z
+          rejection_reason: Price not aligned with branch policy.
+          created_at: 2026-04-09T10:30:00.000Z
+          updated_at: 2026-04-09T10:36:00.000Z
           category:
             id: 1
             name: Hair Care
-            branchId: 1
-            createdAt: 2026-04-09T10:00:00.000Z
-            updatedAt: 2026-04-09T10:00:00.000Z
+            branch_id: 1
+            created_at: 2026-04-09T10:00:00.000Z
+            updated_at: 2026-04-09T10:00:00.000Z
 
   responses:
     BadRequest:
@@ -2709,7 +2790,7 @@ paths:
 
   /branch-admin/apply:
     post:
-      tags: [branch_admin/Application]
+      tags: [Branch_admin/Application]
       summary: Submit branch_admin application
       description: Submit branch_admin application.
       operationId: postBranchAdminApply
@@ -2744,7 +2825,7 @@ paths:
 
   /branch-admin/verify-email:
     post:
-      tags: [branch_admin/Application]
+      tags: [Branch_admin/Application]
       summary: Verify application email OTP
       description: Verify application email OTP.
       operationId: postBranchAdminVerifyEmail
@@ -2778,7 +2859,7 @@ paths:
 
   /branch-admin/verify-phone:
     post:
-      tags: [branch_admin/Application]
+      tags: [Branch_admin/Application]
       summary: Verify application phone OTP
       description: Verify application phone OTP.
       operationId: postBranchAdminVerifyPhone
@@ -2812,7 +2893,7 @@ paths:
 
   /branch-admin/resend-code:
     post:
-      tags: [branch_admin/Application]
+      tags: [Branch_admin/Application]
       summary: Resend branch_admin application OTP
       description: Resend branch_admin application OTP.
       operationId: postBranchAdminResendCode
@@ -2846,7 +2927,7 @@ paths:
 
   /branch-admin/profile:
     put:
-      tags: [branch_admin/Profile]
+      tags: [Branch_admin/Profile]
       summary: Update branch profile
       description: Update authenticated branch_admin profile data.
       operationId: putBranchAdminProfile
@@ -2854,7 +2935,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       requestBody:
         required: true
         content:
@@ -2961,10 +3042,62 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+    get:
+      tags: [Branch_admin/Profile]
+      summary: Get authenticated branch profile
+      description: Get authenticated branch_admin profile data.
+      operationId: getBranchAdminProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      responses:
+        "200":
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              ownerName:
+                                type: string
+                              email:
+                                type: string
+                              phone:
+                                type: string
+                              businessName:
+                                type: string
+                              category:
+                                type: string
+              examples:
+                default:
+                  value:
+                    status: 200
+                    error: false
+                    message: Profile retrieved successfully.
+                    data:
+                      user:
+                        id: 1
+                        ownerName: Prime Salon
+                        email: branch@example.com
+                        phone: "01000000022"
+                        businessName: Prime Salon
+                        category: SALON
 
   /branch-admin/create-staff:
     post:
-      tags: [branch_admin/Staff]
+      tags: [Branch_admin/Staff]
       summary: Create staff user
       description: Create staff user.
       operationId: postBranchAdminCreateStaff
@@ -2972,7 +3105,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       requestBody:
         required: true
         content:
@@ -3006,7 +3139,7 @@ paths:
 
   /branch-admin/staff/my-staff:
     get:
-      tags: [branch_admin/Staff]
+      tags: [Branch_admin/Staff]
       summary: List current branch_admin staff
       description: List current branch_admin staff.
       operationId: getBranchAdminStaffMyStaff
@@ -3014,7 +3147,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       responses:
         "200":
           description: Staff fetched
@@ -3039,7 +3172,7 @@ paths:
 
   /branch-admin/staff/{id}:
     get:
-      tags: [branch_admin/Staff]
+      tags: [Branch_admin/Staff]
       summary: Get staff by id for current branch_admin
       description: Get staff by id for current branch_admin.
       operationId: getBranchAdminStaffById
@@ -3053,7 +3186,7 @@ paths:
             type: integer
             minimum: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       responses:
         "200":
           description: Staff fetched
@@ -3077,7 +3210,7 @@ paths:
           $ref: "#/components/responses/NotFound"
 
     put:
-      tags: [branch_admin/Staff]
+      tags: [Branch_admin/Staff]
       summary: Update staff by id for current branch_admin
       description: Update staff by id for current branch_admin.
       operationId: putBranchAdminStaffById
@@ -3091,7 +3224,7 @@ paths:
             type: integer
             minimum: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       requestBody:
         required: true
         content:
@@ -3126,7 +3259,7 @@ paths:
           $ref: "#/components/responses/NotFound"
 
     delete:
-      tags: [branch_admin/Staff]
+      tags: [Branch_admin/Staff]
       summary: Delete staff by id for current branch_admin
       description: Delete staff by id for current branch_admin.
       operationId: deleteBranchAdminStaffById
@@ -3140,7 +3273,7 @@ paths:
             type: integer
             minimum: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       responses:
         "200":
           description: Staff deleted
@@ -3160,7 +3293,7 @@ paths:
 
   /branch-admin/services/categories:
     post:
-      tags: [branch_admin/Services]
+      tags: [Branch_admin/Services]
       summary: Add service category
       description: Add service category.
       operationId: postBranchAdminServicesCategories
@@ -3168,7 +3301,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       requestBody:
         required: true
         content:
@@ -3201,7 +3334,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
 
     get:
-      tags: [branch_admin/Services]
+      tags: [Branch_admin/Services]
       summary: List service categories for current branch_admin
       description: List service categories for current branch_admin.
       operationId: getBranchAdminServicesCategories
@@ -3209,7 +3342,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       responses:
         "200":
           description: Categories fetched
@@ -3234,7 +3367,7 @@ paths:
 
   /branch-admin/services/create-service:
     post:
-      tags: [branch_admin/Services]
+      tags: [Branch_admin/Services]
       summary: Create service (pending approval)
       description: Create service (pending approval).
       operationId: postBranchAdminServicesCreateService
@@ -3242,7 +3375,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       requestBody:
         required: true
         content:
@@ -3279,7 +3412,7 @@ paths:
 
   /branch-admin/services:
     post:
-      tags: [branch_admin/Services]
+      tags: [Branch_admin/Services]
       summary: Create service (alias)
       description: Alias endpoint for creating a service (pending approval).
       operationId: postBranchAdminServices
@@ -3287,7 +3420,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       requestBody:
         required: true
         content:
@@ -3324,7 +3457,7 @@ paths:
 
   /branch-admin/services/my-services:
     get:
-      tags: [branch_admin/Services]
+      tags: [Branch_admin/Services]
       summary: List current branch_admin services
       description: List current branch_admin services.
       operationId: getBranchAdminServicesMyServices
@@ -3332,7 +3465,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
         - $ref: "#/components/parameters/ServiceStatusQuery"
       responses:
         "200":
@@ -3358,7 +3491,7 @@ paths:
 
   /branch-admin/my-services:
     get:
-      tags: [branch_admin/Services]
+      tags: [Branch_admin/Services]
       summary: List current branch_admin services (alias)
       description: Backward-compatible alias for listing current branch_admin services.
       operationId: getBranchAdminMyServices
@@ -3366,7 +3499,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
         - $ref: "#/components/parameters/ServiceStatusQuery"
       responses:
         "200":
@@ -3392,7 +3525,7 @@ paths:
 
   /branch-admin/services/{id}:
     put:
-      tags: [branch_admin/Services]
+      tags: [Branch_admin/Services]
       summary: Update service by id
       description: Update service by id.
       operationId: putBranchAdminServicesById
@@ -3406,7 +3539,7 @@ paths:
             type: integer
             minimum: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       requestBody:
         required: true
         content:
@@ -3444,7 +3577,7 @@ paths:
           $ref: "#/components/responses/NotFound"
 
     delete:
-      tags: [branch_admin/Services]
+      tags: [Branch_admin/Services]
       summary: Delete service by id
       description: Delete service by id.
       operationId: deleteBranchAdminServicesById
@@ -3458,7 +3591,7 @@ paths:
             type: integer
             minimum: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       responses:
         "200":
           description: Service deleted
@@ -3480,7 +3613,7 @@ paths:
 
   /staff/profile:
     get:
-      tags: [staff/Profile]
+      tags: [Staff/Profile]
       summary: Get authenticated staff profile
       description: Get authenticated staff profile.
       operationId: getStaffProfile
@@ -3511,9 +3644,9 @@ paths:
 
   /staff/schedule:
     get:
-      tags: [staff/Schedule]
+      tags: [Staff/Schedule]
       summary: Get staff schedule for a day
-      description: Get staff schedule for a day.
+      description: Get staff appointments for a specified date. Returns all appointments for that day.
       operationId: getStaffSchedule
       security:
         - bearerAuth: []
@@ -3550,15 +3683,21 @@ paths:
 
   /staff/appointments:
     get:
-      tags: [staff/appointments]
-      summary: List pending appointments
-      description: List pending appointments.
+      tags: [Staff/appointments]
+      summary: List appointments
+      description: List appointments for the authenticated staff member. Defaults to PENDING when no status is provided.
       operationId: getStaffAppointments
       security:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeader"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELED]
       responses:
         "200":
           description: Requests fetched
@@ -3581,71 +3720,9 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
-  /staff/appointments/{appointmentId}/accept:
-    patch:
-      tags: [staff/appointments]
-      summary: Accept a pending appointment
-      description: Accept a pending appointment.
-      operationId: acceptAppointment
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: appointmentId
-          in: path
-          required: true
-          schema:
-            type: integer
-        - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
-      responses:
-        "200":
-          description: Appointment accepted
-          content:
-            application/json:
-              examples:
-                default:
-                  $ref: "#/components/examples/StaffAppointmentAcceptedResponse"
-              schema:
-                $ref: "#/components/schemas/ApiSuccess"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-
-  /staff/appointments/{appointmentId}/reject:
-    patch:
-      tags: [staff/appointments]
-      summary: Reject a pending appointment
-      description: Reject a pending appointment.
-      operationId: rejectAppointment
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: appointmentId
-          in: path
-          required: true
-          schema:
-            type: integer
-        - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
-      responses:
-        "200":
-          description: Appointment rejected
-          content:
-            application/json:
-              examples:
-                default:
-                  $ref: "#/components/examples/StaffAppointmentRejectedResponse"
-              schema:
-                $ref: "#/components/schemas/ApiSuccess"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-
   /staff/appointments/{appointmentId}/start:
     patch:
-      tags: [staff/appointments]
+      tags: [Staff/appointments]
       summary: Mark an appointment as in progress
       description: Mark an appointment as in progress.
       operationId: startAppointment
@@ -3676,7 +3753,7 @@ paths:
 
   /staff/appointments/{appointmentId}/complete:
     patch:
-      tags: [staff/appointments]
+      tags: [Staff/appointments]
       summary: Mark an appointment as completed
       description: Mark an appointment as completed.
       operationId: completeAppointment
@@ -3702,6 +3779,13 @@ paths:
               properties:
                 notes:
                   type: string
+                  nullable: true
+                attachments:
+                  type: array
+                  nullable: true
+                  items:
+                    type: string
+                    format: uri
       responses:
         "200":
           description: Appointment completed
@@ -3719,7 +3803,7 @@ paths:
 
   /staff/income:
     get:
-      tags: [staff/Income]
+      tags: [Staff/Income]
       summary: Get staff income statistics
       description: Get staff income statistics.
       operationId: getStaffIncome
@@ -3769,7 +3853,7 @@ paths:
 
   /staff/services:
     get:
-      tags: [staff/Services]
+      tags: [Staff/Services]
       summary: List staff services
       description: List staff services.
       operationId: getStaffServices
@@ -3800,7 +3884,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
     post:
-      tags: [staff/Services]
+      tags: [Staff/Services]
       summary: Add a service to the staff profile
       description: Add a service to the staff profile.
       operationId: postStaffServices
@@ -3842,7 +3926,7 @@ paths:
 
   /staff/availability:
     get:
-      tags: [staff/Availability]
+      tags: [Staff/Availability]
       summary: List staff availability slots
       description: List staff availability slots.
       operationId: getStaffAvailability
@@ -3873,9 +3957,9 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
     post:
-      tags: [staff/Availability]
+      tags: [Staff/Availability]
       summary: Create a staff availability slot
-      description: Create a staff availability slot.
+      description: Create a staff availability slot. `dayOfWeek` uses JavaScript/dayjs numbering where `0 = Sunday`, `1 = Monday`, `2 = Tuesday`, `3 = Wednesday`, `4 = Thursday`, `5 = Friday`, and `6 = Saturday`.
       operationId: postStaffAvailability
       security:
         - bearerAuth: []
@@ -3897,6 +3981,7 @@ paths:
                   type: integer
                   minimum: 0
                   maximum: 6
+                  description: JavaScript/dayjs day index. 0 = Sunday, 1 = Monday, 2 = Tuesday, 3 = Wednesday, 4 = Thursday, 5 = Friday, 6 = Saturday.
                 startTime:
                   type: string
                 endTime:
@@ -3920,9 +4005,9 @@ paths:
 
   /staff/availability/{availabilityId}:
     put:
-      tags: [staff/Availability]
+      tags: [Staff/Availability]
       summary: Update a staff availability slot
-      description: Update a staff availability slot.
+      description: Update a staff availability slot. `dayOfWeek` uses JavaScript/dayjs numbering where `0 = Sunday`, `1 = Monday`, `2 = Tuesday`, `3 = Wednesday`, `4 = Thursday`, `5 = Friday`, and `6 = Saturday`.
       operationId: updateStaffAvailability
       security:
         - bearerAuth: []
@@ -3944,6 +4029,16 @@ paths:
                 $ref: "#/components/examples/StaffUpdateAvailabilityRequest"
             schema:
               type: object
+              properties:
+                dayOfWeek:
+                  type: integer
+                  minimum: 0
+                  maximum: 6
+                  description: JavaScript/dayjs day index. 0 = Sunday, 1 = Monday, 2 = Tuesday, 3 = Wednesday, 4 = Thursday, 5 = Friday, 6 = Saturday.
+                startTime:
+                  type: string
+                endTime:
+                  type: string
       responses:
         "200":
           description: Availability updated
@@ -3963,7 +4058,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
     delete:
-      tags: [staff/Availability]
+      tags: [Staff/Availability]
       summary: Delete a staff availability slot
       description: Delete a staff availability slot.
       operationId: deleteStaffAvailability
@@ -3997,7 +4092,7 @@ paths:
 
   /staff/available-slots:
     get:
-      tags: [staff/Availability]
+      tags: [Staff/Availability]
       summary: Get available booking slots for a service
       description: Get available booking slots for a service.
       operationId: getStaffAvailableSlots
@@ -4053,16 +4148,22 @@ paths:
 
   /admin/applications:
     get:
-      tags: [super_admin/Applications]
+      tags: [Super_admin/Applications]
       summary: List branch applications
-      description: List branch applications.
+      description: List branch applications with optional filtering by status.
       operationId: getAdminApplications
       security:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
-        - $ref: "#/components/parameters/ApplicationStatusQuery"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [PENDING, APPROVED, REJECTED]
+          description: Filter applications by status
       responses:
         "200":
           description: Applications fetched
@@ -4087,7 +4188,7 @@ paths:
 
   /admin/applications/{id}:
     get:
-      tags: [super_admin/Applications]
+      tags: [Super_admin/Applications]
       summary: Get application details
       description: Get application details.
       operationId: getAdminApplicationsById
@@ -4101,7 +4202,14 @@ paths:
             type: integer
             minimum: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+        - name: includeCodes
+          in: query
+          required: false
+          description: When true, include the latest verification codes for the application (admin-only debugging).
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: Application details fetched
@@ -4126,7 +4234,7 @@ paths:
 
   /admin/applications/{id}/approve:
     post:
-      tags: [super_admin/Applications]
+      tags: [Super_admin/Applications]
       summary: Approve branch application
       description: Approve branch application.
       operationId: postAdminApplicationsByIdApprove
@@ -4140,7 +4248,7 @@ paths:
             type: integer
             minimum: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       responses:
         "200":
           description: Application approved
@@ -4167,7 +4275,7 @@ paths:
 
   /admin/applications/{id}/reject:
     post:
-      tags: [super_admin/Applications]
+      tags: [Super_admin/Applications]
       summary: Reject branch application
       description: Reject branch application.
       operationId: postAdminApplicationsByIdReject
@@ -4181,7 +4289,7 @@ paths:
             type: integer
             minimum: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       requestBody:
         required: true
         content:
@@ -4210,9 +4318,106 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /admin/users/{id}:
+    get:
+      tags: [Super_admin/Applications]
+      summary: Get user profile
+      description: Get a user profile by ID (e.g., branch admin profile).
+      operationId: getAdminUserProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      responses:
+        "200":
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              ownerName:
+                                type: string
+                              email:
+                                type: string
+                              phone:
+                                type: string
+                              businessName:
+                                type: string
+                              category:
+                                type: string
+                              logoUrl:
+                                type: string
+                                nullable: true
+                              operatingHours:
+                                type: string
+                                nullable: true
+                              address:
+                                type: string
+                                nullable: true
+                              status:
+                                type: string
+                              emailVerified:
+                                type: boolean
+                              phoneVerified:
+                                type: boolean
+                              createdAt:
+                                type: string
+                                format: date-time
+                              updatedAt:
+                                type: string
+                                format: date-time
+              examples:
+                default:
+                  value:
+                    status: 200
+                    error: false
+                    message: Profile retrieved successfully
+                    data:
+                      user:
+                        id: 1
+                        ownerName: Prime Salon
+                        email: branch@example.com
+                        phone: "01000000022"
+                        businessName: Prime Salon
+                        category: SALON
+                        logoUrl: https://cdn.booklyx.com/branch/logo.png
+                        operatingHours: "09:00-22:00"
+                        address: "123 Main St"
+                        status: APPROVED
+                        emailVerified: true
+                        phoneVerified: true
+                        createdAt: "2026-04-09T10:15:00.000Z"
+                        updatedAt: "2026-04-09T10:15:00.000Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /admin/services/pending:
     get:
-      tags: [super_admin/Services]
+      tags: [Super_admin/Services]
       summary: List pending services
       description: List pending services.
       operationId: getAdminServicesPending
@@ -4220,7 +4425,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       responses:
         "200":
           description: Pending services fetched
@@ -4245,7 +4450,7 @@ paths:
 
   /admin/services/{id}/approve:
     post:
-      tags: [super_admin/Services]
+      tags: [Super_admin/Services]
       summary: Approve pending service
       description: Approve pending service.
       operationId: postAdminServicesByIdApprove
@@ -4259,7 +4464,7 @@ paths:
             type: integer
             minimum: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       responses:
         "200":
           description: Service approved
@@ -4286,7 +4491,7 @@ paths:
 
   /admin/services/{id}/reject:
     post:
-      tags: [super_admin/Services]
+      tags: [Super_admin/Services]
       summary: Reject pending service
       description: Reject pending service.
       operationId: postAdminServicesByIdReject
@@ -4300,7 +4505,7 @@ paths:
             type: integer
             minimum: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       requestBody:
         required: true
         content:
@@ -4399,7 +4604,7 @@ paths:
 
   /offers:
     post:
-      tags: [branch_admin/Offers]
+      tags: [Branch_admin/Offers]
       summary: Create offer
       description: Create a new offer for authenticated branch_admin.
       operationId: postOffers
@@ -4407,7 +4612,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       requestBody:
         required: true
         content:
@@ -4505,7 +4710,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
 
     get:
-      tags: [branch_admin/Offers]
+      tags: [Branch_admin/Offers]
       summary: List branch offers
       description: List offers for authenticated branch_admin.
       operationId: getOffers
@@ -4513,7 +4718,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       responses:
         "200":
           description: Offers fetched
@@ -4560,7 +4765,7 @@ paths:
 
   /offers/{id}:
     put:
-      tags: [branch_admin/Offers]
+      tags: [Branch_admin/Offers]
       summary: Update offer by id
       description: Update an offer owned by authenticated branch_admin.
       operationId: putOffersById
@@ -4574,7 +4779,7 @@ paths:
             type: integer
             minimum: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       requestBody:
         required: true
         content:
@@ -4663,7 +4868,7 @@ paths:
 
   /offers/{id}/toggle:
     patch:
-      tags: [branch_admin/Offers]
+      tags: [Branch_admin/Offers]
       summary: Toggle offer active state
       description: Toggle active/inactive state for an offer owned by authenticated branch_admin.
       operationId: patchOffersByIdToggle
@@ -4677,7 +4882,7 @@ paths:
             type: integer
             minimum: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       responses:
         "200":
           description: Offer toggled

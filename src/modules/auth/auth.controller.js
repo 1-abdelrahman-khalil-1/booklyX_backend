@@ -3,31 +3,31 @@ import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
-  login,
-  logout,
-  refresh,
-  register,
-  requestPasswordReset,
-  resendCode,
-  resetPassword,
-  verifyEmail,
-  verifyPasswordReset,
-  verifyPhone,
+    login,
+    logout,
+    refresh,
+    register,
+    requestPasswordReset,
+    resendCode,
+    resetPassword,
+    verifyEmail,
+    verifyPasswordReset,
+    verifyPhone,
 } from "./auth.service.js";
 import {
-  loginSchema,
-  registerSchema,
-  requestPasswordResetSchema,
-  platformSchema,
-  resendCodeSchema,
-  resetPasswordSchema,
-  validateAuthInput,
-  verifyEmailSchema,
-  verifyPasswordResetSchema,
-  verifyPhoneSchema,
+    loginSchema,
+    platformSchema,
+    registerSchema,
+    requestPasswordResetSchema,
+    resendCodeSchema,
+    resetPasswordSchema,
+    validateAuthInput,
+    verifyEmailSchema,
+    verifyPasswordResetSchema,
+    verifyPhoneSchema,
 } from "./auth.validation.js";
 
-// ─── Login ────────────────────────────────────────────────────────────────────
+// ─── Login ────────────────
 
 export const loginHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
@@ -89,7 +89,7 @@ export const verifyPhoneHandler = asyncHandler(async (req, res) => {
   successResponse(res, 200, t(tr.PHONE_VERIFIED_SUCCESS, lang), result);
 });
 
-// ─── Password Reset ───────────────────────────────────────────────────────────
+// ─── Password Reset ───────
 
 export const requestPasswordResetHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
@@ -140,7 +140,7 @@ export const refreshHandler = asyncHandler(async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     const { refreshToken: _refreshToken, ...responseBody } = result;
-    return void successResponse(res, 200, t(tr.LOGIN_SUCCESS, lang), responseBody);
+    return void successResponse(res, 200, t(tr.token, lang), responseBody);
   }
 
   successResponse(res, 200, t(tr.LOGIN_SUCCESS, lang), result);

@@ -7,6 +7,7 @@ import {
     createStaff,
     deleteService,
     deleteStaff,
+    getBranchAdminProfile,
     getMyServiceCategories,
     getMyServices,
     getMyStaff,
@@ -27,6 +28,7 @@ import {
     myServicesQuerySchema,
     resendCodeSchema,
     staffIdSchema,
+    updateBranchAdminProfileSchema,
     updateServiceSchema,
     updateStaffSchema,
     validateBranchAdminInput,
@@ -88,7 +90,7 @@ function buildProfilePayload(req) {
   };
 }
 
-// ─── Apply Handler ───────────────────────────────────────────────────────────
+// ─── Apply Handler ───────
 
 export const applyHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
@@ -97,7 +99,7 @@ export const applyHandler = asyncHandler(async (req, res) => {
   successResponse(res, 201, t(result.message, lang), result.application);
 });
 
-// ─── Verify Email Handler ─────────────────────────────────────────────────────
+// ─── Verify Email Handler ─
 
 export const verifyEmailHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
@@ -106,7 +108,7 @@ export const verifyEmailHandler = asyncHandler(async (req, res) => {
   successResponse(res, 200, t(result.message, lang));
 });
 
-// ─── Verify Phone Handler ─────────────────────────────────────────────────────
+// ─── Verify Phone Handler ─
 
 export const verifyPhoneHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
@@ -115,7 +117,7 @@ export const verifyPhoneHandler = asyncHandler(async (req, res) => {
   successResponse(res, 200, t(result.message, lang));
 });
 
-// ─── Resend Code Handler ──────────────────────────────────────────────────────
+// ─── Resend Code Handler ──
 
 export const resendCodeHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
@@ -124,7 +126,7 @@ export const resendCodeHandler = asyncHandler(async (req, res) => {
   successResponse(res, 200, t(result.message, lang));
 });
 
-// ─── Create Staff Handler ─────────────────────────────────────────────────────
+// ─── Create Staff Handler ─
 
 export const createStaffHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
@@ -143,7 +145,8 @@ export const updateStaffHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const data = validateBranchAdminInput(updateStaffSchema, {
     ...req.body,
-    id: req.body.id ?? req.params.id,
+    // Always trust the path param to avoid accidental/malicious id mismatches.
+    id: req.params.id,
   });
   const result = await updateStaff(data, req.user.sub);
   successResponse(res, 200, t(tr.STAFF_UPDATED, lang), result);
@@ -194,7 +197,8 @@ export const updateServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const data = validateBranchAdminInput(updateServiceSchema, {
     ...buildServicePayload(req),
-    id: req.body.id ?? req.params.id,
+    // Always trust the path param to avoid accidental/malicious id mismatches.
+    id: req.params.id,
   });
   const result = await updateService(data, req.user.sub);
   successResponse(res, 200, t(tr.SERVICE_UPDATED, lang), result);
@@ -209,6 +213,16 @@ export const deleteServiceHandler = asyncHandler(async (req, res) => {
 
 export const updateBranchAdminProfileHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await updateBranchAdminProfile(buildProfilePayload(req), req.user.sub);
+  const data = validateBranchAdminInput(
+    updateBranchAdminProfileSchema,
+    buildProfilePayload(req),
+  );
+  const result = await updateBranchAdminProfile(data, req.user.sub);
   successResponse(res, 200, t(tr.PROFILE_UPDATED_SUCCESSFULLY, lang), result);
+});
+
+export const getBranchAdminProfileHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const result = await getBranchAdminProfile(req.user.sub);
+  successResponse(res, 200, t(tr.PROFILE_RETRIEVED_SUCCESSFULLY, lang), result);
 });
