@@ -2,20 +2,21 @@ import { Router } from "express";
 import { Role } from "../../generated/prisma/client.js";
 import { authenticate, authorize } from "../../middleware/authenticate.js";
 import {
-    addServiceHandler,
-    completeAppointmentHandler,
-    createAvailabilityHandler,
-    deleteAvailabilityHandler,
-    getAppointmentsDetailsHandler,
-    getAppointmentsHandler,
-    getAvailableSlotsHandler,
-    getIncomeStatsHandler,
-    getProfileHandler,
-    getScheduleHandler,
-    listAvailabilityHandler,
-    listServicesHandler,
-    startAppointmentHandler,
-    updateAvailabilityHandler,
+  addServiceHandler,
+  completeAppointmentHandler,
+  createAvailabilityHandler,
+  deleteAvailabilityHandler,
+  getAppointmentsDetailsHandler,
+  getAppointmentsHandler,
+  getAvailableSlotsHandler,
+  getIncomeStatsHandler,
+  getProfileHandler,
+  getScheduleHandler,
+  getStaffPublicProfileHandler,
+  listAvailabilityHandler,
+  listServicesHandler,
+  startAppointmentHandler,
+  updateAvailabilityHandler,
 } from "./staff.controller.js";
 
 const staffRouter = Router();
@@ -26,6 +27,14 @@ staffRouter.get(
   authenticate,
   authorize(Role.staff),
   getProfileHandler,
+);
+
+// Public staff profile by staff id (clients and branch admins)
+staffRouter.get(
+  "/:id/profile",
+  authenticate,
+  authorize(Role.client, Role.branch_admin, Role.super_admin),
+  getStaffPublicProfileHandler,
 );
 
 // ─── Schedule ──────

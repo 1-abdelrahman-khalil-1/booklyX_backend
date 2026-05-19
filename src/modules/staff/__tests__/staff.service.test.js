@@ -359,7 +359,7 @@ describe("Staff Service", () => {
       // service returns appointments array
       expect(result).toHaveProperty("appointments");
       expect(result.appointments).toHaveLength(1);
-      expect(result.appointments[0]).toHaveProperty("clientName", "Client 1");
+      expect(result.appointments[0]).toHaveProperty("client.user.name", "Client 1");
     });
   });
 
@@ -386,7 +386,7 @@ describe("Staff Service", () => {
       const result = await staffService.getAppointments(1);
 
       expect(result).toHaveLength(2);
-      expect(result[0]).toHaveProperty("clientName", "Client 1");
+      expect(result[0]).toHaveProperty("client.user.name", "Client 1");
       expect(prisma.appointment.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({

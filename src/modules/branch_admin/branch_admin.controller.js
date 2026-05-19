@@ -8,6 +8,7 @@ import {
     deleteService,
     deleteStaff,
     getBranchAdminProfile,
+    getBranchPublicProfile,
     getMyServiceCategories,
     getMyServices,
     getMyStaff,
@@ -225,4 +226,11 @@ export const getBranchAdminProfileHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const result = await getBranchAdminProfile(req.user.sub);
   successResponse(res, 200, t(tr.PROFILE_RETRIEVED_SUCCESSFULLY, lang), result);
+});
+
+export const getBranchPublicProfileHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const branchId = Number(req.params.id);
+  const profile = await getBranchPublicProfile(branchId, req.user);
+  successResponse(res, 200, t(tr.PROFILE_RETRIEVED_SUCCESSFULLY, lang), profile);
 });

@@ -1,15 +1,15 @@
 import bcrypt from "bcrypt";
 import dayjs from "dayjs";
 import {
-    ApplicationStatus,
-    AppointmentStatus,
-    AvailabilityStatus,
-    BusinessCategory,
-    PrismaClient,
-    Role,
-    ServiceApprovalStatus,
-    StaffRole,
-    UserStatus,
+  ApplicationStatus,
+  AppointmentStatus,
+  AvailabilityStatus,
+  BusinessCategory,
+  PrismaClient,
+  Role,
+  ServiceApprovalStatus,
+  StaffRole,
+  UserStatus,
 } from "../src/generated/prisma/client.js";
 
 const SUPER_ADMIN_EMAIL = "admin@booklyx.com";
@@ -33,6 +33,38 @@ const SEED_USERS = [
     email: "eslam.wael@booklyx.com",
     password: "12345678",
     phone: "01000000002",
+    role: Role.client,
+    status: UserStatus.ACTIVE,
+  },
+  {
+    name: "Mohamed Ali",
+    email: "mohamed.ali@booklyx.com",
+    password: "12345678",
+    phone: "01000000003",
+    role: Role.client,
+    status: UserStatus.ACTIVE,
+  },
+  {
+    name: "Omar Hassan",
+    email: "omar.hassan@booklyx.com",
+    password: "12345678",
+    phone: "01000000004",
+    role: Role.client,
+    status: UserStatus.ACTIVE,
+  },
+  {
+    name: "Youssef Nabil",
+    email: "youssef.nabil@booklyx.com",
+    password: "12345678",
+    phone: "01000000005",
+    role: Role.client,
+    status: UserStatus.ACTIVE,
+  },
+  {
+    name: "Karim Mahmoud",
+    email: "karim.mahmoud@booklyx.com",
+    password: "12345678",
+    phone: "01000000006",
     role: Role.client,
     status: UserStatus.ACTIVE,
   },
@@ -1121,34 +1153,29 @@ async function main() {
 
   if (clients.length > 0 && staffMembers.length > 0) {
     const appointmentPlan = [
-      {
-        dayOffset: -6,
-        hour: 10,
-        status: AppointmentStatus.COMPLETED,
-        rating: 5,
-        comment: "Excellent service and friendly staff.",
-      },
-      {
-        dayOffset: -3,
-        hour: 12,
-        status: AppointmentStatus.COMPLETED,
-        rating: 4,
-        comment: "Great experience, would book again.",
-      },
+      { dayOffset: -6, hour: 10, status: AppointmentStatus.COMPLETED },
+      { dayOffset: -3, hour: 12, status: AppointmentStatus.COMPLETED },
       { dayOffset: -1, hour: 14, status: AppointmentStatus.CANCELED },
-      {
-        dayOffset: -1,
-        hour: 16,
-        status: AppointmentStatus.COMPLETED,
-        rating: 5,
-        comment: "Smooth visit and clean place.",
-      },
+      { dayOffset: -1, hour: 16, status: AppointmentStatus.COMPLETED },
       { dayOffset: 0, hour: 11, status: AppointmentStatus.CONFIRMED },
       { dayOffset: 0, hour: 15, status: AppointmentStatus.PENDING },
       { dayOffset: 0, hour: 17, status: AppointmentStatus.IN_PROGRESS },
       { dayOffset: 1, hour: 10, status: AppointmentStatus.CONFIRMED },
       { dayOffset: 4, hour: 13, status: AppointmentStatus.PENDING },
       { dayOffset: 10, hour: 16, status: AppointmentStatus.PENDING },
+    ];
+
+    const REVIEW_COMMENTS = [
+      "Excellent attention to detail.",
+      "Very professional and on time.",
+      "Friendly staff and great service.",
+      "Good value for money.",
+      "Would recommend to my friends.",
+      "Clean place and pleasant experience.",
+      "Highly skilled and courteous.",
+      "Service was ok but could improve.",
+      "Outstanding result, thank you!",
+      "Quick and efficient service.",
     ];
 
     for (let i = 0; i < clients.length; i++) {
@@ -1171,11 +1198,9 @@ async function main() {
           continue;
         }
 
-        for (const plan of appointmentPlan) {
-          const scheduledDate = appointmentDate(
-            plan.dayOffset,
-            plan.hour + i,
-          );
+        for (let pIndex = 0; pIndex < appointmentPlan.length; pIndex++) {
+          const plan = appointmentPlan[pIndex];
+          const scheduledDate = appointmentDate(plan.dayOffset, plan.hour + i);
 
           const appointment = await prisma.appointment.create({
             data: {
@@ -1189,6 +1214,10 @@ async function main() {
           });
 
           if (plan.status === AppointmentStatus.COMPLETED) {
+            // Deterministic rating/comment selection to diversify seed data
+            const rating = ((i + pIndex) % 5) + 1; // 1-5
+            const comment = REVIEW_COMMENTS[(i + pIndex) % REVIEW_COMMENTS.length];
+
             await prisma.review.create({
               data: {
                 clientId: client.id,
@@ -1197,8 +1226,8 @@ async function main() {
                 branchId: branch.id,
                 staffId: staff.id,
                 appointmentId: appointment.id,
-                rating: plan.rating,
-                comment: plan.comment,
+                rating,
+                comment,
                 reviewerRole: Role.client,
                 createdAt: dayjs(scheduledDate).add(1, "hour").toDate(),
               },

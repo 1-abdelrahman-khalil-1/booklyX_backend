@@ -10,7 +10,11 @@ function toSnakeCaseDeep(value) {
     return value.map(toSnakeCaseDeep);
   }
 
-  if (!value || typeof value !== "object" || value instanceof Date) {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (!value || typeof value !== "object") {
     return value;
   }
 

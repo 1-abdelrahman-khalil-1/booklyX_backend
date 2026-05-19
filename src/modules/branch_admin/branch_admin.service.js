@@ -1,34 +1,34 @@
 import bcrypt from "bcrypt";
 import {
-  ApplicationStatus,
-  Prisma,
-  Role,
-  ServiceApprovalStatus,
-  UserStatus,
-  VerificationType,
+    ApplicationStatus,
+    Prisma,
+    Role,
+    ServiceApprovalStatus,
+    UserStatus,
+    VerificationType,
 } from "../../generated/prisma/client.js";
 import {
-  sendEmailVerification,
-  sendPhoneVerificationCode,
+    sendEmailVerification,
+    sendPhoneVerificationCode,
 } from "../../lib/email.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import {
-  addServiceCategorySchema,
-  applySchema,
-  createServiceSchema,
-  createStaffSchema,
-  deleteServiceSchema,
-  myServicesQuerySchema,
-  resendCodeSchema,
-  staffIdSchema,
-  updateBranchAdminProfileSchema,
-  updateServiceSchema,
-  updateStaffSchema,
-  validateBranchAdminInput,
-  verifyEmailSchema,
-  verifyPhoneSchema,
+    addServiceCategorySchema,
+    applySchema,
+    createServiceSchema,
+    createStaffSchema,
+    deleteServiceSchema,
+    myServicesQuerySchema,
+    resendCodeSchema,
+    staffIdSchema,
+    updateBranchAdminProfileSchema,
+    updateServiceSchema,
+    updateStaffSchema,
+    validateBranchAdminInput,
+    verifyEmailSchema,
+    verifyPhoneSchema,
 } from "./branch_admin.validation.js";
 
 const SALT_ROUNDS = 10;
@@ -1103,4 +1103,64 @@ export async function deleteService(body, branchAdminUserId) {
   });
 
   return { message: tr.SERVICE_DELETED };
+}
+
+export async function getBranchPublicProfile(branchId, authUser) {
+  const branch = await prisma.branchAdmin.findUnique({
+    where: { id: Number(branchId) },
+    select: {
+      id: true,
+      businessName: true,
+      category: true,
+      averageRating: true,
+      reviewCount: true,
+    },
+  });
+
+  if (!branch) throw new ApplicationNotFound();
+
+  // If requester is branch_admin, ensure it's their branch
+  if (authUser && authUser.role === Role.branch_admin) {
+    const myBranch = await prisma.branchAdmin.findUnique({ where: { userId: authUser.sub }, select: { id: true } });
+    if (!myBranch || myBranch.id !== branch.id) throw new AppError(tr.FORBIDDEN, 403);
+  }
+
+  // Fetch only latest 5 visible reviews for lightweight profile preview
+  const reviews = await prisma.review.findMany({
+    where: { branchId: branch.id, isVisible: true },
+    take: 5,
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      rating: true,
+      comment: true,
+      appointmentId: true,
+      createdAt: true,
+      client: { select: { user: { select: { name: true, phone: true } } } },
+      service: { select: { id: true, name: true } },
+      staff: { select: { id: true, user: { select: { id: true, name: true } } } },
+    },
+  });
+
+  const formatted = reviews.map(r => ({
+    id: r.id,
+    rating: r.rating,
+    comment: r.comment,
+    appointmentId: r.appointmentId,
+    createdAt: r.createdAt ? r.createdAt.toISOString() : null,
+    reviewer: r.client ? { name: r.client.user.name, phone: r.client.user.phone } : null,
+    service: r.service ? { id: r.service.id, name: r.service.name } : null,
+    staff: r.staff ? { id: r.staff.id, name: r.staff.user.name } : null,
+  }));
+
+  return {
+    branch: {
+      id: branch.id,
+      businessName: branch.businessName,
+      category: branch.category,
+      average_rating: branch.averageRating,
+      total_reviews: branch.reviewCount,
+    },
+    reviews: formatted,
+  };
 }

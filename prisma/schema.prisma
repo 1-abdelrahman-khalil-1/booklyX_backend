@@ -193,6 +193,8 @@ model BranchAdmin {
   appointments             Appointment[]
   reviews                  Review[]
   user                     User?                         @relation(fields: [userId], references: [id])
+  averageRating            Float                         @default(0)
+  reviewCount              Int                           @default(0)
 
   @@index([status])
   @@index([email])
@@ -394,7 +396,7 @@ model Review {
   serviceId     Int
   branchId      Int
   staffId       Int
-  appointmentId Int?     @unique
+  appointmentId Int      @unique
   rating        Int
   comment       String?
   isVisible     Boolean  @default(true)

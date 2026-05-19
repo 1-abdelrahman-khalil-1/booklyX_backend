@@ -1,3 +1,4 @@
+import { Role } from "../../generated/prisma/client.js";
 import { AvailabilityStatus } from "../../generated/prisma/index.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
@@ -57,10 +58,10 @@ function mapReview(review) {
         id: review.id,
         rating: review.rating,
         comment: review.comment,
-        reviewerRole: review.reviewerRole,
         createdAt: toIsoString(review.createdAt),
-        client: review.client
+        reviewer: review.client
             ? {
+                id: review.client.user.id,
                 name: review.client.user.name,
                 phone: review.client.user.phone,
             }
@@ -167,13 +168,13 @@ export async function getStaffProfile(userId) {
                     id: true,
                     rating: true,
                     comment: true,
-                    reviewerRole: true,
                     appointmentId: true,
                     createdAt: true,
                     client: {
                         select: {
                             user: {
                                 select: {
+                                    id: true,
                                     name: true,
                                     phone: true,
                                 },
@@ -237,6 +238,81 @@ export async function getStaffProfile(userId) {
                 averageRating: staff.averageRating,
                 reviewCount: staff.reviewCount,
             },
+        },
+    };
+}
+
+export async function getStaffPublicProfile(staffId, authUser) {
+    const staff = await prisma.staff.findUnique({
+        where: { id: Number(staffId) },
+        select: {
+            id: true,
+            profileImageUrl: true,
+            age: true,
+            staffRole: true,
+            commissionPercentage: true,
+            isActive: true,
+            averageRating: true,
+            reviewCount: true,
+            createdAt: true,
+            updatedAt: true,
+            user: {
+                select: { id: true, name: true },
+            },
+            branch: {
+                select: { id: true, businessName: true },
+            },
+        },
+    });
+
+    if (!staff) {
+        throw new StaffNotFoundError();
+    }
+
+    // If requester is branch_admin, ensure staff belongs to their branch
+    if (authUser && authUser.role === Role.branch_admin) {
+        const branch = await prisma.branchAdmin.findUnique({ where: { userId: authUser.sub }, select: { id: true } });
+        if (!branch || branch.id !== staff.branch.id) {
+            throw new AppError(tr.FORBIDDEN, 403);
+        }
+    }
+
+    // Fetch only latest 5 visible reviews for lightweight profile preview
+    const reviews = await prisma.review.findMany({
+        where: { staffId: staff.id, isVisible: true },
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        select: {
+            id: true,
+            rating: true,
+            comment: true,
+            appointmentId: true,
+            createdAt: true,
+            client: { select: { user: { select: { id: true, name: true, phone: true } } } },
+            service: { select: { id: true, name: true } },
+        },
+    });
+
+    const formatted = reviews.map(r => ({
+        id: r.id,
+        rating: r.rating,
+        comment: r.comment,
+        appointmentId: r.appointmentId,
+        createdAt: r.createdAt ? r.createdAt.toISOString() : null,
+        reviewer: r.client ? { id: r.client.user.id, name: r.client.user.name, phone: r.client.user.phone } : null,
+        service: r.service ? { id: r.service.id, name: r.service.name } : null,
+    }));
+
+    return {
+        average_rating: staff.averageRating,
+        total_reviews: staff.reviewCount,
+        reviews: formatted,
+        staff: {
+            id: staff.id,
+            name: staff.user.name,
+            profileImageUrl: staff.profileImageUrl,
+            staffRole: staff.staffRole,
+            isActive: staff.isActive,
         },
     };
 }

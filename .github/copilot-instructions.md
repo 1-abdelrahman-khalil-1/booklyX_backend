@@ -55,6 +55,8 @@
 - Services must be reusable and independent
 - No dependency on Express داخل services
 
+- Preserve database-selected response shapes in services: avoid remapping or formatting DB query results inside services unless the API contract explicitly requires it. Keep any non-trivial response transformations documented and reviewed.
+
 - Error-to-HTTP guidance:
   - Validation/business input errors -> `400`
   - Unauthorized/auth errors -> `401`

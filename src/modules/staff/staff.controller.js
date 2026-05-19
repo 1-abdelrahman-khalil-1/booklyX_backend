@@ -11,6 +11,7 @@ import {
   getAvailableSlots,
   getIncomeStats,
   getStaffProfile,
+  getStaffPublicProfile,
   getStaffSchedule,
   listStaffAvailability,
   listStaffServices,
@@ -182,4 +183,11 @@ export const getAvailableSlotsHandler = asyncHandler(async (req, res) => {
 
   const slots = await getAvailableSlots(userId, date, serviceId);
   successResponse(res, 200, t(tr.SLOTS_RETRIEVED_SUCCESSFULLY, lang), slots);
+});
+
+export const getStaffPublicProfileHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const staffId = Number(req.params.id);
+  const profile = await getStaffPublicProfile(staffId, req.user);
+  successResponse(res, 200, t(tr.PROFILE_RETRIEVED_SUCCESSFULLY, lang), profile);
 });

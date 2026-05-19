@@ -10,6 +10,7 @@ import {
     deleteServiceHandler,
     deleteStaffHandler,
     getBranchAdminProfileHandler,
+    getBranchPublicProfileHandler,
     getMyServiceCategoriesHandler,
     getMyServicesHandler,
     getMyStaffByIdHandler,
@@ -151,6 +152,14 @@ branchAdminRouter.delete(
   authenticate,
   authorize(Role.branch_admin),
   deleteServiceHandler,
+);
+
+// Public branch profile with reviews (clients and branch_admin can view)
+branchAdminRouter.get(
+  "/:id/profile",
+  authenticate,
+  authorize(Role.client, Role.branch_admin, Role.super_admin),
+  getBranchPublicProfileHandler,
 );
 
 export default branchAdminRouter;

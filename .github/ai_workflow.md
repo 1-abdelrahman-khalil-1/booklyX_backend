@@ -172,6 +172,10 @@ Primary lifecycle:
 - Do not enforce permanent uniqueness on rejected application records.
 - Enforce conflict checks in service layer based on active workflow status (for example: prevent duplicates for pending/in-review applications, but allow re-apply after rejection according to business rules).
 
+### 4.8 Response Shape Rule
+
+- Preserve database-selected response shapes in services: do not reformat or map DB results into a different JSON shape inside services unless the API contract explicitly requires a transformation. Controllers may perform light shaping when strictly necessary and agreed upon.
+
 ---
 
 ## 5) Controller Layer

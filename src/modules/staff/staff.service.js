@@ -9,7 +9,7 @@ import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import { IncomeRange } from "../../utils/enums.js";
-export { getStaffProfile } from "./staff.profile.js";
+export { getStaffProfile, getStaffPublicProfile } from "./staff.profile.js";
 
 // ─── Custom Error Classes ───────────────────────────────────────────────
 class StaffNotFoundError extends AppError {
@@ -113,18 +113,41 @@ export async function getStaffSchedule(userId, dateStr) {
     orderBy: { scheduledAt: "asc" },
   });
 
-  const formatAppointment = (apt) => ({
+
+  // Format appointments to BookingModel-compatible JSON (snake_case keys)
+  const formattedAppointments = appointments.map((apt) => {
+    const aptAny = /** @type {any} */ (apt);
+    return ({
     id: apt.id,
-    clientName: apt.client.user.name,
-    serviceName: apt.service.name,
-    scheduledAt: apt.scheduledAt.toISOString(),
-    duration: apt.service.durationMinutes,
-    status: apt.status,
+    client: apt.client
+      ? {
+          user: {
+            id: ((/** @type {any} */ (apt.client.user))?.id),
+            name: ((/** @type {any} */ (apt.client.user))?.name),
+            phone: ((/** @type {any} */ (apt.client.user))?.phone),
+            avatar_url:
+              ((/** @type {any} */ (apt.client.user))?.profileImageUrl) ?? ((/** @type {any} */ (apt.client.user))?.avatarUrl) ?? null,
+          },
+        }
+      : null,
+    status: (apt.status || "").toLowerCase(),
+    service: apt.service
+      ? {
+          id: ((/** @type {any} */ (apt.service))?.id),
+          name: ((/** @type {any} */ (apt.service))?.name),
+          description: ((/** @type {any} */ (apt.service))?.description) ?? null,
+          price: ((/** @type {any} */ (apt.service))?.price) ?? null,
+          duration_minutes:
+            ((/** @type {any} */ (apt.service))?.durationMinutes) ?? ((/** @type {any} */ (apt.service))?.duration_minutes) ?? null,
+        }
+      : null,
+    scheduled_at: apt.scheduledAt ? new Date(apt.scheduledAt).toISOString() : null,
+    notes: aptAny.notes ?? null,
+    has_attachments: !!(aptAny.attachments || aptAny.serviceExecution?.attachments?.length),
+  });
   });
 
-  return {
-    appointments: appointments.map(formatAppointment),
-  };
+  return { appointments: formattedAppointments };
 }
 
 
@@ -132,8 +155,12 @@ export async function getAppointments(userId, statusFilter) {
   const staffId = await getStaffIdByUserId(userId);
   let statusCondition;
 
-  if (statusFilter === "pending") {
-    statusCondition = AppointmentStatus.CONFIRMED;
+  if (!statusFilter) {
+    statusCondition = AppointmentStatus.PENDING;
+  } else if (Object.values(AppointmentStatus).includes(statusFilter)) {
+    statusCondition = statusFilter;
+  } else if (statusFilter === "pending") {
+    statusCondition = AppointmentStatus.PENDING;
   } else if (statusFilter === "open") {
     statusCondition = AppointmentStatus.IN_PROGRESS;
   } else if (statusFilter === "closed") {
@@ -152,30 +179,63 @@ export async function getAppointments(userId, statusFilter) {
       client: {
         select: {
           user: {
-            select: { name: true },
+            select: {
+              id: true,
+              name: true,
+              phone: true
+            },
           },
         },
       },
       service: {
         select: {
+          id: true,
           name: true,
+          description: true,
+          price: true,
           durationMinutes: true,
         },
       },
       scheduledAt: true,
       status: true,
     },
-    orderBy: { scheduledAt: "asc" },
+    orderBy: {
+      scheduledAt: "asc"
+    },
   });
 
-  return appointments.map((apt) => ({
+  // Return appointments formatted to BookingModel-compatible JSON
+  return appointments.map((apt) => {
+    const aptAny = /** @type {any} */ (apt);
+    return ({
     id: apt.id,
-    clientName: apt.client.user.name,
-    serviceName: apt.service.name,
-    scheduledAt: apt.scheduledAt.toISOString(),
-    duration: apt.service.durationMinutes,
-    status: apt.status,
-  }));
+    client: apt.client
+      ? {
+          user: {
+            id: ((/** @type {any} */ (apt.client.user))?.id),
+            name: ((/** @type {any} */ (apt.client.user))?.name),
+            phone: ((/** @type {any} */ (apt.client.user))?.phone),
+            avatar_url:
+              ((/** @type {any} */ (apt.client.user))?.profileImageUrl) ?? ((/** @type {any} */ (apt.client.user))?.avatarUrl) ?? null,
+          },
+        }
+      : null,
+    status: (apt.status || "").toLowerCase(),
+    service: apt.service
+      ? {
+          id: ((/** @type {any} */ (apt.service))?.id),
+          name: ((/** @type {any} */ (apt.service))?.name),
+          description: ((/** @type {any} */ (apt.service))?.description) ?? null,
+          price: ((/** @type {any} */ (apt.service))?.price) ?? null,
+          duration_minutes:
+            ((/** @type {any} */ (apt.service))?.durationMinutes) ?? ((/** @type {any} */ (apt.service))?.duration_minutes) ?? null,
+        }
+      : null,
+    scheduled_at: apt.scheduledAt ? new Date(apt.scheduledAt).toISOString() : null,
+    notes: aptAny.notes ?? null,
+    has_attachments: !!(aptAny.attachments || aptAny.serviceExecution?.attachments?.length),
+  });
+  });
 }
 
 export async function getAppointmentDetails(userId, appointmentId) {
@@ -187,7 +247,11 @@ export async function getAppointmentDetails(userId, appointmentId) {
       client: {
         select: {
           user: {
-            select: { id: true, name: true, phone: true },
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            },
           },
         },
       },

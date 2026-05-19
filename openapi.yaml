@@ -620,18 +620,45 @@ components:
       properties:
         id:
           type: integer
-        clientName:
-          type: string
-        serviceName:
-          type: string
-        scheduledAt:
+        client:
+          type: object
+          properties:
+            user:
+              type: object
+              properties:
+                id:
+                  type: integer
+                name:
+                  type: string
+                phone:
+                  type: string
+                avatar_url:
+                  type: string
+                  nullable: true
+        service:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            description:
+              type: string
+            price:
+              type: number
+            duration_minutes:
+              type: integer
+        scheduled_at:
           type: string
           format: date-time
-        duration:
-          type: integer
+        notes:
+          type: string
+          nullable: true
+        has_attachments:
+          type: boolean
         status:
           type: string
-          enum: [PENDING, CONFIRMED, CANCELED, IN_PROGRESS, COMPLETED]
+          example: pending
 
     StaffService:
       type: object
@@ -1732,9 +1759,9 @@ components:
                 - id: 21
                   rating: 5
                   comment: Great attention to detail.
-                  reviewer_role: CLIENT
                   created_at: 2026-04-20T12:00:00.000Z
-                  client:
+                  reviewer:
+                    id: 2
                     name: Abdo Khalil
                     phone: "01000000001"
                   service:
@@ -1751,10 +1778,18 @@ components:
         data:
           appointments:
             - id: 1
-              clientName: Abdo Khalil
-              serviceName: Haircut
-              scheduledAt: 2026-04-21T10:00:00.000Z
-              duration: 30
+              client:
+                user:
+                  id: 2
+                  name: Abdo Khalil
+                  phone: "01000000001"
+              service:
+                id: 11
+                name: Haircut
+                description: Classic haircut
+                price: 150
+                duration_minutes: 30
+              scheduled_at: 2026-04-21T10:00:00.000Z
               status: CONFIRMED
     StaffAppointmentsResponse:
       value:
@@ -1763,16 +1798,32 @@ components:
         message: Appointments retrieved successfully.
         data:
           - id: 1
-            clientName: Abdo Khalil
-            serviceName: Haircut
-            scheduledAt: 2026-04-22T11:00:00.000Z
-            duration: 30
+            client:
+              user:
+                id: 2
+                name: Abdo Khalil
+                phone: "01000000001"
+            service:
+              id: 11
+              name: Haircut
+              description: Classic haircut
+              price: 150
+              duration_minutes: 30
+            scheduled_at: 2026-04-22T11:00:00.000Z
             status: CONFIRMED
           - id: 2
-            clientName: Eslam Wael
-            serviceName: Hair Coloring
-            scheduledAt: 2026-04-22T14:00:00.000Z
-            duration: 60
+            client:
+              user:
+                id: 3
+                name: Eslam Wael
+                phone: "01000000002"
+            service:
+              id: 12
+              name: Hair Coloring
+              description: Full color
+              price: 300
+              duration_minutes: 60
+            scheduled_at: 2026-04-22T14:00:00.000Z
             status: COMPLETED
     StaffAppointmentStartedResponse:
       value:
@@ -4960,7 +5011,35 @@ paths:
                           reviews:
                             type: array
                             items:
-                              $ref: "#/components/schemas/Review"
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                rating:
+                                  type: integer
+                                comment:
+                                  type: string
+                                created_at:
+                                  type: string
+                                  format: date-time
+                                reviewer:
+                                  type: object
+                                  properties:
+                                    id:
+                                      type: integer
+                                    name:
+                                      type: string
+                                    role:
+                                      type: string
+                                service:
+                                  type: object
+                                  properties:
+                                    id:
+                                      type: integer
+                                    name:
+                                      type: string
+                                appointment_id:
+                                  type: integer
                           pagination:
                             $ref: "#/components/schemas/Pagination"
               examples:
@@ -4998,6 +5077,66 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Reviews]
+      summary: Create review
+      description: Create a review for a completed appointment. Only clients can create reviews. One review per appointment.
+      operationId: postReviewsCreate
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - appointmentId
+                - rating
+              properties:
+                appointmentId:
+                  type: integer
+                  minimum: 1
+                  description: ID of completed appointment
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: Rating 1-5
+                comment:
+                  type: string
+                  description: Optional review comment
+            examples:
+              default:
+                value:
+                  appointmentId: 42
+                  rating: 5
+                  comment: Excellent service!
+      responses:
+        "201":
+          description: Review created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Review"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
 
   /reviews/my:
     get:
@@ -5053,7 +5192,35 @@ paths:
                           reviews:
                             type: array
                             items:
-                              $ref: "#/components/schemas/Review"
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                rating:
+                                  type: integer
+                                comment:
+                                  type: string
+                                created_at:
+                                  type: string
+                                  format: date-time
+                                reviewer:
+                                  type: object
+                                  properties:
+                                    id:
+                                      type: integer
+                                    name:
+                                      type: string
+                                    role:
+                                      type: string
+                                service:
+                                  type: object
+                                  properties:
+                                    id:
+                                      type: integer
+                                    name:
+                                      type: string
+                                appointment_id:
+                                  type: integer
                           pagination:
                             $ref: "#/components/schemas/Pagination"
               examples:
@@ -5091,3 +5258,121 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+
+  /staff/{id}/profile:
+    get:
+      tags: [Staff/Profile]
+      summary: Get public staff profile with reviews
+      description: Get public profile of a staff member including average rating and latest 5 reviews. Accessible to clients and branch admins.
+      operationId: getStaffPublicProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+        - name: id
+          in: path
+          required: true
+          description: Staff member ID
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Staff profile with reviews fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          average_rating:
+                            type: number
+                            format: float
+                            description: Average staff rating
+                          total_reviews:
+                            type: integer
+                            description: Total number of reviews
+                          reviews:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/Review"
+                          staff:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              name:
+                                type: string
+                              profileImageUrl:
+                                type: string
+                              staffRole:
+                                type: string
+                              isActive:
+                                type: boolean
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /branch-admin/{id}/profile:
+    get:
+      tags: [Branch_admin/Profile]
+      summary: Get public branch profile with reviews
+      description: Get public profile of a branch including average rating and latest 5 reviews. Accessible to clients and branch admins.
+      operationId: getBranchPublicProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+        - name: id
+          in: path
+          required: true
+          description: Branch admin ID
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Branch profile with reviews fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          branch:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              businessName:
+                                type: string
+                              category:
+                                type: string
+                              average_rating:
+                                type: number
+                                format: float
+                              total_reviews:
+                                type: integer
+                          reviews:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/Review"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
