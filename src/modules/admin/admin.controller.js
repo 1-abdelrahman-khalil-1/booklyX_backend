@@ -38,9 +38,7 @@ export const listApplicationsHandler = asyncHandler(async (req, res) => {
 export const getApplicationDetailHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { id } = validateAdminInput(idParamSchema, req.params);
-  const { includeCodes } = validateAdminInput(includeCodesQuerySchema, req.query);
-  const includeCodesBool = includeCodes === "true";
-  const result = await getApplicationDetail(id, includeCodesBool);
+  const result = await getApplicationDetail(id);
   successResponse(
     res,
     200,

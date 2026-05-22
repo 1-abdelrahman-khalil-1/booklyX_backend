@@ -26,6 +26,7 @@ if (process.env.NODE_ENV !== "production") {
   allowedOrigins.add("http://127.0.0.1:3000");
   allowedOrigins.add("http://localhost:5173");
   allowedOrigins.add("http://127.0.0.1:5173");
+  allowedOrigins.add("https://unfilial-vernie-vortiginous.ngrok-free.dev");
 }
 
 function isAllowedOrigin(origin) {
@@ -61,6 +62,7 @@ const corsOptions = {
 
 app.use(express.json());
 app.use(cookieParser());
+app.set("trust proxy", 1);
 app.use(cors(corsOptions));
 app.use(generalLimiter);
 

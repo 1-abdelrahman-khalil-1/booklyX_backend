@@ -221,6 +221,7 @@ Before finalizing any implementation, verify:
 - No business logic in controller.
 - No hardcoded user-facing text (must use translation keys).
 - If Prisma models changed, `prisma/seed.js` was updated in the same change and Prisma client was regenerated.
+- If a feature is introduced or changed using new seed data, `prisma/seed.js` was updated in the same change and the relevant `openapi.yaml` entries were updated too.
 - If the change requires database schema work, use `npx prisma migrate dev --name <descriptive-name>` and only use `npx prisma migrate reset` when drift exists and the development-data loss is explicitly acceptable.
 
 ---

@@ -363,6 +363,7 @@ model Offer {
   discountValue Float
   startDate     DateTime
   endDate       DateTime
+  imageUrl      String?
   isActive      Boolean           @default(true)
   usageLimit    Int?
   usedCount     Int               @default(0)

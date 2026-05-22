@@ -8,7 +8,7 @@ export const asyncHandler = (fn) => {
       const prefix = process.stdout.isTTY
         ? `${ANSI_YELLOW}[AsyncError]${ANSI_RESET}`
         : "[AsyncError]";
-
+      
       console.error(
         `${prefix} ${functionName} -> ${req.method} ${req.originalUrl}`,
         err,

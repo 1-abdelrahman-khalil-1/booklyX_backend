@@ -25,7 +25,7 @@ export class ApplicationNotFound extends AppError {
   }
 }
 
-export class ApplicationNotPendingError extends AppError {
+export class ApplicationIsNotPendingError extends AppError {
   constructor() {
     super(tr.APPLICATION_IS_NOT_PENDING_APPROVAL, 409);
     this.name = "ApplicationIsNotPendingError";
@@ -80,7 +80,7 @@ export async function listApplications(status) {
   return applications;
 }
 
-export async function getApplicationDetail(id, includeCodes = false) {
+export async function getApplicationDetail(id) {
   const application = await prisma.branchAdmin.findUnique({
     where: { id },
     select: {
@@ -118,20 +118,6 @@ export async function getApplicationDetail(id, includeCodes = false) {
           createdAt: true,
         },
       },
-      verificationCodes: includeCodes
-        ? {
-            take: 5,
-            orderBy: { createdAt: "desc" },
-            select: {
-              id: true,
-              type: true,
-              expiresAt: true,
-              used: true,
-              attempts: true,
-              createdAt: true,
-            },
-          }
-        : false,
     },
   });
 
@@ -146,7 +132,7 @@ export async function approveApplication(id) {
 
   if (!application) throw new ApplicationNotFound();
   if (application.status !== ApplicationStatus.PENDING_APPROVAL) {
-    throw new ApplicationNotPendingError();
+    throw new ApplicationIsNotPendingError();
   }
 
   return await prisma.$transaction(async (tx) => {
@@ -184,7 +170,7 @@ export async function rejectApplication(id, reason) {
 
   if (!application) throw new ApplicationNotFound();
   if (application.status !== ApplicationStatus.PENDING_APPROVAL) {
-    throw new ApplicationNotPendingError();
+    throw new ApplicationIsNotPendingError();
   }
 
   await prisma.branchAdmin.update({
@@ -294,7 +280,7 @@ export async function rejectService(id, reason) {
 }
 
 export async function getUserProfile(userId) {
-  const user = await prisma.user.findUnique({
+  const user = await prisma.user.findUnique({ 
     where: { id: userId },
     select: {
       id: true,

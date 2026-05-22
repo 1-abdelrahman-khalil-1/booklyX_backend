@@ -4213,7 +4213,8 @@ paths:
           required: false
           schema:
             type: string
-            enum: [PENDING, APPROVED, REJECTED]
+            default: PENDING_APPROVAL
+            enum: [PENDING_APPROVAL, APPROVED, REJECTED]
           description: Filter applications by status
       responses:
         "200":
@@ -4254,13 +4255,6 @@ paths:
             minimum: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeaderWebOnly"
-        - name: includeCodes
-          in: query
-          required: false
-          description: When true, include the latest verification codes for the application (admin-only debugging).
-          schema:
-            type: boolean
-            default: false
       responses:
         "200":
           description: Application details fetched

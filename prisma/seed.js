@@ -1,15 +1,18 @@
 import bcrypt from "bcrypt";
 import dayjs from "dayjs";
 import {
+  ApplicationDocumentType,
   ApplicationStatus,
   AppointmentStatus,
   AvailabilityStatus,
   BusinessCategory,
+  OfferDiscountType,
   PrismaClient,
   Role,
   ServiceApprovalStatus,
   StaffRole,
   UserStatus,
+  VerificationType,
 } from "../src/generated/prisma/client.js";
 
 const SUPER_ADMIN_EMAIL = "admin@booklyx.com";
@@ -18,6 +21,382 @@ const SUPER_ADMIN_PHONE = "01000000000";
 const SUPER_ADMIN_NAME = "Super Admin";
 const SALT_ROUNDS = 10;
 const LOGIN_COUNTER_KEY = "login";
+
+// ===== CENTRALIZED ASSETS MANAGEMENT =====
+const ASSETS = {
+  profileImages: {
+    doctors: [
+      "https://images.pexels.com/photos/5452201/pexels-photo-5452201.jpeg",
+      "https://images.pexels.com/photos/6129507/pexels-photo-6129507.jpeg",
+      "https://images.pexels.com/photos/8460372/pexels-photo-8460372.jpeg",
+    ],
+
+    barbers: [
+      "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg",
+      "https://images.pexels.com/photos/7697393/pexels-photo-7697393.jpeg",
+      "https://images.pexels.com/photos/3992874/pexels-photo-3992874.jpeg",
+    ],
+
+    spa: [
+      "https://images.pexels.com/photos/3985325/pexels-photo-3985325.jpeg",
+      "https://images.pexels.com/photos/6621469/pexels-photo-6621469.jpeg",
+      "https://images.pexels.com/photos/3762879/pexels-photo-3762879.jpeg",
+    ],
+  },
+
+  certificates: [
+    "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    "https://www.orimi.com/pdf-test.pdf",
+    "https://gahp.net/wp-content/uploads/2017/09/sample.pdf",
+  ],
+
+  executionAttachments: {
+    barber: [
+      "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg",
+      "https://images.pexels.com/photos/7697393/pexels-photo-7697393.jpeg",
+      "https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg",
+    ],
+
+    spa: [
+      "https://images.pexels.com/photos/3757942/pexels-photo-3757942.jpeg",
+      "https://images.pexels.com/photos/6621469/pexels-photo-6621469.jpeg",
+      "https://images.pexels.com/photos/3985331/pexels-photo-3985331.jpeg",
+    ],
+
+    medical: [
+      "https://images.pexels.com/photos/3845756/pexels-photo-3845756.jpeg",
+      "https://images.pexels.com/photos/7581572/pexels-photo-7581572.jpeg",
+      "https://images.pexels.com/photos/8376233/pexels-photo-8376233.jpeg",
+    ],
+  },
+
+  serviceImages: {
+    barber: [
+      // Haircut
+      "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg",
+
+      // Beard trim
+      "https://images.pexels.com/photos/7697393/pexels-photo-7697393.jpeg",
+
+      // Hair styling
+      "https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg",
+
+      // Barber tools
+      "https://images.pexels.com/photos/1319461/pexels-photo-1319461.jpeg",
+    ],
+
+    spa: [
+      // Facial care
+      "https://images.pexels.com/photos/3985325/pexels-photo-3985325.jpeg",
+
+      // Massage
+      "https://images.pexels.com/photos/3757942/pexels-photo-3757942.jpeg",
+
+      // Skin care
+      "https://images.pexels.com/photos/6621469/pexels-photo-6621469.jpeg",
+
+      // Spa relaxing
+      "https://images.pexels.com/photos/3764011/pexels-photo-3764011.jpeg",
+    ],
+
+    medical: [
+      // Dental
+      "https://images.pexels.com/photos/3845756/pexels-photo-3845756.jpeg",
+
+      // Dermatology
+      "https://images.pexels.com/photos/7581572/pexels-photo-7581572.jpeg",
+
+      // Physiotherapy
+      "https://images.pexels.com/photos/4506105/pexels-photo-4506105.jpeg",
+
+      // Medical consultation
+      "https://images.pexels.com/photos/8376233/pexels-photo-8376233.jpeg",
+    ],
+  },
+
+  businessImages: {
+    barber: [
+      "https://images.pexels.com/photos/1319461/pexels-photo-1319461.jpeg",
+      "https://images.pexels.com/photos/3992874/pexels-photo-3992874.jpeg",
+    ],
+
+    spa: [
+      "https://images.pexels.com/photos/3757942/pexels-photo-3757942.jpeg",
+      "https://images.pexels.com/photos/6621469/pexels-photo-6621469.jpeg",
+    ],
+
+    medical: [
+      "https://images.pexels.com/photos/3845756/pexels-photo-3845756.jpeg",
+      "https://images.pexels.com/photos/8376233/pexels-photo-8376233.jpeg",
+    ],
+  },
+
+  offerImages: {
+    barber: [
+      "https://images.pexels.com/photos/7697393/pexels-photo-7697393.jpeg",
+      "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg",
+    ],
+
+    spa: [
+      "https://images.pexels.com/photos/3985325/pexels-photo-3985325.jpeg",
+      "https://images.pexels.com/photos/3757942/pexels-photo-3757942.jpeg",
+    ],
+
+    medical: [
+      "https://images.pexels.com/photos/3845756/pexels-photo-3845756.jpeg",
+      "https://images.pexels.com/photos/7581572/pexels-photo-7581572.jpeg",
+    ],
+  },
+};
+// ===== HELPER UTILITIES =====
+function pickRandom(arr, seed = 0) {
+  if (!arr?.length) return null;
+
+  return arr[seed % arr.length];
+}
+
+function getStaffProfileImage(role, index = 0) {
+  switch (role) {
+    case StaffRole.DOCTOR:
+      return ASSETS.profileImages.doctors[index % ASSETS.profileImages.doctors.length];
+    case StaffRole.BARBER:
+      return ASSETS.profileImages.barbers[index % ASSETS.profileImages.barbers.length];
+    case StaffRole.SPA_SPECIALIST:
+      return ASSETS.profileImages.spa[index % ASSETS.profileImages.spa.length];
+    default:
+      return pickRandom(ASSETS.profileImages.spa, index);
+  }
+}
+
+function getApplicationDocumentUrl(type) {
+  return pickRandom(ASSETS.certificates);
+}
+
+function getServiceImage(category, index = 0) {
+  switch (category) {
+    case BusinessCategory.BARBER:
+      return ASSETS.serviceImages.barber[index % ASSETS.serviceImages.barber.length];
+    case BusinessCategory.CLINIC:
+      return ASSETS.serviceImages.medical[index % ASSETS.serviceImages.medical.length];
+    case BusinessCategory.SPA:
+      return ASSETS.serviceImages.spa[index % ASSETS.serviceImages.spa.length];
+    default:
+      return pickRandom(ASSETS.serviceImages.spa, index);
+  }
+}
+
+function getExecutionAttachment(category, index = 0) {
+  switch (category) {
+    case BusinessCategory.BARBER:
+      return ASSETS.executionAttachments.barber[index % ASSETS.executionAttachments.barber.length];
+    case BusinessCategory.CLINIC:
+      return ASSETS.executionAttachments.medical[index % ASSETS.executionAttachments.medical.length];
+    case BusinessCategory.SPA:
+      return ASSETS.executionAttachments.spa[index % ASSETS.executionAttachments.spa.length];
+    default:
+      return pickRandom(ASSETS.executionAttachments.spa, index);
+  }
+}
+
+const BUSINESS_CATEGORIES = [
+  BusinessCategory.SPA,
+  BusinessCategory.CLINIC,
+  BusinessCategory.BARBER,
+];
+
+const BRANCH_APPLICATION_GROUPS = [
+  {
+    status: ApplicationStatus.PENDING_VERIFICATION,
+    slug: "verification",
+    title: "Verification",
+    code: "VER",
+    rejectionReason: null,
+  },
+  {
+    status: ApplicationStatus.PENDING_APPROVAL,
+    slug: "approval",
+    title: "Approval",
+    code: "APR",
+    rejectionReason: null,
+  },
+  {
+    status: ApplicationStatus.APPROVED,
+    slug: "approved",
+    title: "Approved",
+    code: "APD",
+    rejectionReason: null,
+  },
+  {
+    status: ApplicationStatus.REJECTED,
+    slug: "rejected",
+    title: "Rejected",
+    code: "REJ",
+    rejectionReason: "Missing required documents or compliance checks.",
+  },
+];
+
+const SEED_STABLE_BRANCH_ADMINS = [
+  {
+    ownerName: "Mahmoud Ibrahim",
+    email: "mahmoud.ibrahim@booklyx.com",
+    phone: "01000000011",
+    password: "12345678",
+    businessName: "Hassan Beauty Salon",
+    category: BusinessCategory.SPA,
+    description: "Premium beauty and skincare services.",
+    commercialRegisterNumber: "CR-2026-001",
+    taxId: "TAX-2026-001",
+    city: "Cairo",
+    district: "Nasr City",
+    address: "12 Makram Ebeid Street",
+    latitude: 30.0626,
+    longitude: 31.3368,
+    status: ApplicationStatus.APPROVED,
+    rejectionReason: null,
+  },
+  {
+    ownerName: "Ahmed Samir",
+    email: "ahmed.samir@booklyx.com",
+    phone: "01000000012",
+    password: "12345678",
+    businessName: "Samir Health Clinic",
+    category: BusinessCategory.CLINIC,
+    description: "General medicine and dermatology care.",
+    commercialRegisterNumber: "CR-2026-002",
+    taxId: "TAX-2026-002",
+    city: "Giza",
+    district: "Dokki",
+    address: "8 Tahrir Street",
+    latitude: 30.0384,
+    longitude: 31.2109,
+    status: ApplicationStatus.APPROVED,
+    rejectionReason: null,
+  },
+  {
+    ownerName: "Eslam Wael",
+    email: "eslam.branch@booklyx.com",
+    phone: "01000000020",
+    password: "12345678",
+    businessName: "Eslam Premium Spa",
+    category: BusinessCategory.SPA,
+    description: "Luxury spa and wellness center",
+    commercialRegisterNumber: "CR-2026-APX-001",
+    taxId: "TAX-2026-APX-001",
+    city: "Cairo",
+    district: "Maadi",
+    address: "5 Road 9, Maadi",
+    latitude: 29.9699,
+    longitude: 31.2675,
+    status: ApplicationStatus.APPROVED,
+    rejectionReason: null,
+  },
+];
+
+const SERVICE_PLANS = [
+  {
+    categoryName: "Core Services",
+    serviceNamePrefix: "Signature",
+    description: "Core service seeded for coverage.",
+    status: ServiceApprovalStatus.APPROVED,
+  },
+  {
+    categoryName: "Premium Services",
+    serviceNamePrefix: "Priority",
+    description: "Premium service seeded for approval queue coverage.",
+    status: ServiceApprovalStatus.PENDING_APPROVAL,
+  },
+  {
+    categoryName: "Recovery Services",
+    serviceNamePrefix: "Review",
+    description: "Service seeded as a rejected scenario.",
+    status: ServiceApprovalStatus.REJECTED,
+  },
+];
+
+const APPOINTMENT_STATUS_PLAN = [
+  AppointmentStatus.PENDING,
+  AppointmentStatus.CONFIRMED,
+  AppointmentStatus.IN_PROGRESS,
+  AppointmentStatus.COMPLETED,
+  AppointmentStatus.CANCELED,
+];
+
+const REVIEW_COMMENTS = [
+  "Excellent attention to detail.",
+  "Very professional and on time.",
+  "Friendly staff and great service.",
+  "Good value for money.",
+  "Would recommend to my friends.",
+  "Clean place and pleasant experience.",
+  "Highly skilled and courteous.",
+  "Service was ok but could improve.",
+  "Outstanding result, thank you!",
+  "Quick and efficient service.",
+];
+
+function buildBranchApplications() {
+  return BRANCH_APPLICATION_GROUPS.flatMap((group, groupIndex) =>
+    Array.from({ length: 5 }, (_, index) => {
+      const sequence = groupIndex * 5 + index + 1;
+      const emailSuffix = `${group.slug}-${String(index + 1).padStart(2, "0")}`;
+      const cityPool = ["Cairo", "Giza", "Alexandria", "Mansoura", "Tanta"];
+      const districtPool = [
+        "Nasr City",
+        "Dokki",
+        "Heliopolis",
+        "Maadi",
+        "Zamalek",
+      ];
+
+      return {
+        ownerName: `${group.title} Owner ${index + 1}`,
+        email: `${emailSuffix}@booklyx.com`,
+        phone: `0100003${String(sequence).padStart(4, "0")}`,
+        password: "12345678",
+        businessName: `${group.title} Wellness ${index + 1}`,
+        category: BUSINESS_CATEGORIES[(groupIndex + index) % BUSINESS_CATEGORIES.length],
+        description: `${group.title} branch seeded to cover onboarding workflows.`,
+        commercialRegisterNumber: `CR-2026-${group.code}-${String(index + 1).padStart(3, "0")}`,
+        taxId: `TAX-2026-${group.code}-${String(index + 1).padStart(3, "0")}`,
+        city: cityPool[(groupIndex + index) % cityPool.length],
+        district: districtPool[(groupIndex + index) % districtPool.length],
+        address: `${10 + sequence} Seeded Street`,
+        latitude: 29.95 + groupIndex * 0.05 + index * 0.01,
+        longitude: 31.2 + groupIndex * 0.04 + index * 0.01,
+        status: group.status,
+        rejectionReason: group.rejectionReason,
+      };
+    }),
+  );
+}
+
+function buildUserVerificationSeeds(userIds) {
+  return userIds.flatMap((userId, index) => [
+    {
+      userId,
+      type: VerificationType.EMAIL,
+      code: `EMAIL-${String(index + 1).padStart(2, "0")}-123456`,
+    },
+    {
+      userId,
+      type: VerificationType.PHONE,
+      code: `PHONE-${String(index + 1).padStart(2, "0")}-654321`,
+    },
+    {
+      userId,
+      type: VerificationType.PASSWORD_RESET,
+      code: `RESET-${String(index + 1).padStart(2, "0")}-999999`,
+    },
+  ]);
+}
+
+function buildRefreshTokenSeed(userId, index) {
+  return {
+    userId,
+    token: `refresh-token-${index + 1}`,
+    loginSequence: index + 1,
+  };
+}
 
 const SEED_USERS = [
   {
@@ -29,8 +408,8 @@ const SEED_USERS = [
     status: UserStatus.ACTIVE,
   },
   {
-    name: "Eslam Wael",
-    email: "eslam.wael@booklyx.com",
+    name: "Eslam Ahmed",
+    email: "eslam.ahmed@booklyx.com",
     password: "12345678",
     phone: "01000000002",
     role: Role.client,
@@ -68,7 +447,16 @@ const SEED_USERS = [
     role: Role.client,
     status: UserStatus.ACTIVE,
   },
+  {
+    name: "Nora Saad",
+    email: "nora.saad@booklyx.com",
+    password: "12345678",
+    phone: "01000000007",
+    role: Role.client,
+    status: UserStatus.ACTIVE,
+  },
 ];
+
 const SEED_INITIAL_STAFF_USERS = [
   {
     name: "Mazen Tamer",
@@ -83,185 +471,24 @@ const SEED_INITIAL_STAFF_USERS = [
     name: "Abdo Badr",
     email: "abdo.badr@booklyx.com",
     password: "12345678",
-    age: 30,
     phone: "01000000022",
+    age: 30,
+    role: Role.staff,
+    status: UserStatus.ACTIVE,
+  },
+  {
+    name: "Sarah Adel",
+    email: "sarah.adel@booklyx.com",
+    password: "12345678",
+    phone: "01000000023",
+    age: 27,
     role: Role.staff,
     status: UserStatus.ACTIVE,
   },
 ];
 const SEED_BRANCH_APPLICATIONS = [
-  {
-    ownerName: "Mahmoud Ibrahim",
-    email: "mahmoud.ibrahim@booklyx.com",
-    phone: "01000000011",
-    password: "12345678",
-    businessName: "Hassan Beauty Salon",
-    category: BusinessCategory.SPA,
-    description: "Premium beauty and skincare services.",
-    commercialRegisterNumber: "CR-2026-001",
-    taxId: "TAX-2026-001",
-    city: "Cairo",
-    district: "Nasr City",
-    address: "12 Makram Ebeid Street",
-    latitude: 30.0626,
-    longitude: 31.3368,
-    status: ApplicationStatus.APPROVED,
-  },
-  {
-    ownerName: "Ahmed Samir",
-    email: "ahmed.samir@booklyx.com",
-    phone: "01000000012",
-    password: "12345678",
-    businessName: "Samir Health Clinic",
-    category: BusinessCategory.CLINIC,
-    description: "General medicine and dermatology care.",
-    commercialRegisterNumber: "CR-2026-002",
-    taxId: "TAX-2026-002",
-    city: "Giza",
-    district: "Dokki",
-    address: "8 Tahrir Street",
-    latitude: 30.0384,
-    longitude: 31.2109,
-    status: ApplicationStatus.APPROVED,
-  },
-];
-
-// Service Categories & Services per branch
-const SEED_SERVICE_CATEGORIES = [
-  {
-    branchEmail: "mahmoud.ibrahim@booklyx.com",
-    categories: [
-      { name: "Hair Care" },
-      { name: "Facial Treatments" },
-      { name: "Body Spa" },
-    ],
-  },
-  {
-    branchEmail: "ahmed.samir@booklyx.com",
-    categories: [
-      { name: "General Medicine" },
-      { name: "Dermatology" },
-      { name: "Consultation" },
-    ],
-  },
-];
-
-const SEED_SERVICES = [
-  {
-    branchEmail: "mahmoud.ibrahim@booklyx.com",
-    categoryName: "Hair Care",
-    services: [
-      {
-        name: "Haircut",
-        description: "Professional haircut with styling",
-        price: 150,
-        durationMinutes: 30,
-      },
-      {
-        name: "Hair Coloring",
-        description: "Premium hair coloring service",
-        price: 300,
-        durationMinutes: 60,
-      },
-    ],
-  },
-  {
-    branchEmail: "mahmoud.ibrahim@booklyx.com",
-    categoryName: "Facial Treatments",
-    services: [
-      {
-        name: "Facial Massage",
-        description: "Relaxing facial massage",
-        price: 200,
-        durationMinutes: 45,
-      },
-      {
-        name: "Skin Glow Treatment",
-        description: "Brightening skin treatment",
-        price: 250,
-        durationMinutes: 50,
-      },
-    ],
-  },
-  {
-    branchEmail: "ahmed.samir@booklyx.com",
-    categoryName: "General Medicine",
-    services: [
-      {
-        name: "General Checkup",
-        description: "Full body general checkup",
-        price: 500,
-        durationMinutes: 45,
-      },
-      {
-        name: "Blood Test",
-        description: "Complete blood analysis",
-        price: 300,
-        durationMinutes: 15,
-      },
-    ],
-  },
-  {
-    branchEmail: "ahmed.samir@booklyx.com",
-    categoryName: "Dermatology",
-    services: [
-      {
-        name: "Skin Consultation",
-        description: "Dermatological consultation",
-        price: 400,
-        durationMinutes: 30,
-      },
-      {
-        name: "Acne Treatment",
-        description: "Advanced acne treatment",
-        price: 600,
-        durationMinutes: 60,
-      },
-    ],
-  },
-];
-
-// Staff mapping to branches
-const STAFF_BRANCH_MAPPING = [
-  {
-    staffEmail: "mazen.tamer@booklyx.com",
-    branchEmail: "mahmoud.ibrahim@booklyx.com",
-    age: 22,
-    startDateOffsetDays: 120,
-    profileImageUrl: null,
-    staffRole: StaffRole.BARBER,
-    commissionPercentage: 15,
-    serviceNames: ["Haircut", "Hair Coloring"],
-  },
-  {
-    staffEmail: "abdo.badr@booklyx.com",
-    branchEmail: "ahmed.samir@booklyx.com",
-    age: 30,
-    startDateOffsetDays: 105,
-    profileImageUrl: null,
-    staffRole: StaffRole.DOCTOR,
-    commissionPercentage: 20,
-    serviceNames: ["General Checkup", "Skin Consultation"],
-  },
-];
-
-const SEED_APPROVED_BRANCH_ADMINS = [
-  {
-    ownerName: "Eslam Wael",
-    email: "eslam.branch@booklyx.com",
-    phone: "01000000020",
-    password: "12345678",
-    businessName: "Eslam Premium Spa",
-    category: BusinessCategory.SPA,
-    description: "Luxury spa and wellness center",
-    commercialRegisterNumber: "CR-2026-APX-001",
-    taxId: "TAX-2026-APX-001",
-    city: "Cairo",
-    district: "Maadi",
-    address: "5 Road 9, Maadi",
-    latitude: 29.9699,
-    longitude: 31.2675,
-  },
+  ...SEED_STABLE_BRANCH_ADMINS,
+  ...buildBranchApplications(),
 ];
 
 const SEED_STAFF = [
@@ -272,9 +499,10 @@ const SEED_STAFF = [
     password: "12345678",
     age: 26,
     startDateOffsetDays: 90,
-    profileImageUrl: null,
+    profileImageUrl: ASSETS.profileImages.spa[0],
     staffRole: StaffRole.SPA_SPECIALIST,
     commissionPercentage: 25,
+    branchEmail: "approved-01@booklyx.com",
   },
   {
     name: "Karim Ahmed",
@@ -283,62 +511,115 @@ const SEED_STAFF = [
     password: "12345678",
     age: 28,
     startDateOffsetDays: 75,
-    profileImageUrl: null,
-    staffRole: StaffRole.SPA_SPECIALIST,
+    profileImageUrl: ASSETS.profileImages.barbers[0],
+    staffRole: StaffRole.BARBER,
     commissionPercentage: 22.5,
+    branchEmail: "approved-02@booklyx.com",
+  },
+  {
+    name: "Hassan Adel",
+    email: "hassan.staff@booklyx.com",
+    phone: "01000000032",
+    password: "12345678",
+    age: 31,
+    startDateOffsetDays: 110,
+    profileImageUrl: ASSETS.profileImages.doctors[0],
+    staffRole: StaffRole.DOCTOR,
+    commissionPercentage: 20,
+    branchEmail: "approved-03@booklyx.com",
+  },
+  {
+    name: "Mona Youssef",
+    email: "mona.staff@booklyx.com",
+    phone: "01000000033",
+    password: "12345678",
+    age: 24,
+    startDateOffsetDays: 65,
+    profileImageUrl: ASSETS.profileImages.spa[1],
+    staffRole: StaffRole.SPA_SPECIALIST,
+    commissionPercentage: 18,
+    branchEmail: "approved-04@booklyx.com",
+  },
+  {
+    name: "Omar Fathy",
+    email: "omar.staff@booklyx.com",
+    phone: "01000000034",
+    password: "12345678",
+    age: 29,
+    startDateOffsetDays: 80,
+    profileImageUrl: ASSETS.profileImages.barbers[1],
+    staffRole: StaffRole.BARBER,
+    commissionPercentage: 21,
+    branchEmail: "approved-05@booklyx.com",
   },
 ];
 
-// Staff Availability (working hours per day of week: 1=Monday, 7=Sunday)
-const SEED_STAFF_AVAILABILITY = [
-  // Mazen Tamer - Working days Monday (1) to Friday (5)
-  { email: "mazen.tamer@booklyx.com", dayOfWeek: 1, startTime: "09:00", endTime: "17:00" },
-  { email: "mazen.tamer@booklyx.com", dayOfWeek: 2, startTime: "09:00", endTime: "17:00" },
-  { email: "mazen.tamer@booklyx.com", dayOfWeek: 3, startTime: "09:00", endTime: "17:00" },
-  { email: "mazen.tamer@booklyx.com", dayOfWeek: 4, startTime: "09:00", endTime: "17:00" },
-  { email: "mazen.tamer@booklyx.com", dayOfWeek: 5, startTime: "09:00", endTime: "17:00" },
-  // Abdo Badr - Working days Tuesday (2) to Saturday (6)
-  { email: "abdo.badr@booklyx.com", dayOfWeek: 2, startTime: "10:00", endTime: "18:00" },
-  { email: "abdo.badr@booklyx.com", dayOfWeek: 3, startTime: "10:00", endTime: "18:00" },
-  { email: "abdo.badr@booklyx.com", dayOfWeek: 4, startTime: "10:00", endTime: "18:00" },
-  { email: "abdo.badr@booklyx.com", dayOfWeek: 5, startTime: "10:00", endTime: "18:00" },
-  { email: "abdo.badr@booklyx.com", dayOfWeek: 6, startTime: "10:00", endTime: "18:00" },
+const SEED_STAFF_EMAILS = [
+  ...SEED_INITIAL_STAFF_USERS.map((staff) => staff.email),
+  ...SEED_STAFF.map((staff) => staff.email),
 ];
 
-// Staff Certificates
-const SEED_STAFF_CERTIFICATES = [
+const SEED_STAFF_AVAILABILITY = SEED_STAFF.flatMap((staff, index) => [
   {
-    staffEmail: "mazen.tamer@booklyx.com",
-    title: "Advanced Hair Styling Certification",
-    issuer: "International Beauty Association",
-    issueDateOffsetMonths: 30,
-    expiryDateOffsetMonths: 18,
+    email: staff.email,
+    dayOfWeek: ((index + 1 - 1) % 7) + 1,
+    startTime: "09:00",
+    endTime: "17:00",
+    status: AvailabilityStatus.AVAILABLE,
+  },
+  {
+    email: staff.email,
+    dayOfWeek: ((index + 4 - 1) % 7) + 1,
+    startTime: "13:00",
+    endTime: "15:00",
+    status: AvailabilityStatus.UNAVAILABLE,
+  },
+]);
+
+const SEED_STAFF_CERTIFICATES = SEED_STAFF.flatMap((staff, index) => [
+  {
+    staffEmail: staff.email,
+    title: `${staff.name} Professional Certification`,
+    issuer: "BooklyX Academy",
+    issueDateOffsetMonths: 30 + index,
+    expiryDateOffsetMonths: index % 2 === 0 ? 18 : null,
     verified: true,
   },
   {
-    staffEmail: "mazen.tamer@booklyx.com",
-    title: "Barbering Excellence Certificate",
-    issuer: "Professional Barber Council",
-    issueDateOffsetMonths: 42,
-    expiryDate: null,
-    verified: true,
+    staffEmail: staff.email,
+    title: `${staff.name} Compliance Badge`,
+    issuer: "BooklyX QA Board",
+    issueDateOffsetMonths: 12 + index,
+    expiryDateOffsetMonths: null,
+    verified: index % 2 === 0,
   },
-  {
-    staffEmail: "abdo.badr@booklyx.com",
-    title: "Medical License - General Practice",
-    issuer: "Ministry of Health",
-    issueDateOffsetMonths: 60,
-    expiryDateOffsetMonths: 24,
-    verified: true,
-  },
-  {
-    staffEmail: "abdo.badr@booklyx.com",
-    title: "Dermatology Specialization",
-    issuer: "Egyptian Medical Association",
-    issueDateOffsetMonths: 48,
-    expiryDate: null,
-    verified: true,
-  },
+]);
+
+const SEED_APPLICATION_VERIFICATION_CODES = SEED_BRANCH_APPLICATIONS.flatMap(
+  (application, index) => [
+    {
+      email: application.email,
+      type: VerificationType.EMAIL,
+      code: `APP-EMAIL-${String(index + 1).padStart(2, "0")}-111111`,
+    },
+    {
+      email: application.email,
+      type: VerificationType.PHONE,
+      code: `APP-PHONE-${String(index + 1).padStart(2, "0")}-222222`,
+    },
+    {
+      email: application.email,
+      type: VerificationType.PASSWORD_RESET,
+      code: `APP-RESET-${String(index + 1).padStart(2, "0")}-333333`,
+    },
+  ],
+);
+
+const SEED_APPLICATION_DOCUMENT_TYPES = [
+  ApplicationDocumentType.TAX_CERTIFICATE,
+  ApplicationDocumentType.COMMERCIAL_REGISTER,
+  ApplicationDocumentType.NATIONAL_ID,
+  ApplicationDocumentType.FACILITY_LICENSE,
 ];
 
 const prisma = new PrismaClient();
@@ -346,11 +627,6 @@ const prisma = new PrismaClient();
 const SEED_CLIENT_EMAILS = SEED_USERS
   .filter((user) => user.role === Role.client)
   .map((user) => user.email);
-
-const SEED_STAFF_EMAILS = [
-  ...SEED_INITIAL_STAFF_USERS.map((staff) => staff.email),
-  ...SEED_STAFF.map((staff) => staff.email),
-];
 
 function daysAgo(days) {
   return dayjs().subtract(days, "day").startOf("day").toDate();
@@ -536,6 +812,72 @@ async function main() {
     console.log(`👤 Seeded staff: ${staff.email} (${staff.role})`);
   }
 
+  const verificationTargets = await prisma.user.findMany({
+    where: {
+      email: {
+        in: [
+          SUPER_ADMIN_EMAIL,
+          ...SEED_USERS.map((user) => user.email),
+          ...SEED_INITIAL_STAFF_USERS.map((staff) => staff.email),
+          ...SEED_STAFF.map((staff) => staff.email),
+          ...SEED_BRANCH_APPLICATIONS.map((application) => application.email),
+        ],
+      },
+    },
+    orderBy: { id: "asc" },
+  });
+
+  const verificationSeeds = buildUserVerificationSeeds(
+    verificationTargets.map((user) => user.id),
+  );
+
+  if (verificationTargets.length > 0) {
+    await prisma.verificationCode.deleteMany({
+      where: {
+        userId: {
+          in: verificationTargets.map((user) => user.id),
+        },
+      },
+    });
+
+    for (const verificationSeed of verificationSeeds) {
+      const codeHash = await bcrypt.hash(verificationSeed.code, SALT_ROUNDS);
+
+      await prisma.verificationCode.create({
+        data: {
+          userId: verificationSeed.userId,
+          type: verificationSeed.type,
+          codeHash,
+          expiresAt: dayjs().add(2, "day").toDate(),
+          used: false,
+          attempts: 0,
+        },
+      });
+    }
+
+    await prisma.refreshToken.deleteMany({
+      where: {
+        userId: {
+          in: verificationTargets.slice(0, 3).map((user) => user.id),
+        },
+      },
+    });
+
+    for (const [index, user] of verificationTargets.slice(0, 3).entries()) {
+      const refreshTokenSeed = buildRefreshTokenSeed(user.id, index);
+      const tokenHash = await bcrypt.hash(refreshTokenSeed.token, SALT_ROUNDS);
+
+      await prisma.refreshToken.create({
+        data: {
+          userId: refreshTokenSeed.userId,
+          tokenHash,
+          expiresAt: dayjs().add(30, "day").toDate(),
+          loginSequence: refreshTokenSeed.loginSequence,
+        },
+      });
+    }
+  }
+
   let branchAdminTableExists = true;
   try {
     await prisma.branchAdmin.count();
@@ -611,7 +953,7 @@ async function main() {
           status: application.status,
           emailVerified: true,
           phoneVerified: true,
-          rejectionReason: null,
+          rejectionReason: application.rejectionReason,
           userId: branchAdminUser.id,
         },
       });
@@ -635,6 +977,7 @@ async function main() {
           status: application.status,
           emailVerified: true,
           phoneVerified: true,
+          rejectionReason: application.rejectionReason,
           userId: branchAdminUser.id,
         },
       });
@@ -643,372 +986,336 @@ async function main() {
     console.log(
       `🏢 Seeded branch: ${application.businessName} (${application.status}) - Owner: ${branchAdminUser.email}`,
     );
-
-    // Seed Service Categories for this branch
-    const categoryMap = SEED_SERVICE_CATEGORIES.find(
-      (sc) => sc.branchEmail === application.email,
+    console.log(
+      JSON.stringify(
+        {
+          branchAdmin: {
+            id: branchAdmin.id,
+            ownerName: branchAdmin.ownerName,
+            email: branchAdmin.email,
+            phone: branchAdmin.phone,
+            businessName: branchAdmin.businessName,
+            category: branchAdmin.category,
+            status: branchAdmin.status,
+            userId: branchAdmin.userId,
+          },
+          user: {
+            id: branchAdminUser.id,
+            name: branchAdminUser.name,
+            email: branchAdminUser.email,
+            phone: branchAdminUser.phone,
+            role: branchAdminUser.role,
+            status: branchAdminUser.status,
+          },
+        },
+        null,
+        2,
+      ),
     );
-    if (categoryMap) {
-      for (const cat of categoryMap.categories) {
+
+    await prisma.applicationDocument.deleteMany({
+      where: { applicationId: branchAdmin.id },
+    });
+
+    const documentTypes =
+      application.status === ApplicationStatus.APPROVED
+        ? SEED_APPLICATION_DOCUMENT_TYPES
+        : SEED_APPLICATION_DOCUMENT_TYPES.slice(0, 2);
+
+    for (const documentType of documentTypes) {
+      await prisma.applicationDocument.create({
+        data: {
+          applicationId: branchAdmin.id,
+          type: documentType,
+          fileUrl: getApplicationDocumentUrl(documentType),
+        },
+      });
+    }
+
+    await prisma.applicationVerificationCode.deleteMany({
+      where: { applicationId: branchAdmin.id },
+    });
+
+    const verificationCodes = SEED_APPLICATION_VERIFICATION_CODES.filter(
+      (seed) => seed.email === application.email,
+    );
+
+    for (const verificationCode of verificationCodes) {
+      const codeHash = await bcrypt.hash(
+        verificationCode.code,
+        SALT_ROUNDS,
+      );
+
+      await prisma.applicationVerificationCode.create({
+        data: {
+          applicationId: branchAdmin.id,
+          type: verificationCode.type,
+          codeHash,
+          expiresAt: dayjs().add(3, "day").toDate(),
+          used: false,
+          attempts: 0,
+        },
+      });
+    }
+
+    if (application.status === ApplicationStatus.APPROVED) {
+      for (const servicePlan of SERVICE_PLANS) {
         await prisma.serviceCategory.upsert({
           where: {
             branchId_name: {
               branchId: branchAdmin.id,
-              name: cat.name,
+              name: servicePlan.categoryName,
             },
           },
           update: {},
           create: {
             branchId: branchAdmin.id,
-            name: cat.name,
+            name: servicePlan.categoryName,
           },
         });
       }
-      console.log(
-        `  📂 Created ${categoryMap.categories.length} service categories`,
-      );
-    }
 
-    // Seed Services for this branch
-    const branchServices = SEED_SERVICES.filter(
-      (ss) => ss.branchEmail === application.email,
-    );
-    for (const serviceGroup of branchServices) {
-      const category = await prisma.serviceCategory.findFirst({
+      for (const servicePlan of SERVICE_PLANS) {
+        const category = await prisma.serviceCategory.findFirst({
+          where: {
+            branchId: branchAdmin.id,
+            name: servicePlan.categoryName,
+          },
+        });
+
+        if (!category) {
+          continue;
+        }
+
+        const serviceName = `${servicePlan.serviceNamePrefix} ${branchAdmin.id}`;
+        const existingService = await prisma.service.findFirst({
+          where: {
+            branchId: branchAdmin.id,
+            serviceCategoryId: category.id,
+            name: serviceName,
+          },
+        });
+
+        const serviceData = {
+          branchId: branchAdmin.id,
+          serviceCategoryId: category.id,
+          name: serviceName,
+          description: servicePlan.description,
+          price:
+            servicePlan.status === ServiceApprovalStatus.APPROVED
+              ? 150 + branchAdmin.id
+              : servicePlan.status === ServiceApprovalStatus.PENDING_APPROVAL
+                ? 250 + branchAdmin.id
+                : 100 + branchAdmin.id,
+          durationMinutes:
+            servicePlan.status === ServiceApprovalStatus.APPROVED
+              ? 30
+              : servicePlan.status === ServiceApprovalStatus.PENDING_APPROVAL
+                ? 45
+                : 60,
+          imageUrl: getServiceImage(application.category, branchAdmin.id % 2),
+          status: servicePlan.status,
+          approvedAt:
+            servicePlan.status === ServiceApprovalStatus.APPROVED
+              ? dayjs().subtract(2, "day").toDate()
+              : null,
+          rejectionReason:
+            servicePlan.status === ServiceApprovalStatus.REJECTED
+              ? "Seeded rejected service scenario."
+              : null,
+        };
+
+        if (existingService) {
+          await prisma.service.update({
+            where: { id: existingService.id },
+            data: serviceData,
+          });
+        } else {
+          await prisma.service.create({
+            data: serviceData,
+          });
+        }
+      }
+
+      const approvedService = await prisma.service.findFirst({
         where: {
           branchId: branchAdmin.id,
-          name: serviceGroup.categoryName,
+          status: ServiceApprovalStatus.APPROVED,
         },
+        select: { id: true },
       });
 
-      if (category) {
-        for (const svc of serviceGroup.services) {
-          const existingService = await prisma.service.findFirst({
-            where: {
-              branchId: branchAdmin.id,
-              serviceCategoryId: category.id,
-              name: svc.name,
-            },
-          });
+      const pendingService = await prisma.service.findFirst({
+        where: {
+          branchId: branchAdmin.id,
+          status: ServiceApprovalStatus.PENDING_APPROVAL,
+        },
+        select: { id: true },
+      });
 
-          if (existingService) {
-            await prisma.service.update({
-              where: { id: existingService.id },
-              data: {
-                description: svc.description,
-                price: svc.price,
-                durationMinutes: svc.durationMinutes,
-                status: ServiceApprovalStatus.APPROVED,
-              },
-            });
-          } else {
-            await prisma.service.create({
-              data: {
-                branchId: branchAdmin.id,
-                serviceCategoryId: category.id,
-                name: svc.name,
-                description: svc.description,
-                price: svc.price,
-                durationMinutes: svc.durationMinutes,
-                status: ServiceApprovalStatus.APPROVED,
-              },
-            });
-          }
-        }
+      await prisma.offer.deleteMany({
+        where: { branchId: branchAdmin.id },
+      });
+
+      const offerTargets = [
+        {
+          title: `Launch Percentage ${branchAdmin.id}`,
+          discountType: OfferDiscountType.PERCENTAGE,
+          discountValue: 15,
+          serviceId: approvedService?.id,
+        },
+        {
+          title: `Launch Fixed ${branchAdmin.id}`,
+          discountType: OfferDiscountType.FIXED,
+          discountValue: 50,
+          serviceId: pendingService?.id ?? approvedService?.id,
+        },
+      ].filter((offer) => offer.serviceId);
+
+      for (const offerTarget of offerTargets) {
+        const offer = await prisma.offer.create({
+          data: {
+            branchId: branchAdmin.id,
+            title: offerTarget.title,
+            description: `Seeded ${offerTarget.discountType.toLowerCase()} offer for branch coverage.`,
+            discountType: offerTarget.discountType,
+            discountValue: offerTarget.discountValue,
+            startDate: dayjs().subtract(1, "day").toDate(),
+            endDate: dayjs().add(30, "day").toDate(),
+            imageUrl: pickRandom(ASSETS.offerImages, branchAdmin.id),
+            isActive: true,
+            usageLimit: 50,
+            usedCount: 0,
+          },
+        });
+
+        await prisma.offerService.create({
+          data: {
+            offerId: offer.id,
+            serviceId: offerTarget.serviceId,
+          },
+        });
       }
     }
   }
 
   console.log("\n");
 
-  // Link Staff to Branches
-  for (const staffMapping of STAFF_BRANCH_MAPPING) {
-    const staff = await prisma.user.findUnique({
-      where: { email: staffMapping.staffEmail },
-    });
+  // Link staff to approved branches
+  for (const staffData of SEED_STAFF) {
+    const staffPasswordHash = await bcrypt.hash(staffData.password, SALT_ROUNDS);
 
-    const branch = await prisma.branchAdmin.findFirst({
-      where: { email: staffMapping.branchEmail },
-    });
-
-    if (staff && branch) {
-      const existingStaff = await prisma.staff.findUnique({
-        where: { userId: staff.id },
-      });
-
-      if (existingStaff) {
-        await prisma.staff.update({
-          where: { userId: staff.id },
-          data: {
-            branchId: branch.id,
-            age: staffMapping.age,
-            startDate: daysAgo(staffMapping.startDateOffsetDays),
-            profileImageUrl: staffMapping.profileImageUrl,
-            staffRole: staffMapping.staffRole,
-            commissionPercentage: staffMapping.commissionPercentage,
-          },
-        });
-      } else {
-        await prisma.staff.create({
-          data: {
-            userId: staff.id,
-            branchId: branch.id,
-            age: staffMapping.age,
-            startDate: daysAgo(staffMapping.startDateOffsetDays),
-            profileImageUrl: staffMapping.profileImageUrl,
-            staffRole: staffMapping.staffRole,
-            commissionPercentage: staffMapping.commissionPercentage,
-          },
-        });
-      }
-
-      // Create professional profile
-      const staffRecord = existingStaff || (await prisma.staff.findUnique({
-        where: { userId: staff.id },
-      }));
-
-      if (staffRecord) {
-        const servicesToAssign = await prisma.service.findMany({
-          where: {
-            branchId: branch.id,
-            status: ServiceApprovalStatus.APPROVED,
-            ...(staffMapping.serviceNames?.length
-              ? { name: { in: staffMapping.serviceNames } }
-              : {}),
-          },
-          select: { id: true },
-        });
-
-        await prisma.staffService.deleteMany({
-          where: { staffId: staffRecord.id },
-        });
-
-        if (servicesToAssign.length > 0) {
-          await prisma.staffService.createMany({
-            data: servicesToAssign.map((service) => ({
-              staffId: staffRecord.id,
-              serviceId: service.id,
-            })),
-          });
-        }
-
-        await prisma.staffProfessionalProfile.upsert({
-          where: { staffId: staffRecord.id },
-          update: {},
-          create: {
-            staffId: staffRecord.id,
-            bio: `${staff.name} - Professional ${staffMapping.staffRole}`,
-            yearsOfExperience: 5,
-            specialization: staffMapping.staffRole,
-          },
-        });
-      }
-
-      console.log(
-        `👥 Linked staff: ${staff.email} → ${branch.businessName} (${staffMapping.staffRole})`,
-      );
-    }
-  }
-
-  // Seed approved branch admins
-  console.log("\n📝 Seeding approved branch admins...\n");
-
-  for (const branchAdminData of SEED_APPROVED_BRANCH_ADMINS) {
-    const ownerPasswordHash = await bcrypt.hash(
-      branchAdminData.password,
-      SALT_ROUNDS,
-    );
-
-    // Find existing branch admin by email
-    let branchAdmin = await prisma.branchAdmin.findFirst({
-      where: { email: branchAdminData.email },
-    });
-
-    if (branchAdmin) {
-      // Update existing
-      branchAdmin = await prisma.branchAdmin.update({
-        where: { id: branchAdmin.id },
-        data: {
-          ownerName: branchAdminData.ownerName,
-          passwordHash: ownerPasswordHash,
-          phone: branchAdminData.phone,
-          businessName: branchAdminData.businessName,
-          category: branchAdminData.category,
-          description: branchAdminData.description,
-          commercialRegisterNumber: branchAdminData.commercialRegisterNumber,
-          taxId: branchAdminData.taxId,
-          city: branchAdminData.city,
-          district: branchAdminData.district,
-          address: branchAdminData.address,
-          latitude: branchAdminData.latitude,
-          longitude: branchAdminData.longitude,
-          status: ApplicationStatus.APPROVED,
-          emailVerified: true,
-          phoneVerified: true,
-        },
-      });
-    } else {
-      // Create new
-      branchAdmin = await prisma.branchAdmin.create({
-        data: {
-          ownerName: branchAdminData.ownerName,
-          email: branchAdminData.email,
-          phone: branchAdminData.phone,
-          passwordHash: ownerPasswordHash,
-          businessName: branchAdminData.businessName,
-          category: branchAdminData.category,
-          description: branchAdminData.description,
-          commercialRegisterNumber: branchAdminData.commercialRegisterNumber,
-          taxId: branchAdminData.taxId,
-          city: branchAdminData.city,
-          district: branchAdminData.district,
-          address: branchAdminData.address,
-          latitude: branchAdminData.latitude,
-          longitude: branchAdminData.longitude,
-          status: ApplicationStatus.APPROVED,
-          emailVerified: true,
-          phoneVerified: true,
-        },
-      });
-    }
-
-    // Create corresponding User record if not exists
-    const branchAdminUser = await prisma.user.upsert({
-      where: { email: branchAdminData.email },
+    const staffUser = await prisma.user.upsert({
+      where: { email: staffData.email },
       update: {
-        name: branchAdminData.ownerName,
-        password: ownerPasswordHash,
-        phone: branchAdminData.phone,
-        role: Role.branch_admin,
+        name: staffData.name,
+        password: staffPasswordHash,
+        phone: staffData.phone,
+        role: Role.staff,
         status: UserStatus.ACTIVE,
         emailVerified: true,
         phoneVerified: true,
       },
       create: {
-        name: branchAdminData.ownerName,
-        email: branchAdminData.email,
-        password: ownerPasswordHash,
-        phone: branchAdminData.phone,
-        role: Role.branch_admin,
+        name: staffData.name,
+        email: staffData.email,
+        password: staffPasswordHash,
+        phone: staffData.phone,
+        role: Role.staff,
         status: UserStatus.ACTIVE,
         emailVerified: true,
         phoneVerified: true,
       },
     });
 
-    // Link User to BranchAdmin if not already linked
-    if (!branchAdmin.userId) {
-      await prisma.branchAdmin.update({
-        where: { id: branchAdmin.id },
-        data: { userId: branchAdminUser.id },
+    const branch = await prisma.branchAdmin.findFirst({
+      where: { email: staffData.branchEmail },
+    });
+
+    if (!branch) {
+      console.log(
+        `⚠️  Skipping staff ${staffData.email} because branch ${staffData.branchEmail} was not found.`,
+      );
+      continue;
+    }
+
+    const existingStaff = await prisma.staff.findUnique({
+      where: { userId: staffUser.id },
+    });
+
+    if (existingStaff) {
+      await prisma.staff.update({
+        where: { userId: staffUser.id },
+        data: {
+          branchId: branch.id,
+          age: staffData.age,
+          startDate: daysAgo(staffData.startDateOffsetDays),
+          profileImageUrl: staffData.profileImageUrl,
+          staffRole: staffData.staffRole,
+          commissionPercentage: staffData.commissionPercentage,
+        },
+      });
+    } else {
+      await prisma.staff.create({
+        data: {
+          userId: staffUser.id,
+          branchId: branch.id,
+          age: staffData.age,
+          startDate: daysAgo(staffData.startDateOffsetDays),
+          profileImageUrl: staffData.profileImageUrl,
+          staffRole: staffData.staffRole,
+          commissionPercentage: staffData.commissionPercentage,
+        },
       });
     }
 
-    console.log(
-      `✅ Seeded branch admin: ${branchAdminData.businessName} (APPROVED)`,
-    );
-    console.log(`   Email: ${branchAdminData.email}`);
-    console.log(`   Password: ${branchAdminData.password}\n`);
-  }
+    const staffRecord = await prisma.staff.findUnique({
+      where: { userId: staffUser.id },
+      select: { id: true },
+    });
 
-  // Seed staff users
-  console.log("📝 Seeding staff users...\n");
+    const approvedServices = await prisma.service.findMany({
+      where: {
+        branchId: branch.id,
+        status: ServiceApprovalStatus.APPROVED,
+      },
+      select: { id: true },
+      orderBy: { id: "asc" },
+    });
 
-  // Get the first approved branch admin to assign staff to
-  const approvedBranch = await prisma.branchAdmin.findFirst({
-    where: { status: ApplicationStatus.APPROVED },
-  });
-
-  if (!approvedBranch) {
-    console.log(
-      "⚠️  No approved branch found. Skipping staff seeding. Please approve a branch first.\n",
-    );
-  } else {
-    for (const staffData of SEED_STAFF) {
-      const staffPasswordHash = await bcrypt.hash(staffData.password, SALT_ROUNDS);
-
-      // Create staff user
-      const staffUser = await prisma.user.upsert({
-        where: { email: staffData.email },
-        update: {
-          name: staffData.name,
-          password: staffPasswordHash,
-          phone: staffData.phone,
-          role: Role.staff,
-          status: UserStatus.ACTIVE,
-          emailVerified: true,
-          phoneVerified: true,
-        },
-        create: {
-          name: staffData.name,
-          email: staffData.email,
-          password: staffPasswordHash,
-          phone: staffData.phone,
-          role: Role.staff,
-          status: UserStatus.ACTIVE,
-          emailVerified: true,
-          phoneVerified: true,
-        },
+    if (staffRecord) {
+      await prisma.staffService.deleteMany({
+        where: { staffId: staffRecord.id },
       });
 
-      // Create staff record
-      await prisma.staff.upsert({
-        where: { userId: staffUser.id },
-        update: {
-          age: staffData.age,
-          startDate: daysAgo(staffData.startDateOffsetDays),
-          profileImageUrl: staffData.profileImageUrl,
-          staffRole: staffData.staffRole,
-          commissionPercentage: staffData.commissionPercentage,
-        },
-        create: {
-          userId: staffUser.id,
-          branchId: approvedBranch.id,
-          age: staffData.age,
-          startDate: daysAgo(staffData.startDateOffsetDays),
-          profileImageUrl: staffData.profileImageUrl,
-          staffRole: staffData.staffRole,
-          commissionPercentage: staffData.commissionPercentage,
-        },
-      });
-
-      const approvedBranchServices = await prisma.service.findMany({
-        where: {
-          branchId: approvedBranch.id,
-          status: ServiceApprovalStatus.APPROVED,
-        },
-        select: { id: true },
-        orderBy: { id: "asc" },
-        take: 2,
-      });
-
-      const staffRecord = await prisma.staff.findUnique({
-        where: { userId: staffUser.id },
-        select: { id: true },
-      });
-
-      if (staffRecord) {
-        await prisma.staffService.deleteMany({
-          where: { staffId: staffRecord.id },
+      if (approvedServices.length > 0) {
+        await prisma.staffService.createMany({
+          data: approvedServices.map((service) => ({
+            staffId: staffRecord.id,
+            serviceId: service.id,
+          })),
         });
-
-        if (approvedBranchServices.length > 0) {
-          await prisma.staffService.createMany({
-            data: approvedBranchServices.map((service) => ({
-              staffId: staffRecord.id,
-              serviceId: service.id,
-            })),
-          });
-        }
       }
 
-      console.log(
-        `✅ Seeded staff: ${staffData.name} (${staffData.staffRole})`,
-      );
-      console.log(`   Email: ${staffData.email}`);
-      console.log(`   Password: ${staffData.password}`);
-      console.log(`   Branch: ${approvedBranch.businessName}\n`);
+      await prisma.staffProfessionalProfile.upsert({
+        where: { staffId: staffRecord.id },
+        update: {
+          bio: `${staffData.name} - Professional ${staffData.staffRole}`,
+          yearsOfExperience: 5,
+          specialization: staffData.staffRole,
+        },
+        create: {
+          staffId: staffRecord.id,
+          bio: `${staffData.name} - Professional ${staffData.staffRole}`,
+          yearsOfExperience: 5,
+          specialization: staffData.staffRole,
+        },
+      });
     }
+
+    console.log(
+      `✅ Seeded staff: ${staffData.name} (${staffData.staffRole}) -> ${branch.businessName}`,
+    );
   }
 
   console.log("🔐 Use seeded credentials to login as users/admin when testing.");
@@ -1080,14 +1387,14 @@ async function main() {
         update: {
           startTime: availability.startTime,
           endTime: availability.endTime,
-          status: AvailabilityStatus.AVAILABLE,
+          status: availability.status,
         },
         create: {
           staffId: staff.id,
           dayOfWeek: availability.dayOfWeek,
           startTime: availability.startTime,
           endTime: availability.endTime,
-          status: AvailabilityStatus.AVAILABLE,
+          status: availability.status,
         },
       });
       console.log(
@@ -1125,7 +1432,7 @@ async function main() {
           expiryDate: cert.expiryDateOffsetMonths
             ? monthsFromNow(cert.expiryDateOffsetMonths)
             : null,
-          fileUrl: `https://api.booklyx.com/certificates/${staff.id}/${cert.title.replace(/\s+/g, "_")}.pdf`,
+          fileUrl: pickRandom(ASSETS.certificates, staff.id),
           verified: cert.verified,
         },
       });
@@ -1152,96 +1459,88 @@ async function main() {
   });
 
   if (clients.length > 0 && staffMembers.length > 0) {
-    const appointmentPlan = [
-      { dayOffset: -6, hour: 10, status: AppointmentStatus.COMPLETED },
-      { dayOffset: -3, hour: 12, status: AppointmentStatus.COMPLETED },
-      { dayOffset: -1, hour: 14, status: AppointmentStatus.CANCELED },
-      { dayOffset: -1, hour: 16, status: AppointmentStatus.COMPLETED },
-      { dayOffset: 0, hour: 11, status: AppointmentStatus.CONFIRMED },
-      { dayOffset: 0, hour: 15, status: AppointmentStatus.PENDING },
-      { dayOffset: 0, hour: 17, status: AppointmentStatus.IN_PROGRESS },
-      { dayOffset: 1, hour: 10, status: AppointmentStatus.CONFIRMED },
-      { dayOffset: 4, hour: 13, status: AppointmentStatus.PENDING },
-      { dayOffset: 10, hour: 16, status: AppointmentStatus.PENDING },
-    ];
+    const appointmentClients = clients.slice(0, 5);
+    const appointmentStaff = staffMembers.slice(0, 5);
 
-    const REVIEW_COMMENTS = [
-      "Excellent attention to detail.",
-      "Very professional and on time.",
-      "Friendly staff and great service.",
-      "Good value for money.",
-      "Would recommend to my friends.",
-      "Clean place and pleasant experience.",
-      "Highly skilled and courteous.",
-      "Service was ok but could improve.",
-      "Outstanding result, thank you!",
-      "Quick and efficient service.",
-    ];
+    for (let i = 0; i < appointmentClients.length; i++) {
+      const client = appointmentClients[i];
+      const staff = appointmentStaff[i % appointmentStaff.length];
 
-    for (let i = 0; i < clients.length; i++) {
-      const client = clients[i];
-      const staff = staffMembers[i % staffMembers.length]; // Cycle through staff
-
-      // Get a service from the staff member's assigned services
       const staffService = await prisma.staffService.findFirst({
         where: { staffId: staff.id },
         include: { service: true },
+        orderBy: { serviceId: "asc" },
       });
 
-      if (staffService) {
-        const service = staffService.service;
-        const branch = await prisma.branchAdmin.findUnique({
-          where: { id: staff.branchId },
+      if (!staffService) {
+        continue;
+      }
+
+      const service = staffService.service;
+      const branch = await prisma.branchAdmin.findUnique({
+        where: { id: staff.branchId },
+      });
+
+      if (!branch) {
+        continue;
+      }
+
+      for (let statusIndex = 0; statusIndex < APPOINTMENT_STATUS_PLAN.length; statusIndex++) {
+        const status = APPOINTMENT_STATUS_PLAN[statusIndex];
+        const scheduledDate = appointmentDate(i + statusIndex - 4, 9 + statusIndex * 2);
+
+        const appointment = await prisma.appointment.create({
+          data: {
+            clientId: client.id,
+            staffId: staff.id,
+            serviceId: service.id,
+            branchId: branch.id,
+            scheduledAt: scheduledDate,
+            status,
+          },
         });
 
-        if (!branch) {
-          continue;
-        }
+        if (status === AppointmentStatus.COMPLETED) {
+          const rating = ((i + statusIndex) % 5) + 1;
+          const comment = REVIEW_COMMENTS[(i + statusIndex) % REVIEW_COMMENTS.length];
 
-        for (let pIndex = 0; pIndex < appointmentPlan.length; pIndex++) {
-          const plan = appointmentPlan[pIndex];
-          const scheduledDate = appointmentDate(plan.dayOffset, plan.hour + i);
-
-          const appointment = await prisma.appointment.create({
+          await prisma.review.create({
             data: {
               clientId: client.id,
-              staffId: staff.id,
+              reviewerId: client.userId,
               serviceId: service.id,
               branchId: branch.id,
-              scheduledAt: scheduledDate,
-              status: plan.status,
+              staffId: staff.id,
+              appointmentId: appointment.id,
+              rating,
+              comment,
+              reviewerRole: Role.client,
+              isVisible: (i + statusIndex) % 2 === 0,
+              createdAt: dayjs(scheduledDate).add(1, "hour").toDate(),
             },
           });
 
-          if (plan.status === AppointmentStatus.COMPLETED) {
-            // Deterministic rating/comment selection to diversify seed data
-            const rating = ((i + pIndex) % 5) + 1; // 1-5
-            const comment = REVIEW_COMMENTS[(i + pIndex) % REVIEW_COMMENTS.length];
-
-            await prisma.review.create({
-              data: {
-                clientId: client.id,
-                reviewerId: client.userId,
-                serviceId: service.id,
-                branchId: branch.id,
-                staffId: staff.id,
-                appointmentId: appointment.id,
-                rating,
-                comment,
-                reviewerRole: Role.client,
-                createdAt: dayjs(scheduledDate).add(1, "hour").toDate(),
-              },
-            });
-          }
-
-          console.log(
-            `✅ Created appointment for client ${client.user.email} with staff ${staff.user.email} on ${scheduledDate} (Status: ${plan.status})`,
-          );
+          await prisma.serviceExecution.create({
+            data: {
+              appointmentId: appointment.id,
+              notes: `Seeded completion notes for ${client.user.email}.`,
+              attachments: [
+                {
+                  fileName: `execution-${appointment.id}.jpg`,
+                  url: getExecutionAttachment(branch.category, (i + statusIndex) % 2),
+                },
+              ],
+            },
+          });
         }
+
+        console.log(
+          `✅ Created appointment for client ${client.user.email} with staff ${staff.user.email} on ${scheduledDate} (Status: ${status})`,
+        );
       }
     }
 
-    for (const staff of staffMembers) {
+    for (const staff of appointmentStaff) {
       await refreshStaffRating(staff.id);
     }
   }

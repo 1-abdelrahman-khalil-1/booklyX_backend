@@ -142,6 +142,8 @@
 - All DB logic inside services
 - Import Prisma in modules through `src/lib/prisma.js` (centralized instance)
 - If you change a Prisma model/schema, update `prisma/seed.js` in the same change so seeded data stays aligned with the schema.
+- If you introduce, expand, or rely on new seed data for a feature, update `prisma/seed.js` in the same change; do not leave seed updates as a follow-up.
+- If the new or changed seed data exposes new API behavior, examples, statuses, or entities, update `openapi.yaml` in the same change as well.
 - After Prisma schema/model changes, run `npx prisma generate` before tests so generated types stay in sync.
 - If Prisma schema changes are part of a real feature change, apply them with `npx prisma migrate dev --name <descriptive-name>` before validating the feature.
 - If Prisma reports drift or asks for a reset, treat `npx prisma migrate reset` as destructive development-only maintenance and ask for confirmation before using it.
@@ -557,6 +559,7 @@ Files are **NEVER** stored in database as raw file objects. Follow this pattern:
 ## 20. OpenAPI + Apidog Sync
 
 - When adding new API endpoints or routes, update `openapi.yaml` first.
+- When a change is driven by new seed data or changes an existing seeded flow, update `openapi.yaml` in the same change so the docs match the seeded behavior.
 - Validate using: `npm run openapi:validate`
 - Sync to Apidog using: `npm run apidog:sync`
 - Requires valid Apidog credentials in `.env` (`APIDOG_ACCESS_TOKEN`, `APIDOG_PROJECT_ID`).

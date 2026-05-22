@@ -82,6 +82,8 @@ CREATE TABLE `BranchAdmin` (
     `rejectionReason` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
+    `averageRating` DOUBLE NOT NULL DEFAULT 0,
+    `reviewCount` INTEGER NOT NULL DEFAULT 0,
 
     UNIQUE INDEX `BranchAdmin_userId_key`(`userId`),
     INDEX `BranchAdmin_status_idx`(`status`),
@@ -277,7 +279,7 @@ CREATE TABLE `Review` (
     `serviceId` INTEGER NOT NULL,
     `branchId` INTEGER NOT NULL,
     `staffId` INTEGER NOT NULL,
-    `appointmentId` INTEGER NULL,
+    `appointmentId` INTEGER NOT NULL,
     `rating` INTEGER NOT NULL,
     `comment` VARCHAR(191) NULL,
     `isVisible` BOOLEAN NOT NULL DEFAULT true,
@@ -411,7 +413,7 @@ ALTER TABLE `Review` ADD CONSTRAINT `Review_branchId_fkey` FOREIGN KEY (`branchI
 ALTER TABLE `Review` ADD CONSTRAINT `Review_staffId_fkey` FOREIGN KEY (`staffId`) REFERENCES `Staff`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Review` ADD CONSTRAINT `Review_appointmentId_fkey` FOREIGN KEY (`appointmentId`) REFERENCES `Appointment`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `Review` ADD CONSTRAINT `Review_appointmentId_fkey` FOREIGN KEY (`appointmentId`) REFERENCES `Appointment`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Appointment` ADD CONSTRAINT `Appointment_clientId_fkey` FOREIGN KEY (`clientId`) REFERENCES `Client`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

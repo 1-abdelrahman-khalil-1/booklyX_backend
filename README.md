@@ -153,6 +153,8 @@ Access token format: `<loginSequence>|<jwt>` (example: `15|eyJ...`).
 
 ### branch_admin Accounts
 
+Stable test logins:
+
 | Owner Name      | Email                         | Password   | Phone         | Business Name       | Category |
 | --------------- | ----------------------------- | ---------- | ------------- | ------------------- | -------- |
 | Mahmoud Ibrahim | `mahmoud.ibrahim@booklyx.com` | `12345678` | `01000000011` | Hassan Beauty Salon | `SPA`    |
