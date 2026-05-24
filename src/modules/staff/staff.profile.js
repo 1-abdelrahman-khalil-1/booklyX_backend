@@ -1,4 +1,4 @@
-import { Role } from "../../generated/prisma/client.js";
+import { BranchStatus, Role } from "../../generated/prisma/client.js";
 import { AvailabilityStatus } from "../../generated/prisma/index.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
@@ -260,7 +260,12 @@ export async function getStaffPublicProfile(staffId, authUser) {
                 select: { id: true, name: true },
             },
             branch: {
-                select: { id: true, businessName: true },
+                select: {
+                    id: true,
+                    businessName: true,
+                    status: true,
+                    isSubscriptionActive: true,
+                },
             },
         },
     });
@@ -274,6 +279,11 @@ export async function getStaffPublicProfile(staffId, authUser) {
         const branch = await prisma.branchAdmin.findUnique({ where: { userId: authUser.sub }, select: { id: true } });
         if (!branch || branch.id !== staff.branch.id) {
             throw new AppError(tr.FORBIDDEN, 403);
+        }
+    } else if (!(authUser && authUser.role === Role.super_admin)) {
+        // For clients and unauthenticated requesters, enforce branch visibility
+        if (staff.branch.status !== BranchStatus.APPROVED || !staff.branch.isSubscriptionActive) {
+            throw new StaffNotFoundError();
         }
     }
 

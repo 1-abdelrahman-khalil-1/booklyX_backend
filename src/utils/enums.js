@@ -1,5 +1,5 @@
 /**
- * Application-level enums (not generated from Prisma)
+ * Shared enums (not generated from Prisma)
  * Use these for validation, constants, and business logic
  */
 

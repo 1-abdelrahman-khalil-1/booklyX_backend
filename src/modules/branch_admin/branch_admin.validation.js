@@ -9,6 +9,8 @@ import { tr } from "../../lib/i18n/index.js";
 import { BranchAdminValidationError } from "./branch_admin.service.js";
 
 export const applySchema = z.object({
+  planId: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
+
   // Identity Layer
   ownerName: z.string({ error: tr.NAME_REQUIRED }),
   email: z.email({
@@ -194,6 +196,10 @@ export const myServicesQuerySchema = z.object({
   status: z.enum(Object.values(ServiceApprovalStatus)).optional(),
 });
 
+export const periodQuerySchema = z.object({
+  period: z.enum(["today", "this_month", "this_year"]).optional(),
+});
+
 export const updateServiceSchema = z.object({
   id: z.coerce.number().int().positive(),
   name: z.string({ error: tr.SERVICE_NAME_REQUIRED }).trim().min(1, tr.SERVICE_NAME_REQUIRED).optional(),
@@ -275,15 +281,15 @@ export const updateBranchAdminProfileSchema = z
     }
   });
 
-export const verifyApplicationSchema = z.object({
+export const verifyBranchSchema = z.object({
   id: z.number(),
 });
 
-export const approveApplicationSchema = z.object({
+export const approveBranchSchema = z.object({
   id: z.number(),
 });
 
-export const rejectApplicationSchema = z.object({
+export const rejectBranchSchema = z.object({
   id: z.number(),
   reason: z.string({ error: tr.REJECTION_REASON_REQUIRED }),
 });

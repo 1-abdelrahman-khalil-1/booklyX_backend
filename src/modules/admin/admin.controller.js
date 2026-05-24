@@ -2,73 +2,87 @@ import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
-  approveApplication,
-  approveService,
-  getApplicationDetail,
-  getUserProfile,
-  listApplications,
-  listPendingServices,
-  rejectApplication,
-  rejectService,
+    approveBranch,
+    approveService,
+    getBranchDetails,
+    getBranchPaymentDetails,
+    getPlatformAnalytics,
+    getServiceDetails,
+    getUserProfile,
+    listBranchPayments,
+    listBranches,
+    listServices,
+    rejectBranch,
+    rejectService,
 } from "./admin.service.js";
 import {
-  idParamSchema,
-  includeCodesQuerySchema,
-  listApplicationsQuerySchema,
-  rejectReasonSchema,
-  validateAdminInput,
+    idParamSchema,
+    listBranchesQuerySchema,
+    listServicesQuerySchema,
+    paymentIdParamSchema,
+    periodQuerySchema,
+    rejectReasonSchema,
+    validateAdminInput
 } from "./admin.validation.js";
 
-// ─── List Applications Handler ──────────────────────────────────────────────
+// ─── List Branches Handler ─────────────────────────────────────────────────
 
-export const listApplicationsHandler = asyncHandler(async (req, res) => {
+export const listBranchesHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { status } = validateAdminInput(listApplicationsQuerySchema, req.query);
-  const result = await listApplications(status);
+  const { status } = validateAdminInput(listBranchesQuerySchema, req.query);
+  const result = await listBranches(status);
   successResponse(
     res,
     200,
-    t(tr.APPLICATION_RETRIEVED_SUCCESSFULLY, lang),
+    t(tr.BRANCH_RETRIEVED_SUCCESSFULLY, lang),
     result,
   );
 });
 
-// ─── Get Application Detail Handler ──────────────────────────────────────────
+// ─── Get Branch Detail Handler ──────────────────────────────────────────────
 
-export const getApplicationDetailHandler = asyncHandler(async (req, res) => {
+export const getBranchDetailsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { id } = validateAdminInput(idParamSchema, req.params);
-  const result = await getApplicationDetail(id);
+  const result = await getBranchDetails(id);
   successResponse(
     res,
     200,
-    t(tr.APPLICATION_RETRIEVED_SUCCESSFULLY, lang),
+    t(tr.BRANCH_RETRIEVED_SUCCESSFULLY, lang),
     result,
   );
 });
 
-// ─── Approve Application Handler ─────────────────────────────────────────────
+// ─── Approve Branch Handler ─────────────────────────────────────────────────
 
-export const approveApplicationHandler = asyncHandler(async (req, res) => {
+export const approveBranchHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { id } = validateAdminInput(idParamSchema, req.params);
-  const result = await approveApplication(id);
+  const result = await approveBranch(id);
   successResponse(res, 200, t(result.message, lang), result.user);
 });
 
-// ─── Reject Application Handler ──────────────────────────────────────────────
+// ─── Reject Branch Handler ──────────────────────────────────────────────────
 
-export const rejectApplicationHandler = asyncHandler(async (req, res) => {
+export const rejectBranchHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { id } = validateAdminInput(idParamSchema, req.params);
   const { reason } = validateAdminInput(rejectReasonSchema, req.body);
-  const result = await rejectApplication(id, reason);
+  const result = await rejectBranch(id, reason);
   successResponse(res, 200, t(result.message, lang));
 });
 
-export const listPendingServicesHandler = asyncHandler(async (req, res) => {
+export const listServicesHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await listPendingServices();
+  const { status } = validateAdminInput(listServicesQuerySchema, req.query);
+  const result = await listServices(status);
+  successResponse(res, 200, t(tr.SERVICES_RETRIEVED_SUCCESSFULLY, lang), result);
+});
+
+export const getServiceDetailsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { id } = validateAdminInput(idParamSchema, req.params);
+  const result = await getServiceDetails(id);
   successResponse(res, 200, t(tr.SERVICES_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 
@@ -93,3 +107,40 @@ export const getUserProfileHandler = asyncHandler(async (req, res) => {
   const result = await getUserProfile(id);
   successResponse(res, 200, t(tr.PROFILE_RETRIEVED_SUCCESSFULLY, lang), result);
 });
+
+export const getPlatformAnalyticsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { period } = validateAdminInput(periodQuerySchema, req.query);
+  const result = await getPlatformAnalytics(period);
+  successResponse(
+    res,
+    200,
+    t(tr.PLATFORM_ANALYTICS_RETRIEVED_SUCCESSFULLY, lang),
+    result,
+  );
+});
+
+export const listBranchPaymentsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { period } = validateAdminInput(periodQuerySchema, req.query);
+  const result = await listBranchPayments(period);
+  successResponse(
+    res,
+    200,
+    t(tr.BRANCH_PAYMENTS_RETRIEVED_SUCCESSFULLY, lang),
+    result,
+  );
+});
+
+export const getBranchPaymentDetailsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { paymentId } = validateAdminInput(paymentIdParamSchema, req.params);
+  const result = await getBranchPaymentDetails(paymentId);
+  successResponse(
+    res,
+    200,
+    t(tr.PAYMENT_DETAILS_RETRIEVED_SUCCESSFULLY, lang),
+    result,
+  );
+});
+

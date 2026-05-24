@@ -1,5 +1,6 @@
 import {
-    ApplicationStatus,
+    BranchStatus,
+    PaymentStatus,
     Role,
     ServiceApprovalStatus,
     UserStatus,
@@ -7,9 +8,7 @@ import {
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
-// Validation is now handled in admin.controller.js
-
-// ─── Domain Error Classes ─
+import { toRangeWhere } from "../../utils/period.js";
 
 export class AdminValidationError extends AppError {
   constructor(message, params) {
@@ -18,17 +17,17 @@ export class AdminValidationError extends AppError {
   }
 }
 
-export class ApplicationNotFound extends AppError {
+export class BranchNotFound extends AppError {
   constructor() {
-    super(tr.APPLICATION_NOT_FOUND, 404);
-    this.name = "ApplicationNotFound";
+    super(tr.BRANCH_NOT_FOUND, 404);
+    this.name = "BranchNotFound";
   }
 }
 
-export class ApplicationIsNotPendingError extends AppError {
+export class BranchIsNotPendingError extends AppError {
   constructor() {
-    super(tr.APPLICATION_IS_NOT_PENDING_APPROVAL, 409);
-    this.name = "ApplicationIsNotPendingError";
+    super(tr.BRANCH_IS_NOT_PENDING_APPROVAL, 409);
+    this.name = "BranchIsNotPendingError";
   }
 }
 
@@ -46,42 +45,33 @@ export class ServiceNotPendingError extends AppError {
   }
 }
 
-export async function listApplications(status) {
-  
-  const applications = await prisma.branchAdmin.findMany({
-    where: status ? { status } : { status: ApplicationStatus.PENDING_APPROVAL },
+export class PaymentNotFoundError extends AppError {
+  constructor() {
+    super(tr.PAYMENT_NOT_FOUND, 404);
+    this.name = "PaymentNotFoundError";
+  }
+}
+
+export async function listBranches(status) {
+  return prisma.branchAdmin.findMany({
+    where: status ? { status } : { status: BranchStatus.PENDING_APPROVAL },
     select: {
       id: true,
-      ownerName: true,
-      email: true,
-      phone: true,
       businessName: true,
+      ownerName: true,
       category: true,
       city: true,
-      district: true,
-      address: true,
+      logoUrl: true,
       status: true,
-      emailVerified: true,
-      phoneVerified: true,
       rejectionReason: true,
       createdAt: true,
-      documents: {
-        select: {
-          id: true,
-          type: true,
-          fileUrl: true,
-          createdAt: true,
-        },
-      },
     },
     orderBy: { createdAt: "desc" },
   });
-
-  return applications;
 }
 
-export async function getApplicationDetail(id) {
-  const application = await prisma.branchAdmin.findUnique({
+export async function getBranchDetails(id) {
+  const branch = await prisma.branchAdmin.findUnique({
     where: { id },
     select: {
       id: true,
@@ -101,15 +91,26 @@ export async function getApplicationDetail(id) {
       city: true,
       district: true,
       address: true,
+      operatingHours: true,
       latitude: true,
       longitude: true,
       status: true,
-      emailVerified: true,
-      phoneVerified: true,
+      isSubscriptionActive: true,
+      subscriptionStartedAt: true,
       rejectionReason: true,
-      userId: true,
       createdAt: true,
       updatedAt: true,
+      plan: {
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          maxStaff: true,
+          maxServices: true,
+          loyaltyEnabled: true,
+          offersEnabled: true,
+        },
+      },
       documents: {
         select: {
           id: true,
@@ -121,81 +122,99 @@ export async function getApplicationDetail(id) {
     },
   });
 
-  if (!application) throw new ApplicationNotFound();
-  return application;
+  if (!branch) throw new BranchNotFound();
+  return branch;
 }
 
-export async function approveApplication(id) {
-  const application = await prisma.branchAdmin.findUnique({
+export async function approveBranch(id) {
+  const branch = await prisma.branchAdmin.findUnique({
     where: { id },
   });
 
-  if (!application) throw new ApplicationNotFound();
-  if (application.status !== ApplicationStatus.PENDING_APPROVAL) {
-    throw new ApplicationIsNotPendingError();
+  if (!branch) throw new BranchNotFound();
+  if (branch.status !== BranchStatus.PENDING_APPROVAL) {
+    throw new BranchIsNotPendingError();
   }
 
-  return await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: {
-        name: application.ownerName,
-        email: application.email,
-        phone: application.phone,
-        password: application.passwordHash,
+        name: branch.ownerName,
+        email: branch.email,
+        phone: branch.phone,
+        password: branch.passwordHash,
         role: Role.branch_admin,
         status: UserStatus.ACTIVE,
         emailVerified: true,
         phoneVerified: true,
       },
-    });
-
-    await tx.branchAdmin.update({
-      where: { id: application.id },
-      data: {
-        userId: user.id,
-        status: ApplicationStatus.APPROVED,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
       },
     });
 
-    // Omit password from returned user
-    const { password: _password, ...safeUser } = user;
-    return { user: safeUser, message: tr.APPLICATION_APPROVED };
+    await tx.branchAdmin.update({
+      where: { id: branch.id },
+      data: {
+        userId: user.id,
+        status: BranchStatus.APPROVED,
+        rejectionReason: null,
+      },
+    });
+
+    return { user, message: tr.BRANCH_APPROVED };
   });
 }
 
-export async function rejectApplication(id, reason) {
-  const application = await prisma.branchAdmin.findUnique({
+export async function rejectBranch(id, reason) {
+  const branch = await prisma.branchAdmin.findUnique({
     where: { id },
+    select: { id: true, status: true },
   });
 
-  if (!application) throw new ApplicationNotFound();
-  if (application.status !== ApplicationStatus.PENDING_APPROVAL) {
-    throw new ApplicationIsNotPendingError();
+  if (!branch) throw new BranchNotFound();
+  if (branch.status !== BranchStatus.PENDING_APPROVAL) {
+    throw new BranchIsNotPendingError();
   }
 
   await prisma.branchAdmin.update({
-    where: { id: application.id },
+    where: { id: branch.id },
     data: {
-      status: ApplicationStatus.REJECTED,
+      status: BranchStatus.REJECTED,
       rejectionReason: reason,
     },
   });
 
-  return { message: tr.APPLICATION_REJECTED };
+  return { message: tr.BRANCH_REJECTED };
 }
 
-export async function listPendingServices() {
+export async function listServices(status) {
   return prisma.service.findMany({
-    where: { status: ServiceApprovalStatus.PENDING_APPROVAL },
-    include: {
-      category: true,
+    where: status ? { status } : { status: ServiceApprovalStatus.PENDING_APPROVAL },
+    select: {
+      id: true,
+      name: true,
+      imageUrl: true,
+      price: true,
+      durationMinutes: true,
+      status: true,
+      createdAt: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       branch: {
         select: {
           id: true,
           businessName: true,
-          ownerName: true,
-          userId: true,
-          status: true,
+          logoUrl: true,
         },
       },
     },
@@ -203,10 +222,48 @@ export async function listPendingServices() {
   });
 }
 
-export async function approveService(id) {
-
+export async function getServiceDetails(id) {
   const service = await prisma.service.findUnique({
     where: { id },
+    select: {
+      id: true,
+      branchId: true,
+      name: true,
+      imageUrl: true,
+      description: true,
+      price: true,
+      durationMinutes: true,
+      status: true,
+      rejectionReason: true,
+      approvedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      branch: {
+        select: {
+          id: true,
+          businessName: true,
+          logoUrl: true,
+          status: true,
+          isSubscriptionActive: true,
+        },
+      },
+    },
+  });
+
+  if (!service) throw new ServiceNotFound();
+  return service;
+}
+
+export async function approveService(id) {
+  const service = await prisma.service.findUnique({
+    where: { id },
+    select: { id: true, status: true },
   });
 
   if (!service) throw new ServiceNotFound();
@@ -229,12 +286,13 @@ export async function approveService(id) {
       description: true,
       price: true,
       durationMinutes: true,
-      duration: true,
       imageUrl: true,
       status: true,
       approvedAt: true,
       updatedAt: true,
-      category: true,
+      category: {
+        select: { id: true, name: true },
+      },
     },
   });
 
@@ -242,9 +300,9 @@ export async function approveService(id) {
 }
 
 export async function rejectService(id, reason) {
-
   const service = await prisma.service.findUnique({
     where: { id },
+    select: { id: true, status: true },
   });
 
   if (!service) throw new ServiceNotFound();
@@ -267,20 +325,139 @@ export async function rejectService(id, reason) {
       description: true,
       price: true,
       durationMinutes: true,
-      duration: true,
       imageUrl: true,
       status: true,
       rejectionReason: true,
       updatedAt: true,
-      category: true,
+      category: {
+        select: { id: true, name: true },
+      },
     },
   });
 
   return { message: tr.SERVICE_REJECTED, service: updatedService };
 }
 
+export async function getPlatformAnalytics(period = "this_month") {
+  const dateWhere = toRangeWhere(period, "paidAt");
+
+  const [totalActiveBusinesses, totalRevenue] = await Promise.all([
+    prisma.branchAdmin.count({
+      where: {
+        status: BranchStatus.APPROVED,
+        isSubscriptionActive: true,
+      },
+    }),
+    prisma.subscriptionPayment.aggregate({
+      where: {
+        status: PaymentStatus.PAID,
+        ...dateWhere,
+      },
+      _sum: { amount: true },
+    }),
+  ]);
+
+  return {
+    totalActiveBusinesses,
+    totalSubscriptionRevenue: Number(totalRevenue._sum.amount ?? 0),
+  };
+}
+
+export async function listBranchPayments(period = "this_month") {
+  const dateWhere = toRangeWhere(period, "paidAt");
+
+  const payments = await prisma.subscriptionPayment.findMany({
+    where: {
+      ...dateWhere,
+    },
+    select: {
+      id: true,
+      amount: true,
+      status: true,
+      paidAt: true,
+      branch: {
+        select: {
+          id: true,
+          businessName: true,
+        },
+      },
+      plan: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+    orderBy: { paidAt: "desc" },
+  });
+
+  return payments.map((payment) => ({
+    paymentId: payment.id,
+    branchId: payment.branch.id,
+    businessName: payment.branch.businessName,
+    planName: payment.plan.name,
+    amount: payment.amount,
+    paymentStatus: payment.status,
+    paidAt: payment.paidAt,
+  }));
+}
+
+export async function getBranchPaymentDetails(paymentId) {
+  const payment = await prisma.subscriptionPayment.findUnique({
+    where: { id: paymentId },
+    select: {
+      id: true,
+      amount: true,
+      status: true,
+      paymentMethod: true,
+      paidAt: true,
+      branch: {
+        select: {
+          id: true,
+          businessName: true,
+          ownerName: true,
+          category: true,
+          city: true,
+          district: true,
+          address: true,
+          logoUrl: true,
+          status: true,
+          isSubscriptionActive: true,
+          subscriptionStartedAt: true,
+        },
+      },
+      plan: {
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          maxStaff: true,
+          maxServices: true,
+          loyaltyEnabled: true,
+          offersEnabled: true,
+        },
+      },
+    },
+  });
+
+  if (!payment) {
+    throw new PaymentNotFoundError();
+  }
+
+  return {
+    paymentId: payment.id,
+    branch: payment.branch,
+    plan: payment.plan,
+    amount: payment.amount,
+    paymentStatus: payment.status,
+    paymentMethod: payment.paymentMethod,
+    paidAt: payment.paidAt,
+    subscriptionStartedAt: payment.branch.subscriptionStartedAt,
+  };
+}
+
 export async function getUserProfile(userId) {
-  const user = await prisma.user.findUnique({ 
+  const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       id: true,
@@ -293,6 +470,26 @@ export async function getUserProfile(userId) {
       phoneVerified: true,
       createdAt: true,
       updatedAt: true,
+      branchAdmin: {
+        select: {
+          id: true,
+          businessName: true,
+          status: true,
+          isSubscriptionActive: true,
+          subscriptionStartedAt: true,
+          plan: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              maxStaff: true,
+              maxServices: true,
+              loyaltyEnabled: true,
+              offersEnabled: true,
+            },
+          },
+        },
+      },
       staff: {
         select: {
           id: true,
@@ -313,3 +510,4 @@ export async function getUserProfile(userId) {
 
   return { user };
 }
+

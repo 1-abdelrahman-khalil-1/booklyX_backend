@@ -22,10 +22,12 @@ tags:
   - name: Auth/Verification
   - name: Auth/Session
   - name: Auth/Password Reset
-  - name: Branch_admin/Application
+  - name: Branch_admin/Registration
   - name: Branch_admin/Profile
   - name: Branch_admin/Staff
   - name: Branch_admin/Services
+  - name: Branch_admin/Subscription
+  - name: Branch_admin/Analytics
   - name: Branch_admin/Offers
   - name: Staff/Profile
   - name: Staff/Schedule
@@ -33,8 +35,11 @@ tags:
   - name: Staff/Income
   - name: Staff/Services
   - name: Staff/Availability
-  - name: Super_admin/Applications
+  - name: Super_admin/Branches
+  - name: Super_admin/Users
   - name: Super_admin/Services
+  - name: Super_admin/Analytics
+  - name: Super_admin/Payments
   - name: Reviews
   - name: Files
 
@@ -97,7 +102,7 @@ components:
           summary: Web client
           value: WEB
 
-    SuperAdminApplicationStatusQuery:
+    SuperAdminBranchStatusQuery:
       name: status
       in: query
       required: false
@@ -108,13 +113,13 @@ components:
         example: PENDING_APPROVAL
       examples:
         pendingApproval:
-          summary: Pending approval applications
+          summary: Pending approval branches
           value: PENDING_APPROVAL
         approved:
-          summary: Approved applications
+          summary: Approved branches
           value: APPROVED
         rejected:
-          summary: Rejected applications
+          summary: Rejected branches
           value: REJECTED
 
     ServiceStatusQuery:
@@ -173,6 +178,41 @@ components:
         params:
           nullable: true
           example: null
+
+    PlanPreview:
+      type: object
+      required:
+        - id
+        - name
+        - price
+        - max_staff
+        - max_services
+        - loyalty_enabled
+        - offers_enabled
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Starter
+        price:
+          type: string
+          example: "199.00"
+        max_staff:
+          type: integer
+          nullable: true
+          example: 3
+        max_services:
+          type: integer
+          nullable: true
+          example: 10
+        loyalty_enabled:
+          type: boolean
+          example: false
+        offers_enabled:
+          type: boolean
+          example: false
 
     VerificationFlags:
       type: object
@@ -771,6 +811,7 @@ components:
     BranchAdminApplyRequestJson:
       type: object
       required:
+        - planId
         - ownerName
         - email
         - phone
@@ -786,6 +827,10 @@ components:
         - latitude
         - longitude
       properties:
+        planId:
+          type: integer
+          minimum: 1
+          example: 1
         ownerName:
           type: string
           example: Mahmoud Ibrahim
@@ -836,6 +881,7 @@ components:
           format: double
           example: 31.3368
       example:
+        planId: 1
         ownerName: Mahmoud Ibrahim
         email: mahmoud.ibrahim@booklyx.com
         phone: "01000000011"
@@ -1240,7 +1286,7 @@ components:
       example:
         reason: Missing required documents.
 
-    ApplicationDocument:
+    BranchDocument:
       type: object
       properties:
         id:
@@ -1266,7 +1312,7 @@ components:
           format: date-time
           example: 2026-04-09T09:50:00.000Z
 
-    ApplicationVerificationCodeSummary:
+    BranchVerificationCodeSummary:
       type: object
       properties:
         id:
@@ -1292,7 +1338,7 @@ components:
           format: date-time
           example: 2026-04-09T10:00:00.000Z
 
-    BranchApplication:
+    BranchSubmission:
       type: object
       properties:
         id:
@@ -1391,11 +1437,11 @@ components:
         documents:
           type: array
           items:
-            $ref: "#/components/schemas/ApplicationDocument"
+            $ref: "#/components/schemas/BranchDocument"
         verificationCodes:
           type: array
           items:
-            $ref: "#/components/schemas/ApplicationVerificationCodeSummary"
+            $ref: "#/components/schemas/BranchVerificationCodeSummary"
       example:
         id: 1
         userId: 5
@@ -1450,7 +1496,7 @@ components:
       value:
         email: abdo.khalil@booklyx.com
         code: "333333"
-    VerifyBranchApplicationCodeRequest:
+    VerifyBranchSubmissionCodeRequest:
       value:
         email: mahmoud.ibrahim@booklyx.com
         code: "333333"
@@ -1484,6 +1530,7 @@ components:
         refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
     BranchAdminApplyRequest:
       value:
+        planId: 1
         ownerName: Mahmoud Ibrahim
         email: mahmoud.ibrahim@booklyx.com
         phone: "01000000011"
@@ -1595,19 +1642,19 @@ components:
       value:
         status: 200
         error: false
-        message: Application email verified successfully.
+        message: Branch email verified successfully.
         data: null
     BranchVerifyPhoneSuccessResponse:
       value:
         status: 200
         error: false
-        message: Application phone verified successfully.
+        message: Branch phone verified successfully.
         data: null
     BranchResendCodeSuccessResponse:
       value:
         status: 200
         error: false
-        message: Application verification code sent successfully.
+        message: Branch verification code sent successfully.
         data: null
     BranchAdminStaffListResponse:
       value:
@@ -2105,12 +2152,39 @@ components:
         data:
           email_verified: false
           phone_verified: true
-    BranchApplicationSubmittedResponse:
+    BranchSubmissionCreatedResponse:
       value:
         status: 201
         error: false
-        message: Your application has been submitted successfully. Please verify your email.
+        message: Your branch submission has been submitted successfully. Please verify your email.
         data: null
+    PlansListResponse:
+      value:
+        status: 200
+        error: false
+        message: Plans retrieved successfully.
+        data:
+          - id: 1
+            name: Starter
+            price: "199.00"
+            max_staff: 3
+            max_services: 10
+            loyalty_enabled: false
+            offers_enabled: false
+          - id: 2
+            name: Pro
+            price: "499.00"
+            max_staff: 15
+            max_services: 50
+            loyalty_enabled: true
+            offers_enabled: true
+          - id: 3
+            name: Enterprise
+            price: "1499.00"
+            max_staff: null
+            max_services: null
+            loyalty_enabled: true
+            offers_enabled: true
     StaffCreatedResponse:
       value:
         status: 201
@@ -2231,11 +2305,11 @@ components:
             branch_id: 1
             created_at: 2026-04-09T10:00:00.000Z
             updated_at: 2026-04-09T10:00:00.000Z
-    ApplicationsListResponse:
+    BranchesListResponse:
       value:
         status: 200
         error: false
-        message: Applications retrieved successfully.
+        message: Branches retrieved successfully.
         data:
           - id: 1
             userId: 5
@@ -2257,11 +2331,11 @@ components:
             rejection_reason: null
             created_at: 2026-04-09T09:45:00.000Z
             updated_at: 2026-04-09T10:20:00.000Z
-    ApplicationDetailResponse:
+    BranchDetailResponse:
       value:
         status: 200
         error: false
-        message: Applications retrieved successfully.
+        message: Branch retrieved successfully.
         data:
           id: 1
           userId: 5
@@ -2296,11 +2370,11 @@ components:
               used: true
               attempts: 1
               created_at: 2026-04-09T10:00:00.000Z
-    ApplicationApprovedResponse:
+    BranchApprovedResponse:
       value:
         status: 200
         error: false
-        message: Application approved successfully.
+        message: Branch approved successfully.
         data:
           id: 5
           name: Mahmoud Ibrahim
@@ -2310,11 +2384,11 @@ components:
           status: ACTIVE
           email_verified: true
           phone_verified: true
-    ApplicationRejectedResponse:
+    BranchRejectedResponse:
       value:
         status: 200
         error: false
-        message: Application rejected successfully.
+        message: Branch rejected successfully.
         data: null
     PendingServicesResponse:
       value:
@@ -2439,6 +2513,34 @@ components:
             $ref: "#/components/schemas/ApiError"
 
 paths:
+  /plans:
+    get:
+      tags: [Plans]
+      summary: List active plans
+      description: Public endpoint for browsing active subscription plans before branch submission.
+      operationId: getPlans
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+      responses:
+        "200":
+          description: Plans retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/PlanPreview"
+              examples:
+                default:
+                  $ref: "#/components/examples/PlansListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
   /auth/register:
     post:
       tags: [Auth/Verification]
@@ -2841,7 +2943,7 @@ paths:
 
   /branch-admin/apply:
     post:
-      tags: [Branch_admin/Application]
+      tags: [Branch_admin/Registration]
       summary: Submit branch_admin application
       description: Submit branch_admin application.
       operationId: postBranchAdminApply
@@ -2868,7 +2970,7 @@ paths:
                 $ref: "#/components/schemas/ApiSuccess"
               examples:
                 default:
-                  $ref: "#/components/examples/BranchApplicationSubmittedResponse"
+                  $ref: "#/components/examples/BranchSubmissionCreatedResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "409":
@@ -2876,7 +2978,7 @@ paths:
 
   /branch-admin/verify-email:
     post:
-      tags: [Branch_admin/Application]
+      tags: [Branch_admin/Registration]
       summary: Verify application email OTP
       description: Verify application email OTP.
       operationId: postBranchAdminVerifyEmail
@@ -2890,7 +2992,7 @@ paths:
               $ref: "#/components/schemas/VerifyCodeRequest"
             examples:
               default:
-                $ref: "#/components/examples/VerifyBranchApplicationCodeRequest"
+                $ref: "#/components/examples/VerifyBranchSubmissionCodeRequest"
       responses:
         "200":
           description: Email verified
@@ -2910,7 +3012,7 @@ paths:
 
   /branch-admin/verify-phone:
     post:
-      tags: [Branch_admin/Application]
+      tags: [Branch_admin/Registration]
       summary: Verify application phone OTP
       description: Verify application phone OTP.
       operationId: postBranchAdminVerifyPhone
@@ -2924,7 +3026,7 @@ paths:
               $ref: "#/components/schemas/VerifyCodeRequest"
             examples:
               default:
-                $ref: "#/components/examples/VerifyBranchApplicationCodeRequest"
+                $ref: "#/components/examples/VerifyBranchSubmissionCodeRequest"
       responses:
         "200":
           description: Phone verified
@@ -2944,7 +3046,7 @@ paths:
 
   /branch-admin/resend-code:
     post:
-      tags: [Branch_admin/Application]
+      tags: [Branch_admin/Registration]
       summary: Resend branch_admin application OTP
       description: Resend branch_admin application OTP.
       operationId: postBranchAdminResendCode
@@ -4197,12 +4299,12 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
-  /admin/applications:
+  /admin/branches:
     get:
-      tags: [Super_admin/Applications]
-      summary: List branch applications
-      description: List branch applications with optional filtering by status.
-      operationId: getAdminApplications
+      tags: [Super_admin/Branches]
+      summary: List branches for moderation
+      description: List branches with optional filtering by status.
+      operationId: getAdminBranches
       security:
         - bearerAuth: []
       parameters:
@@ -4215,10 +4317,10 @@ paths:
             type: string
             default: PENDING_APPROVAL
             enum: [PENDING_APPROVAL, APPROVED, REJECTED]
-          description: Filter applications by status
+          description: Filter branches by status
       responses:
         "200":
-          description: Applications fetched
+          description: Branches fetched
           content:
             application/json:
               schema:
@@ -4229,21 +4331,21 @@ paths:
                       data:
                         type: array
                         items:
-                          $ref: "#/components/schemas/BranchApplication"
+                          $ref: "#/components/schemas/BranchSubmission"
               examples:
                 default:
-                  $ref: "#/components/examples/ApplicationsListResponse"
+                  $ref: "#/components/examples/BranchesListResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
 
-  /admin/applications/{id}:
+  /admin/branches/{id}:
     get:
-      tags: [Super_admin/Applications]
-      summary: Get application details
-      description: Get application details.
-      operationId: getAdminApplicationsById
+      tags: [Super_admin/Branches]
+      summary: Get branch details
+      description: Get detailed branch moderation payload.
+      operationId: getAdminBranchesById
       security:
         - bearerAuth: []
       parameters:
@@ -4257,7 +4359,7 @@ paths:
         - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       responses:
         "200":
-          description: Application details fetched
+          description: Branch details fetched
           content:
             application/json:
               schema:
@@ -4266,10 +4368,10 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: "#/components/schemas/BranchApplication"
+                        $ref: "#/components/schemas/BranchSubmission"
               examples:
                 default:
-                  $ref: "#/components/examples/ApplicationDetailResponse"
+                  $ref: "#/components/examples/BranchDetailResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -4277,12 +4379,12 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  /admin/applications/{id}/approve:
+  /admin/branches/{id}/approve:
     post:
-      tags: [Super_admin/Applications]
-      summary: Approve branch application
-      description: Approve branch application.
-      operationId: postAdminApplicationsByIdApprove
+      tags: [Super_admin/Branches]
+      summary: Approve pending branch
+      description: Approve a branch only when status is PENDING_APPROVAL.
+      operationId: postAdminBranchesByIdApprove
       security:
         - bearerAuth: []
       parameters:
@@ -4296,7 +4398,7 @@ paths:
         - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       responses:
         "200":
-          description: Application approved
+          description: Branch approved
           content:
             application/json:
               schema:
@@ -4308,7 +4410,7 @@ paths:
                         $ref: "#/components/schemas/User"
               examples:
                 default:
-                  $ref: "#/components/examples/ApplicationApprovedResponse"
+                  $ref: "#/components/examples/BranchApprovedResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4318,12 +4420,12 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  /admin/applications/{id}/reject:
+  /admin/branches/{id}/reject:
     post:
-      tags: [Super_admin/Applications]
-      summary: Reject branch application
-      description: Reject branch application.
-      operationId: postAdminApplicationsByIdReject
+      tags: [Super_admin/Branches]
+      summary: Reject pending branch
+      description: Reject a branch only when status is PENDING_APPROVAL.
+      operationId: postAdminBranchesByIdReject
       security:
         - bearerAuth: []
       parameters:
@@ -4346,14 +4448,14 @@ paths:
                 $ref: "#/components/examples/RejectReasonRequest"
       responses:
         "200":
-          description: Application rejected
+          description: Branch rejected
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiSuccess"
               examples:
                 default:
-                  $ref: "#/components/examples/ApplicationRejectedResponse"
+                  $ref: "#/components/examples/BranchRejectedResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4365,7 +4467,7 @@ paths:
 
   /admin/users/{id}:
     get:
-      tags: [Super_admin/Applications]
+      tags: [Super_admin/Users]
       summary: Get user profile
       description: Get a user profile by ID (e.g., branch admin profile).
       operationId: getAdminUserProfile
@@ -4460,20 +4562,27 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  /admin/services/pending:
+  /admin/services:
     get:
       tags: [Super_admin/Services]
-      summary: List pending services
-      description: List pending services.
-      operationId: getAdminServicesPending
+      summary: List services for moderation
+      description: List services with optional filtering by moderation status.
+      operationId: getAdminServices
       security:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            default: PENDING_APPROVAL
+            enum: [PENDING_APPROVAL, APPROVED, REJECTED]
       responses:
         "200":
-          description: Pending services fetched
+          description: Services fetched
           content:
             application/json:
               schema:
@@ -4488,6 +4597,259 @@ paths:
               examples:
                 default:
                   $ref: "#/components/examples/PendingServicesResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /admin/services/{id}:
+    get:
+      tags: [Super_admin/Services]
+      summary: Get service details
+      description: Get detailed service moderation payload.
+      operationId: getAdminServicesById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      responses:
+        "200":
+          description: Service details fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Service"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /admin/analytics/platform:
+    get:
+      tags: [Super_admin/Analytics]
+      summary: Get platform analytics
+      description: Returns total active businesses and paid subscription revenue for a period.
+      operationId: getAdminAnalyticsPlatform
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            default: this_month
+            enum: [today, this_month, this_year]
+      responses:
+        "200":
+          description: Platform analytics fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          totalActiveBusinesses:
+                            type: integer
+                          totalSubscriptionRevenue:
+                            type: number
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /admin/payments:
+    get:
+      tags: [Super_admin/Payments]
+      summary: List branch payments
+      description: Returns lightweight subscription payment previews ordered by newest first.
+      operationId: getAdminPayments
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            default: this_month
+            enum: [today, this_month, this_year]
+      responses:
+        "200":
+          description: Branch payments fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /admin/payments/{paymentId}:
+    get:
+      tags: [Super_admin/Payments]
+      summary: Get branch payment details
+      description: Returns detailed subscription payment information.
+      operationId: getAdminPaymentsByPaymentId
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Payment details fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /branch-admin/subscription/activate:
+    post:
+      tags: [Branch_admin/Subscription]
+      summary: Activate current branch subscription
+      description: Creates a fake paid subscription payment and activates subscription for approved branch.
+      operationId: postBranchAdminSubscriptionActivate
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Subscription activated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /branch-admin/analytics/dashboard:
+    get:
+      tags: [Branch_admin/Analytics]
+      summary: Get branch dashboard stats
+      description: Returns bookings, revenue, clients, staff, and services metrics for selected period.
+      operationId: getBranchAdminAnalyticsDashboard
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            default: this_month
+            enum: [today, this_month, this_year]
+      responses:
+        "200":
+          description: Branch analytics fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /branch-admin/analytics/staff-earnings:
+    get:
+      tags: [Branch_admin/Analytics]
+      summary: Get branch staff earnings
+      description: Returns lightweight earnings summary per staff member for selected period.
+      operationId: getBranchAdminAnalyticsStaffEarnings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            default: this_month
+            enum: [today, this_month, this_year]
+      responses:
+        "200":
+          description: Staff earnings fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":

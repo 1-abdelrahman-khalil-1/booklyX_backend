@@ -90,7 +90,7 @@ export const imageOnlyUpload = multer({
 });
 
 /**
- * Upload middleware for documents (branch applications, KYC, etc).
+ * Upload middleware for documents (branch submissions, KYC, etc).
  * Allows images and PDF only. Magic byte validation applied post-upload.
  */
 export const documentsUpload = multer({

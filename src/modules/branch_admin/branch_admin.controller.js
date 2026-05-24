@@ -2,24 +2,27 @@ import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
+    activateSubscription,
     addServiceCategory,
     createService,
     createStaff,
     deleteService,
     deleteStaff,
     getBranchAdminProfile,
+    getBranchDashboardStats,
     getBranchPublicProfile,
     getMyServiceCategories,
     getMyServices,
     getMyStaff,
     getMyStaffById,
-    resendApplicationCode,
-    submitApplication,
+    getStaffEarnings,
+    resendBranchCode,
+    submitBranch,
     updateBranchAdminProfile,
     updateService,
     updateStaff,
-    verifyApplicationEmail,
-    verifyApplicationPhone,
+    verifyBranchEmail,
+    verifyBranchPhone,
 } from "./branch_admin.service.js";
 import {
     addServiceCategorySchema,
@@ -27,6 +30,7 @@ import {
     createServiceSchema,
     createStaffSchema,
     myServicesQuerySchema,
+    periodQuerySchema,
     resendCodeSchema,
     staffIdSchema,
     updateBranchAdminProfileSchema,
@@ -60,7 +64,7 @@ function getPublicImageUrl(req, file) {
   return `${req.protocol}://${req.get("host")}/files/public/${file.filename}`;
 }
 
-function buildApplicationPayload(req) {
+function buildBranchPayload(req) {
   return {
     ...req.body,
     logoUrl:
@@ -95,9 +99,18 @@ function buildProfilePayload(req) {
 
 export const applyHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const data = validateBranchAdminInput(applySchema, buildApplicationPayload(req));
-  const result = await submitApplication(data);
-  successResponse(res, 201, t(result.message, lang), result.application);
+  const data = validateBranchAdminInput(applySchema, buildBranchPayload(req));
+  const result = await submitBranch(data);
+  successResponse(res, 201, t(result.message, lang), result.branch);
+});
+
+export const activateSubscriptionHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const result = await activateSubscription(req.user.sub);
+  successResponse(res, 200, t(result.message, lang), {
+    payment: result.payment,
+    currentSubscription: result.currentSubscription,
+  });
 });
 
 // ─── Verify Email Handler ─
@@ -105,7 +118,7 @@ export const applyHandler = asyncHandler(async (req, res) => {
 export const verifyEmailHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { email, code } = validateBranchAdminInput(verifyEmailSchema, req.body);
-  const result = await verifyApplicationEmail(email, code);
+  const result = await verifyBranchEmail(email, code);
   successResponse(res, 200, t(result.message, lang));
 });
 
@@ -114,7 +127,7 @@ export const verifyEmailHandler = asyncHandler(async (req, res) => {
 export const verifyPhoneHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { email, code } = validateBranchAdminInput(verifyPhoneSchema, req.body);
-  const result = await verifyApplicationPhone(email, code);
+  const result = await verifyBranchPhone(email, code);
   successResponse(res, 200, t(result.message, lang));
 });
 
@@ -123,7 +136,7 @@ export const verifyPhoneHandler = asyncHandler(async (req, res) => {
 export const resendCodeHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { email, type } = validateBranchAdminInput(resendCodeSchema, req.body);
-  const result = await resendApplicationCode(email, type);
+  const result = await resendBranchCode(email, type);
   successResponse(res, 200, t(result.message, lang));
 });
 
@@ -233,4 +246,28 @@ export const getBranchPublicProfileHandler = asyncHandler(async (req, res) => {
   const branchId = Number(req.params.id);
   const profile = await getBranchPublicProfile(branchId, req.user);
   successResponse(res, 200, t(tr.PROFILE_RETRIEVED_SUCCESSFULLY, lang), profile);
+});
+
+export const getBranchDashboardStatsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { period } = validateBranchAdminInput(periodQuerySchema, req.query);
+  const result = await getBranchDashboardStats(req.user.sub, period);
+  successResponse(
+    res,
+    200,
+    t(tr.BRANCH_ANALYTICS_RETRIEVED_SUCCESSFULLY, lang),
+    result,
+  );
+});
+
+export const getStaffEarningsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { period } = validateBranchAdminInput(periodQuerySchema, req.query);
+  const result = await getStaffEarnings(req.user.sub, period);
+  successResponse(
+    res,
+    200,
+    t(tr.STAFF_EARNINGS_RETRIEVED_SUCCESSFULLY, lang),
+    result,
+  );
 });

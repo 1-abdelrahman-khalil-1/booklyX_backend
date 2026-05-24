@@ -2,16 +2,16 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import {
-    ApplicationStatus,
-    Prisma,
-    Role,
-    UserStatus,
-    VerificationType
+  BranchStatus,
+  Prisma,
+  Role,
+  UserStatus,
+  VerificationType
 } from "../../generated/prisma/client.js";
 import {
-    sendEmailVerification,
-    sendPasswordResetEmail,
-    sendPhoneVerificationCode,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  sendPhoneVerificationCode,
 } from "../../lib/email.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
@@ -72,7 +72,7 @@ export class InactiveUserError extends AppError {
 
 export class BranchAdminNotApprovedError extends AppError {
   constructor() {
-    super(tr.APPLICATION_IS_UNDER_REVIEW, 403);
+    super(tr.BRANCH_IS_UNDER_REVIEW, 403);
     this.name = "BranchAdminNotApprovedError";
   }
 }
@@ -247,7 +247,25 @@ function toSafeUser(user) {
 
   if (safeUser.branchAdmin) {
     const { passwordHash: _hash, ...safeBranchAdmin } = safeUser.branchAdmin;
-    return { ...safeBranchAdmin, role: user.role };
+    return {
+      ...safeBranchAdmin,
+      role: user.role,
+      currentSubscription: {
+        plan: safeBranchAdmin.plan
+          ? {
+            id: safeBranchAdmin.plan.id,
+            name: safeBranchAdmin.plan.name,
+            price: safeBranchAdmin.plan.price,
+            maxStaff: safeBranchAdmin.plan.maxStaff,
+            maxServices: safeBranchAdmin.plan.maxServices,
+            loyaltyEnabled: safeBranchAdmin.plan.loyaltyEnabled,
+            offersEnabled: safeBranchAdmin.plan.offersEnabled,
+          }
+          : null,
+        isSubscriptionActive: safeBranchAdmin.isSubscriptionActive,
+        subscriptionStartedAt: safeBranchAdmin.subscriptionStartedAt,
+      },
+    };
   }
   return safeUser;
 }
@@ -277,7 +295,25 @@ export async function login(data, platform) {
 
   const user = await prisma.user.findUnique({
     where: { email, role },
-    include: { branchAdmin: role === Role.branch_admin ? true : false },
+    include: {
+      branchAdmin: role === Role.branch_admin
+        ? {
+          include: {
+            plan: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                maxStaff: true,
+                maxServices: true,
+                loyaltyEnabled: true,
+                offersEnabled: true,
+              },
+            },
+          },
+        }
+        : false,
+    },
   });
 
   const branchAdminRecord = !user
@@ -306,7 +342,7 @@ export async function login(data, platform) {
   if (user.role === Role.branch_admin) {
     if (
       !user.branchAdmin ||
-      user.branchAdmin.status !== ApplicationStatus.APPROVED
+      user.branchAdmin.status !== BranchStatus.APPROVED
     ) {
       throw new BranchAdminNotApprovedError();
     }

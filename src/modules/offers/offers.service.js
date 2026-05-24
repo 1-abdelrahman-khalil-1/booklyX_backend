@@ -1,11 +1,12 @@
 import {
-    ApplicationStatus,
+    BranchStatus,
     OfferDiscountType,
     ServiceApprovalStatus,
 } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
+import { ensureOffersEnabled } from "../../utils/subscriptionGuards.js";
 // Validation is now handled in offers.controller.js
 
 export class OffersValidationError extends AppError {
@@ -24,7 +25,7 @@ export class OfferNotFoundError extends AppError {
 
 export class BranchAdminNotFoundError extends AppError {
   constructor() {
-    super(tr.APPLICATION_NOT_FOUND, 404);
+    super(tr.BRANCH_NOT_FOUND, 404);
     this.name = "BranchAdminNotFoundError";
   }
 }
@@ -46,8 +47,8 @@ async function getApprovedBranchAdmin(branchAdminUserId) {
     throw new BranchAdminNotFoundError();
   }
 
-  if (branchAdmin.status !== ApplicationStatus.APPROVED) {
-    throw new OffersValidationError(tr.APPLICATION_IS_UNDER_REVIEW);
+  if (branchAdmin.status !== BranchStatus.APPROVED) {
+    throw new OffersValidationError(tr.BRANCH_IS_UNDER_REVIEW);
   }
 
   return branchAdmin;
@@ -101,6 +102,7 @@ function resolveDiscountAmount(basePrice, offer) {
 
 export async function createOffer(body, branchAdminUserId) {
   const branchAdmin = await getApprovedBranchAdmin(branchAdminUserId);
+  await ensureOffersEnabled(branchAdmin.id);
   const data = body;
   const serviceIds = await validateApprovedBranchServices(body.serviceIds, branchAdmin.id);
 
@@ -142,6 +144,7 @@ export async function createOffer(body, branchAdminUserId) {
 export async function updateOffer(id, body, branchAdminUserId) {
   const data = body;
   const branchAdmin = await getApprovedBranchAdmin(branchAdminUserId);
+  await ensureOffersEnabled(branchAdmin.id);
 
   const existingOffer = await prisma.offer.findFirst({
     where: {
@@ -230,6 +233,7 @@ export async function updateOffer(id, body, branchAdminUserId) {
 
 export async function toggleOffer(id, branchAdminUserId) {
   const branchAdmin = await getApprovedBranchAdmin(branchAdminUserId);
+  await ensureOffersEnabled(branchAdmin.id);
 
   const offer = await prisma.offer.findFirst({
     where: {
@@ -259,6 +263,7 @@ export async function toggleOffer(id, branchAdminUserId) {
 
 export async function listBranchOffers(branchAdminUserId) {
   const branchAdmin = await getApprovedBranchAdmin(branchAdminUserId);
+  await ensureOffersEnabled(branchAdmin.id);
 
   const offers = await prisma.offer.findMany({
     where: { branchId: branchAdmin.id },
@@ -288,10 +293,21 @@ export async function getValidOffersForService(serviceId, now = new Date()) {
     select: {
       id: true,
       status: true,
+      branch: {
+        select: {
+          status: true,
+          isSubscriptionActive: true,
+        },
+      },
     },
   });
 
-  if (!service || service.status !== ServiceApprovalStatus.APPROVED) {
+  if (
+    !service
+    || service.status !== ServiceApprovalStatus.APPROVED
+    || service.branch.status !== BranchStatus.APPROVED
+    || !service.branch.isSubscriptionActive
+  ) {
     return [];
   }
 
@@ -305,6 +321,10 @@ export async function getValidOffersForService(serviceId, now = new Date()) {
           serviceId,
           service: {
             status: ServiceApprovalStatus.APPROVED,
+            branch: {
+              status: BranchStatus.APPROVED,
+              isSubscriptionActive: true,
+            },
           },
         },
       },
@@ -333,10 +353,21 @@ export async function calculateBestOfferForService(serviceId, now = new Date()) 
       id: true,
       price: true,
       status: true,
+      branch: {
+        select: {
+          status: true,
+          isSubscriptionActive: true,
+        },
+      },
     },
   });
 
-  if (!service || service.status !== ServiceApprovalStatus.APPROVED) {
+  if (
+    !service
+    || service.status !== ServiceApprovalStatus.APPROVED
+    || service.branch.status !== BranchStatus.APPROVED
+    || !service.branch.isSubscriptionActive
+  ) {
     throw new OffersValidationError(tr.SERVICE_NOT_FOUND);
   }
 

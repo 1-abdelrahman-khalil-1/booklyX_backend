@@ -522,7 +522,7 @@ Error example (`400`):
 
 ### POST `/branch-admin/apply`
 
-Initial endpoint for branch_admin application.
+Initial endpoint for branch_admin submission.
 
 Request body:
 
@@ -551,7 +551,7 @@ Success example (`201`):
 {
   "status": 201,
   "error": false,
-  "message": "Your application has been submitted successfully. Please verify your email.",
+  "message": "Your branch submission has been submitted successfully. Please verify your email.",
   "data": null
 }
 ```
@@ -560,7 +560,7 @@ Success example (`201`):
 
 ### POST `/branch-admin/verify-email`
 
-Verifies application email.
+Verifies branch email.
 
 Request body:
 
@@ -586,7 +586,7 @@ Success example (`200`):
 
 ### POST `/branch-admin/verify-phone`
 
-Verifies application phone. Moves to `PENDING_APPROVAL`.
+Verifies branch phone. Moves to `PENDING_APPROVAL`.
 
 Request body:
 
@@ -603,7 +603,7 @@ Success example (`200`):
 {
   "status": 200,
   "error": false,
-  "message": "Your application has been verified and is now under review by our team.",
+  "message": "Your branch submission has been verified and is now under review by our team.",
   "data": null
 }
 ```
@@ -612,7 +612,7 @@ Success example (`200`):
 
 ### POST `/branch-admin/resend-code`
 
-Resends OTP for application.
+Resends OTP for branch submission.
 
 Request body:
 
@@ -837,9 +837,9 @@ Deletes an availability slot.
 
 Requires `super_admin` role.
 
-### GET `/admin/applications`
+### GET `/admin/branches`
 
-List all applications.
+List all branches.
 
 Success example (`200`):
 
@@ -847,7 +847,7 @@ Success example (`200`):
 {
   "status": 200,
   "error": false,
-  "message": "Applications retrieved successfully",
+  "message": "Branches retrieved successfully",
   "data": [
     {
       "id": 1,
@@ -861,9 +861,9 @@ Success example (`200`):
 
 ---
 
-### GET `/admin/applications/:id`
+### GET `/admin/branches/:id`
 
-Get application details by ID.
+Get branch details by ID.
 
 Success example (`200`):
 
@@ -871,7 +871,7 @@ Success example (`200`):
 {
   "status": 200,
   "error": false,
-  "message": "Application retrieved successfully.",
+  "message": "Branch retrieved successfully.",
   "data": {
     "id": 1,
     "ownerName": "Mahmoud Ibrahim",
@@ -883,9 +883,9 @@ Success example (`200`):
 
 ---
 
-### POST `/admin/applications/:id/approve`
+### POST `/admin/branches/:id/approve`
 
-Approve application and create User.
+Approve branch and create User.
 
 Success example (`200`):
 
@@ -893,7 +893,7 @@ Success example (`200`):
 {
   "status": 200,
   "error": false,
-  "message": "Application approved successfully.",
+  "message": "Branch approved successfully.",
   "data": {
     "id": 10,
     "email": "mahmoud.ibrahim@booklyx.com",
@@ -904,9 +904,9 @@ Success example (`200`):
 
 ---
 
-### POST `/admin/applications/:id/reject`
+### POST `/admin/branches/:id/reject`
 
-Reject application with reason.
+Reject branch with reason.
 
 Request body:
 
@@ -986,7 +986,7 @@ Success example (`200`):
      "role": "super_admin"
    }
    ```
-3. Use returned token in admin-only endpoints like `GET /admin/applications`
+3. Use returned token in admin-only endpoints like `GET /admin/branches`
 
 ## 9) Postman files in repo
 

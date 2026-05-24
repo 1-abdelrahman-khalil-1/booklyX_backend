@@ -1,27 +1,142 @@
 import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    jest
 } from "@jest/globals";
 import bcrypt from "bcrypt";
 import {
-  ApplicationStatus,
-  Role,
-  StaffRole,
-  UserStatus,
+    BranchStatus,
+    Role,
+    StaffRole,
+    UserStatus,
 } from "../../../generated/prisma/client.js";
 import prisma from "../../../lib/prisma.js";
 import {
-  ApplicationNotFound,
-  BranchAdminValidationError,
-  createStaff,
-  deleteStaff,
-  StaffNotFoundError,
-  updateBranchAdminProfile,
+    activateSubscription,
+    BranchAdminValidationError,
+    BranchNotFoundError,
+    createStaff,
+    deleteStaff,
+    InactivePlanError,
+    InvalidPlanError,
+    StaffNotFoundError,
+    submitBranch,
+    SubscriptionActivationForbiddenError,
+    SubscriptionAlreadyActiveError,
+    updateBranchAdminProfile,
 } from "../branch_admin.service.js";
+import {
+    applySchema,
+    validateBranchAdminInput,
+} from "../branch_admin.validation.js";
+
+const validBranchSubmissionData = {
+  planId: 1,
+  ownerName: "Mahmoud Ibrahim",
+  email: "mahmoud.branch@example.com",
+  phone: "01012345678",
+  password: "password123",
+  businessName: "Hassan Beauty Salon",
+  category: "SPA",
+  description: "Premium beauty and skincare services.",
+  commercialRegisterNumber: "CR-2026-010",
+  taxId: "TAX-2026-010",
+  city: "Cairo",
+  district: "Nasr City",
+  address: "12 Makram Ebeid Street",
+  latitude: 30.0626,
+  longitude: 31.3368,
+};
+
+describe("Branch Admin Service - submitBranch", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should throw BranchAdminValidationError when planId is missing or invalid", () => {
+    expect(() =>
+      validateBranchAdminInput(applySchema, {
+        ...validBranchSubmissionData,
+        planId: undefined,
+      }),
+    ).toThrow(BranchAdminValidationError);
+
+    expect(() =>
+      validateBranchAdminInput(applySchema, {
+        ...validBranchSubmissionData,
+        planId: "abc",
+      }),
+    ).toThrow(BranchAdminValidationError);
+  });
+
+  it("should throw InvalidPlanError when selected plan does not exist", async () => {
+    jest.spyOn(prisma.plan, "findUnique").mockResolvedValue(null);
+
+    await expect(submitBranch(validBranchSubmissionData)).rejects.toThrow(
+      InvalidPlanError,
+    );
+  });
+
+  it("should throw InactivePlanError when selected plan is inactive", async () => {
+    jest.spyOn(prisma.plan, "findUnique").mockResolvedValue({
+      id: validBranchSubmissionData.planId,
+      isActive: false,
+    });
+
+    await expect(submitBranch(validBranchSubmissionData)).rejects.toThrow(
+      InactivePlanError,
+    );
+  });
+
+  it("should create branch submission with planId without activating subscription or returning plan relation", async () => {
+    const {
+      password: _password,
+      ...branchFields
+    } = validBranchSubmissionData;
+    const createdBranch = {
+      id: 10,
+      ...branchFields,
+      passwordHash: "hashed-password",
+      userId: null,
+      status: BranchStatus.PENDING_VERIFICATION,
+      emailVerified: false,
+      phoneVerified: false,
+      isSubscriptionActive: false,
+      subscriptionStartedAt: null,
+    };
+
+    jest.spyOn(prisma.plan, "findUnique").mockResolvedValue({
+      id: validBranchSubmissionData.planId,
+      isActive: true,
+    });
+    jest.spyOn(bcrypt, "hash").mockResolvedValue("hashed-password");
+    jest.spyOn(prisma, "$transaction").mockImplementation(async (callback) => callback(prisma));
+    jest.spyOn(prisma.user, "findFirst").mockResolvedValue(null);
+    jest.spyOn(prisma.branchAdmin, "findMany").mockResolvedValue([]);
+    const createSpy = jest.spyOn(prisma.branchAdmin, "create").mockResolvedValue(createdBranch);
+    jest.spyOn(prisma.branchVerificationCode, "deleteMany").mockResolvedValue({ count: 0 });
+    jest.spyOn(prisma.branchVerificationCode, "create").mockResolvedValue({ id: 1 });
+
+    const result = await submitBranch(validBranchSubmissionData);
+
+    const createData = createSpy.mock.calls[0][0].data;
+    expect(createData.planId).toBe(validBranchSubmissionData.planId);
+    expect(createData).not.toHaveProperty("isSubscriptionActive");
+    expect(createData).not.toHaveProperty("subscriptionStartedAt");
+    expect(result.branch.planId).toBe(validBranchSubmissionData.planId);
+    expect(result.branch).not.toHaveProperty("passwordHash");
+    expect(result.branch).not.toHaveProperty("plan");
+    expect(result.branch.isSubscriptionActive).toBe(false);
+    expect(result.branch.subscriptionStartedAt).toBeNull();
+  });
+});
 
 describe("Branch Admin Service - createStaff", () => {
   beforeEach(() => {
@@ -56,18 +171,18 @@ describe("Branch Admin Service - createStaff", () => {
     ).rejects.toThrow(BranchAdminValidationError);
   });
 
-  it("should throw ApplicationNotFound if branch admin does not exist", async () => {
+  it("should throw BranchNotFoundError if branch admin does not exist", async () => {
     jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(null);
     await expect(
       createStaff(validStaffData, branchAdminUserId),
-    ).rejects.toThrow(ApplicationNotFound);
+    ).rejects.toThrow(BranchNotFoundError);
   });
 
   it("should throw BranchAdminValidationError if branch admin is not approved", async () => {
     jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({
       id: 1,
       userId: branchAdminUserId,
-      status: ApplicationStatus.PENDING_APPROVAL,
+      status: BranchStatus.PENDING_APPROVAL,
     });
     await expect(
       createStaff(validStaffData, branchAdminUserId),
@@ -78,7 +193,15 @@ describe("Branch Admin Service - createStaff", () => {
     const mockBranchAdmin = {
       id: 1,
       userId: branchAdminUserId,
-      status: ApplicationStatus.APPROVED,
+      status: BranchStatus.APPROVED,
+      isSubscriptionActive: true,
+      plan: {
+        id: 1,
+        maxStaff: 10,
+        maxServices: 20,
+        offersEnabled: true,
+        loyaltyEnabled: true,
+      },
     };
 
     const mockCreatedUser = {
@@ -179,6 +302,54 @@ describe("Branch Admin Service - createStaff", () => {
   });
 });
 
+describe("Branch Admin Service - activateSubscription", () => {
+  const branchAdminUserId = 1;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should throw BranchNotFoundError when branch admin is missing", async () => {
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(null);
+
+    await expect(activateSubscription(branchAdminUserId)).rejects.toThrow(
+      BranchNotFoundError,
+    );
+  });
+
+  it("should throw SubscriptionActivationForbiddenError when branch is not approved", async () => {
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({
+      id: 1,
+      status: BranchStatus.PENDING_APPROVAL,
+      isSubscriptionActive: false,
+      planId: 1,
+      plan: { id: 1, name: "Starter", price: 199, maxStaff: 3, maxServices: 10, loyaltyEnabled: false, offersEnabled: false },
+    });
+
+    await expect(activateSubscription(branchAdminUserId)).rejects.toThrow(
+      SubscriptionActivationForbiddenError,
+    );
+  });
+
+  it("should throw SubscriptionAlreadyActiveError when already active", async () => {
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({
+      id: 1,
+      status: BranchStatus.APPROVED,
+      isSubscriptionActive: true,
+      planId: 1,
+      plan: { id: 1, name: "Starter", price: 199, maxStaff: 3, maxServices: 10, loyaltyEnabled: false, offersEnabled: false },
+    });
+
+    await expect(activateSubscription(branchAdminUserId)).rejects.toThrow(
+      SubscriptionAlreadyActiveError,
+    );
+  });
+});
+
 describe("Branch Admin Service - deleteStaff", () => {
   const branchAdminUserId = 1;
 
@@ -190,11 +361,11 @@ describe("Branch Admin Service - deleteStaff", () => {
     jest.restoreAllMocks();
   });
 
-  it("should throw ApplicationNotFound if branch admin does not exist", async () => {
+  it("should throw BranchNotFoundError if branch admin does not exist", async () => {
     jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(null);
 
     await expect(deleteStaff({ id: 8 }, branchAdminUserId)).rejects.toThrow(
-      ApplicationNotFound,
+      BranchNotFoundError,
     );
   });
 
@@ -239,12 +410,12 @@ describe("Branch Admin Service - updateBranchAdminProfile", () => {
     jest.restoreAllMocks();
   });
 
-  it("should throw ApplicationNotFound if branch admin does not exist", async () => {
+  it("should throw BranchNotFoundError if branch admin does not exist", async () => {
     jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(null);
 
     await expect(
       updateBranchAdminProfile({ name: "New Name" }, branchAdminUserId),
-    ).rejects.toThrow(ApplicationNotFound);
+    ).rejects.toThrow(BranchNotFoundError);
   });
 
   it("should update branch admin profile and password", async () => {
@@ -275,7 +446,7 @@ describe("Branch Admin Service - updateBranchAdminProfile", () => {
       address: "New Address",
       city: "Cairo",
       district: "Nasr City",
-      status: ApplicationStatus.APPROVED,
+      status: BranchStatus.APPROVED,
       updatedAt: new Date(),
     });
 

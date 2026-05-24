@@ -6,7 +6,7 @@ import {
     jest,
 } from "@jest/globals";
 import {
-    ApplicationStatus,
+    BranchStatus,
     OfferDiscountType,
     ServiceApprovalStatus,
 } from "../../../generated/prisma/client.js";
@@ -21,6 +21,13 @@ import {
 describe("Offers Service", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default branch admin mock: approved and subscription active with offers enabled
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({
+      id: 9,
+      status: BranchStatus.APPROVED,
+      isSubscriptionActive: true,
+      plan: { offersEnabled: true },
+    });
   });
 
   it("should create offer when all services are approved and belong to branch", async () => {
@@ -37,7 +44,9 @@ describe("Offers Service", () => {
 
     jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({
       id: 9,
-      status: ApplicationStatus.APPROVED,
+      status: BranchStatus.APPROVED,
+      isSubscriptionActive: true,
+      plan: { offersEnabled: true },
     });
 
     jest.spyOn(prisma.service, "findMany").mockResolvedValue([{ id: 10 }, { id: 11 }]);
@@ -89,6 +98,7 @@ describe("Offers Service", () => {
       id: 50,
       price: 200,
       status: ServiceApprovalStatus.APPROVED,
+      branch: { status: BranchStatus.APPROVED, isSubscriptionActive: true },
     });
 
     jest.spyOn(prisma.offer, "findMany").mockResolvedValue([

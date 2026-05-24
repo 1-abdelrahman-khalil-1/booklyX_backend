@@ -3,29 +3,32 @@ import { Role } from "../../generated/prisma/client.js";
 import { authenticate, authorize } from "../../middleware/authenticate.js";
 import { documentsUpload, imageOnlyUpload } from "../../middleware/upload.js";
 import {
-    addServiceCategoryHandler,
-    applyHandler,
-    createServiceHandler,
-    createStaffHandler,
-    deleteServiceHandler,
-    deleteStaffHandler,
-    getBranchAdminProfileHandler,
-    getBranchPublicProfileHandler,
-    getMyServiceCategoriesHandler,
-    getMyServicesHandler,
-    getMyStaffByIdHandler,
-    getMyStaffHandler,
-    resendCodeHandler,
-    updateBranchAdminProfileHandler,
-    updateServiceHandler,
-    updateStaffHandler,
-    verifyEmailHandler,
-    verifyPhoneHandler,
+  activateSubscriptionHandler,
+  addServiceCategoryHandler,
+  applyHandler,
+  createServiceHandler,
+  createStaffHandler,
+  deleteServiceHandler,
+  deleteStaffHandler,
+  getBranchAdminProfileHandler,
+  getBranchDashboardStatsHandler,
+  getBranchPublicProfileHandler,
+  getMyServiceCategoriesHandler,
+  getMyServicesHandler,
+  getMyStaffByIdHandler,
+  getMyStaffHandler,
+  getStaffEarningsHandler,
+  resendCodeHandler,
+  updateBranchAdminProfileHandler,
+  updateServiceHandler,
+  updateStaffHandler,
+  verifyEmailHandler,
+  verifyPhoneHandler,
 } from "./branch_admin.controller.js";
 
 const branchAdminRouter = Router();
 
-const applicationUploadFields = documentsUpload.fields([
+const branchSubmissionUploadFields = documentsUpload.fields([
   { name: "logo", maxCount: 1 },
   { name: "taxCertificate", maxCount: 1 },
   { name: "commercialRegister", maxCount: 1 },
@@ -36,13 +39,20 @@ const applicationUploadFields = documentsUpload.fields([
 const serviceUploadField = imageOnlyUpload.fields([{ name: "image", maxCount: 1 }]);
 const profileUploadField = imageOnlyUpload.fields([{ name: "logo", maxCount: 1 }]);
 
-branchAdminRouter.post("/apply", applicationUploadFields, applyHandler);
+branchAdminRouter.post("/apply", branchSubmissionUploadFields, applyHandler);
 
 branchAdminRouter.post("/verify-email", verifyEmailHandler);
 
 branchAdminRouter.post("/verify-phone", verifyPhoneHandler);
 
 branchAdminRouter.post("/resend-code", resendCodeHandler);
+
+branchAdminRouter.post(
+  "/subscription/activate",
+  authenticate,
+  authorize(Role.branch_admin),
+  activateSubscriptionHandler,
+);
 
 branchAdminRouter.get(
   "/profile",
@@ -129,6 +139,20 @@ branchAdminRouter.get(
   authenticate,
   authorize(Role.branch_admin),
   getMyServicesHandler,
+);
+
+branchAdminRouter.get(
+  "/analytics/dashboard",
+  authenticate,
+  authorize(Role.branch_admin),
+  getBranchDashboardStatsHandler,
+);
+
+branchAdminRouter.get(
+  "/analytics/staff-earnings",
+  authenticate,
+  authorize(Role.branch_admin),
+  getStaffEarningsHandler,
 );
 
 // Backward-compatible alias.

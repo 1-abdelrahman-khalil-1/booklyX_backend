@@ -25,9 +25,22 @@ export const idParamSchema = z.object({
     id: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
 });
 
-export const listApplicationsQuerySchema = z.object({
+export const paymentIdParamSchema = z.object({
+    paymentId: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
+});
+
+export const listBranchesQuerySchema = z.object({
     status: z.enum(["PENDING_APPROVAL", "APPROVED", "REJECTED"]).optional(),
 });
+
+export const listServicesQuerySchema = z.object({
+    status: z.enum(["PENDING_APPROVAL", "APPROVED", "REJECTED"]).optional(),
+});
+
+export const periodQuerySchema = z.object({
+    period: z.enum(["today", "this_month", "this_year"]).optional(),
+});
+
 export const rejectReasonSchema = z.object({
     reason: z
         .string()
@@ -40,3 +53,4 @@ export const rejectReasonSchema = z.object({
 export const includeCodesQuerySchema = z.object({
     includeCodes: z.enum(["true", "false"]).optional(),
 });
+

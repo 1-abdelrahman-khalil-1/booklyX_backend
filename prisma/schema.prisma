@@ -44,7 +44,7 @@ enum VerificationType {
   PASSWORD_RESET
 }
 
-enum ApplicationStatus {
+enum BranchStatus {
   PENDING_VERIFICATION
   PENDING_APPROVAL
   APPROVED
@@ -57,7 +57,7 @@ enum BusinessCategory {
   BARBER
 }
 
-enum ApplicationDocumentType {
+enum BranchDocumentType {
   TAX_CERTIFICATE
   COMMERCIAL_REGISTER
   NATIONAL_ID
@@ -86,6 +86,16 @@ enum AvailabilityStatus {
 enum OfferDiscountType {
   PERCENTAGE
   FIXED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum PaymentMethod {
+  CARD
 }
 
 // ─── User & Verification ─
@@ -155,9 +165,25 @@ model Staff {
   @@map("Staff")
 }
 
+model Plan {
+  id             Int           @id @default(autoincrement())
+  name           String        @unique
+  price          Decimal       @db.Decimal(10, 2)
+  maxStaff       Int?
+  maxServices    Int?
+  loyaltyEnabled Boolean       @default(false)
+  offersEnabled  Boolean       @default(false)
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  branches       BranchAdmin[]
+  subscriptionPayments SubscriptionPayment[]
+}
+
 model BranchAdmin {
   id                       Int                           @id @default(autoincrement())
   userId                   Int?                          @unique
+  planId                   Int
   ownerName                String
   email                    String
   phone                    String
@@ -178,24 +204,29 @@ model BranchAdmin {
   operatingHours           String?
   latitude                 Float
   longitude                Float
-  status                   ApplicationStatus             @default(PENDING_VERIFICATION)
+  status                   BranchStatus                  @default(PENDING_VERIFICATION)
   emailVerified            Boolean                       @default(false)
   phoneVerified            Boolean                       @default(false)
+  isSubscriptionActive     Boolean                       @default(false)
+  subscriptionStartedAt    DateTime?
   rejectionReason          String?
   createdAt                DateTime                      @default(now())
   updatedAt                DateTime                      @updatedAt
-  verificationCodes        ApplicationVerificationCode[]
-  documents                ApplicationDocument[]
+  verificationCodes        BranchVerificationCode[]
+  documents                BranchDocument[]
   serviceCategories        ServiceCategory[]
   services                 Service[]
   offers                   Offer[]
   staffs                   Staff[]
   appointments             Appointment[]
   reviews                  Review[]
+  subscriptionPayments     SubscriptionPayment[]
   user                     User?                         @relation(fields: [userId], references: [id])
+  plan                     Plan                          @relation(fields: [planId], references: [id])
   averageRating            Float                         @default(0)
   reviewCount              Int                           @default(0)
 
+  @@index([planId])
   @@index([status])
   @@index([email])
   @@index([phone])
@@ -230,9 +261,9 @@ model RefreshToken {
   @@index([userId])
 }
 
-model ApplicationVerificationCode {
+model BranchVerificationCode {
   id            Int              @id @default(autoincrement())
-  applicationId Int
+  branchAdminId Int
   type          VerificationType
   codeHash      String
   expiresAt     DateTime
@@ -240,21 +271,21 @@ model ApplicationVerificationCode {
   attempts      Int              @default(0)
   createdAt     DateTime         @default(now())
 
-  application BranchAdmin @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  branchAdmin BranchAdmin @relation(fields: [branchAdminId], references: [id], onDelete: Cascade)
 
-  @@index([applicationId, type])
+  @@index([branchAdminId, type])
 }
 
-model ApplicationDocument {
+model BranchDocument {
   id            Int                     @id @default(autoincrement())
-  applicationId Int
-  type          ApplicationDocumentType
+  branchAdminId Int
+  type          BranchDocumentType
   fileUrl       String
   createdAt     DateTime                @default(now())
 
-  application BranchAdmin @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  branchAdmin BranchAdmin @relation(fields: [branchAdminId], references: [id], onDelete: Cascade)
 
-  @@index([applicationId])
+  @@index([branchAdminId])
 }
 
 model StaffProfessionalProfile {
@@ -321,7 +352,6 @@ model Service {
   description       String?
   price             Float
   durationMinutes   Int
-  duration          Int?
   imageUrl          String?
   status            ServiceApprovalStatus @default(PENDING_APPROVAL)
   rejectionReason   String?
@@ -465,4 +495,23 @@ model SystemCounter {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model SubscriptionPayment {
+  id            Int           @id @default(autoincrement())
+  branchId      Int
+  planId        Int
+  amount        Decimal       @db.Decimal(10, 2)
+  status        PaymentStatus
+  paymentMethod PaymentMethod @default(CARD)
+  paidAt        DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+
+  branch BranchAdmin @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  plan   Plan        @relation(fields: [planId], references: [id])
+
+  @@index([branchId])
+  @@index([planId])
+  @@index([status])
+  @@index([paidAt])
 }

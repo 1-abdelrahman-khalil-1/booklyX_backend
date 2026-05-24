@@ -2,13 +2,17 @@ import { Router } from "express";
 import { Role } from "../../generated/prisma/client.js";
 import { authenticate, authorize } from "../../middleware/authenticate.js";
 import {
-    approveApplicationHandler,
+    approveBranchHandler,
     approveServiceHandler,
-    getApplicationDetailHandler,
+    getBranchDetailsHandler,
+    getBranchPaymentDetailsHandler,
+    getPlatformAnalyticsHandler,
+    getServiceDetailsHandler,
     getUserProfileHandler,
-    listApplicationsHandler,
-    listPendingServicesHandler,
-    rejectApplicationHandler,
+    listBranchPaymentsHandler,
+    listBranchesHandler,
+    listServicesHandler,
+    rejectBranchHandler,
     rejectServiceHandler,
 } from "./admin.controller.js";
 
@@ -19,20 +23,28 @@ const adminRouter = Router();
  */
 adminRouter.use(authenticate, authorize(Role.super_admin));
 
-adminRouter.get("/applications", listApplicationsHandler);
+adminRouter.get("/branches", listBranchesHandler);
 
 adminRouter.get("/users/:id", getUserProfileHandler);
 
-adminRouter.get("/applications/:id", getApplicationDetailHandler);
+adminRouter.get("/branches/:id", getBranchDetailsHandler);
 
-adminRouter.post("/applications/:id/approve", approveApplicationHandler);
+adminRouter.post("/branches/:id/approve", approveBranchHandler);
 
-adminRouter.post("/applications/:id/reject", rejectApplicationHandler);
+adminRouter.post("/branches/:id/reject", rejectBranchHandler);
 
-adminRouter.get("/services/pending", listPendingServicesHandler);
+adminRouter.get("/services", listServicesHandler);
+
+adminRouter.get("/services/:id", getServiceDetailsHandler);
 
 adminRouter.post("/services/:id/approve", approveServiceHandler);
 
 adminRouter.post("/services/:id/reject", rejectServiceHandler);
+
+adminRouter.get("/analytics/platform", getPlatformAnalyticsHandler);
+
+adminRouter.get("/payments", listBranchPaymentsHandler);
+
+adminRouter.get("/payments/:paymentId", getBranchPaymentDetailsHandler);
 
 export default adminRouter;

@@ -1,18 +1,20 @@
 import bcrypt from "bcrypt";
 import dayjs from "dayjs";
 import {
-  ApplicationDocumentType,
-  ApplicationStatus,
-  AppointmentStatus,
-  AvailabilityStatus,
-  BusinessCategory,
-  OfferDiscountType,
-  PrismaClient,
-  Role,
-  ServiceApprovalStatus,
-  StaffRole,
-  UserStatus,
-  VerificationType,
+    AppointmentStatus,
+    AvailabilityStatus,
+    BranchDocumentType,
+    BranchStatus,
+    BusinessCategory,
+    OfferDiscountType,
+    PaymentMethod,
+    PaymentStatus,
+    PrismaClient,
+    Role,
+    ServiceApprovalStatus,
+    StaffRole,
+    UserStatus,
+    VerificationType,
 } from "../src/generated/prisma/client.js";
 
 const SUPER_ADMIN_EMAIL = "admin@booklyx.com";
@@ -22,25 +24,55 @@ const SUPER_ADMIN_NAME = "Super Admin";
 const SALT_ROUNDS = 10;
 const LOGIN_COUNTER_KEY = "login";
 
+const DEFAULT_PLANS = [
+  {
+    name: "Starter",
+    price: "199.00",
+    maxStaff: 3,
+    maxServices: 10,
+    loyaltyEnabled: false,
+    offersEnabled: false,
+    isActive: true,
+  },
+  {
+    name: "Pro",
+    price: "499.00",
+    maxStaff: 15,
+    maxServices: 50,
+    loyaltyEnabled: true,
+    offersEnabled: true,
+    isActive: true,
+  },
+  {
+    name: "Enterprise",
+    price: "1499.00",
+    maxStaff: null,
+    maxServices: null,
+    loyaltyEnabled: true,
+    offersEnabled: true,
+    isActive: true,
+  },
+];
+
 // ===== CENTRALIZED ASSETS MANAGEMENT =====
 const ASSETS = {
   profileImages: {
     doctors: [
-      "https://images.pexels.com/photos/5452201/pexels-photo-5452201.jpeg",
-      "https://images.pexels.com/photos/6129507/pexels-photo-6129507.jpeg",
-      "https://images.pexels.com/photos/8460372/pexels-photo-8460372.jpeg",
+      "https://images.pexels.com/photos/32160037/pexels-photo-32160037.jpeg",   // male doctor portrait
+      "https://images.pexels.com/photos/17993619/pexels-photo-17993619.jpeg",  // male doctor with tablet
+      "https://images.pexels.com/photos/27298085/pexels-photo-27298085.jpeg",  // professional male doctor
     ],
 
     barbers: [
-      "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg",
-      "https://images.pexels.com/photos/7697393/pexels-photo-7697393.jpeg",
-      "https://images.pexels.com/photos/3992874/pexels-photo-3992874.jpeg",
+      "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg",    // male barber haircut
+      "https://images.pexels.com/photos/7697393/pexels-photo-7697393.jpeg",    // male barber working
+      "https://images.pexels.com/photos/7697383/pexels-photo-7697383.jpeg",    // male barber beard
     ],
 
     spa: [
-      "https://images.pexels.com/photos/3985325/pexels-photo-3985325.jpeg",
-      "https://images.pexels.com/photos/6621469/pexels-photo-6621469.jpeg",
-      "https://images.pexels.com/photos/3762879/pexels-photo-3762879.jpeg",
+      "https://images.pexels.com/photos/6129500/pexels-photo-6129500.jpeg",     // male therapist professional
+      "https://images.pexels.com/photos/7233264/pexels-photo-7233264.jpeg",     // male massage therapist
+      "https://images.pexels.com/photos/3775536/pexels-photo-3775536.jpeg",     // male spa specialist
     ],
   },
 
@@ -54,97 +86,77 @@ const ASSETS = {
     barber: [
       "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg",
       "https://images.pexels.com/photos/7697393/pexels-photo-7697393.jpeg",
-      "https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg",
+      "https://images.pexels.com/photos/7697383/pexels-photo-7697383.jpeg",
     ],
 
     spa: [
-      "https://images.pexels.com/photos/3757942/pexels-photo-3757942.jpeg",
-      "https://images.pexels.com/photos/6621469/pexels-photo-6621469.jpeg",
-      "https://images.pexels.com/photos/3985331/pexels-photo-3985331.jpeg",
+      "https://images.pexels.com/photos/6129500/pexels-photo-6129500.jpeg",
+      "https://images.pexels.com/photos/7233264/pexels-photo-7233264.jpeg",
+      "https://images.pexels.com/photos/3775536/pexels-photo-3775536.jpeg",
     ],
 
     medical: [
-      "https://images.pexels.com/photos/3845756/pexels-photo-3845756.jpeg",
-      "https://images.pexels.com/photos/7581572/pexels-photo-7581572.jpeg",
-      "https://images.pexels.com/photos/8376233/pexels-photo-8376233.jpeg",
+      "https://images.pexels.com/photos/32160037/pexels-photo-32160037.jpeg",
+      "https://images.pexels.com/photos/17993619/pexels-photo-17993619.jpeg",
+      "https://images.pexels.com/photos/27298085/pexels-photo-27298085.jpeg",
+      "https://images.pexels.com/photos/6627801/pexels-photo-6627801.jpeg",     // male dentist
     ],
   },
 
   serviceImages: {
     barber: [
-      // Haircut
-      "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg",
-
-      // Beard trim
-      "https://images.pexels.com/photos/7697393/pexels-photo-7697393.jpeg",
-
-      // Hair styling
-      "https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg",
-
-      // Barber tools
-      "https://images.pexels.com/photos/1319461/pexels-photo-1319461.jpeg",
+      "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg",     // male haircut
+      "https://images.pexels.com/photos/7697393/pexels-photo-7697393.jpeg",     // male beard trim
+      "https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg",     // male styling
+      "https://images.pexels.com/photos/1319461/pexels-photo-1319461.jpeg",     // male barber shop
     ],
 
     spa: [
-      // Facial care
-      "https://images.pexels.com/photos/3985325/pexels-photo-3985325.jpeg",
-
-      // Massage
-      "https://images.pexels.com/photos/3757942/pexels-photo-3757942.jpeg",
-
-      // Skin care
-      "https://images.pexels.com/photos/6621469/pexels-photo-6621469.jpeg",
-
-      // Spa relaxing
-      "https://images.pexels.com/photos/3764011/pexels-photo-3764011.jpeg",
+      "https://images.pexels.com/photos/6129500/pexels-photo-6129500.jpeg",     // male spa therapist
+      "https://images.pexels.com/photos/7233264/pexels-photo-7233264.jpeg",     // male massage therapist
+      "https://images.pexels.com/photos/3775536/pexels-photo-3775536.jpeg",     // male wellness specialist
+      "https://images.pexels.com/photos/5568408/pexels-photo-5568408.jpeg",     // male massage session
     ],
 
     medical: [
-      // Dental
-      "https://images.pexels.com/photos/3845756/pexels-photo-3845756.jpeg",
-
-      // Dermatology
-      "https://images.pexels.com/photos/7581572/pexels-photo-7581572.jpeg",
-
-      // Physiotherapy
-      "https://images.pexels.com/photos/4506105/pexels-photo-4506105.jpeg",
-
-      // Medical consultation
-      "https://images.pexels.com/photos/8376233/pexels-photo-8376233.jpeg",
+      "https://images.pexels.com/photos/32160037/pexels-photo-32160037.jpeg",     // male doctor portrait
+      "https://images.pexels.com/photos/17993619/pexels-photo-17993619.jpeg",     // male doctor with tablet
+      "https://images.pexels.com/photos/27298085/pexels-photo-27298085.jpeg",     // male doctor in clinic
+      "https://images.pexels.com/photos/6627801/pexels-photo-6627801.jpeg",     // male dentist
     ],
   },
 
   businessImages: {
     barber: [
-      "https://images.pexels.com/photos/1319461/pexels-photo-1319461.jpeg",
-      "https://images.pexels.com/photos/3992874/pexels-photo-3992874.jpeg",
+      "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg",
+      "https://images.pexels.com/photos/7697393/pexels-photo-7697393.jpeg",
     ],
 
     spa: [
-      "https://images.pexels.com/photos/3757942/pexels-photo-3757942.jpeg",
-      "https://images.pexels.com/photos/6621469/pexels-photo-6621469.jpeg",
+      "https://images.pexels.com/photos/6129500/pexels-photo-6129500.jpeg",
+      "https://images.pexels.com/photos/7233264/pexels-photo-7233264.jpeg",
     ],
 
     medical: [
-      "https://images.pexels.com/photos/3845756/pexels-photo-3845756.jpeg",
-      "https://images.pexels.com/photos/8376233/pexels-photo-8376233.jpeg",
+      "https://images.pexels.com/photos/32160037/pexels-photo-32160037.jpeg",
+      "https://images.pexels.com/photos/6627801/pexels-photo-6627801.jpeg",
     ],
   },
 
   offerImages: {
     barber: [
-      "https://images.pexels.com/photos/7697393/pexels-photo-7697393.jpeg",
       "https://images.pexels.com/photos/1813272/pexels-photo-1813272.jpeg",
+      "https://images.pexels.com/photos/7697393/pexels-photo-7697393.jpeg",
     ],
 
     spa: [
-      "https://images.pexels.com/photos/3985325/pexels-photo-3985325.jpeg",
-      "https://images.pexels.com/photos/3757942/pexels-photo-3757942.jpeg",
+      "https://images.pexels.com/photos/6129500/pexels-photo-6129500.jpeg",
+      "https://images.pexels.com/photos/7233264/pexels-photo-7233264.jpeg",
     ],
 
     medical: [
-      "https://images.pexels.com/photos/3845756/pexels-photo-3845756.jpeg",
-      "https://images.pexels.com/photos/7581572/pexels-photo-7581572.jpeg",
+      "https://images.pexels.com/photos/32160037/pexels-photo-32160037.jpeg",
+      "https://images.pexels.com/photos/6627801/pexels-photo-6627801.jpeg",
     ],
   },
 };
@@ -168,7 +180,7 @@ function getStaffProfileImage(role, index = 0) {
   }
 }
 
-function getApplicationDocumentUrl(type) {
+function getBranchDocumentUrl(type) {
   return pickRandom(ASSETS.certificates);
 }
 
@@ -204,30 +216,30 @@ const BUSINESS_CATEGORIES = [
   BusinessCategory.BARBER,
 ];
 
-const BRANCH_APPLICATION_GROUPS = [
+const BRANCH_SUBMISSION_GROUPS = [
   {
-    status: ApplicationStatus.PENDING_VERIFICATION,
+    status: BranchStatus.PENDING_VERIFICATION,
     slug: "verification",
     title: "Verification",
     code: "VER",
     rejectionReason: null,
   },
   {
-    status: ApplicationStatus.PENDING_APPROVAL,
+    status: BranchStatus.PENDING_APPROVAL,
     slug: "approval",
     title: "Approval",
     code: "APR",
     rejectionReason: null,
   },
   {
-    status: ApplicationStatus.APPROVED,
+    status: BranchStatus.APPROVED,
     slug: "approved",
     title: "Approved",
     code: "APD",
     rejectionReason: null,
   },
   {
-    status: ApplicationStatus.REJECTED,
+    status: BranchStatus.REJECTED,
     slug: "rejected",
     title: "Rejected",
     code: "REJ",
@@ -251,7 +263,7 @@ const SEED_STABLE_BRANCH_ADMINS = [
     address: "12 Makram Ebeid Street",
     latitude: 30.0626,
     longitude: 31.3368,
-    status: ApplicationStatus.APPROVED,
+    status: BranchStatus.APPROVED,
     rejectionReason: null,
   },
   {
@@ -269,7 +281,7 @@ const SEED_STABLE_BRANCH_ADMINS = [
     address: "8 Tahrir Street",
     latitude: 30.0384,
     longitude: 31.2109,
-    status: ApplicationStatus.APPROVED,
+    status: BranchStatus.APPROVED,
     rejectionReason: null,
   },
   {
@@ -287,7 +299,7 @@ const SEED_STABLE_BRANCH_ADMINS = [
     address: "5 Road 9, Maadi",
     latitude: 29.9699,
     longitude: 31.2675,
-    status: ApplicationStatus.APPROVED,
+    status: BranchStatus.APPROVED,
     rejectionReason: null,
   },
 ];
@@ -334,8 +346,8 @@ const REVIEW_COMMENTS = [
   "Quick and efficient service.",
 ];
 
-function buildBranchApplications() {
-  return BRANCH_APPLICATION_GROUPS.flatMap((group, groupIndex) =>
+function buildBranchSubmissions() {
+  return BRANCH_SUBMISSION_GROUPS.flatMap((group, groupIndex) =>
     Array.from({ length: 5 }, (_, index) => {
       const sequence = groupIndex * 5 + index + 1;
       const emailSuffix = `${group.slug}-${String(index + 1).padStart(2, "0")}`;
@@ -486,9 +498,9 @@ const SEED_INITIAL_STAFF_USERS = [
     status: UserStatus.ACTIVE,
   },
 ];
-const SEED_BRANCH_APPLICATIONS = [
+const SEED_BRANCH_SUBMISSIONS = [
   ...SEED_STABLE_BRANCH_ADMINS,
-  ...buildBranchApplications(),
+  ...buildBranchSubmissions(),
 ];
 
 const SEED_STAFF = [
@@ -595,31 +607,31 @@ const SEED_STAFF_CERTIFICATES = SEED_STAFF.flatMap((staff, index) => [
   },
 ]);
 
-const SEED_APPLICATION_VERIFICATION_CODES = SEED_BRANCH_APPLICATIONS.flatMap(
-  (application, index) => [
+const SEED_BRANCH_VERIFICATION_CODES = SEED_BRANCH_SUBMISSIONS.flatMap(
+  (branchSubmission, index) => [
     {
-      email: application.email,
+      email: branchSubmission.email,
       type: VerificationType.EMAIL,
       code: `APP-EMAIL-${String(index + 1).padStart(2, "0")}-111111`,
     },
     {
-      email: application.email,
+      email: branchSubmission.email,
       type: VerificationType.PHONE,
       code: `APP-PHONE-${String(index + 1).padStart(2, "0")}-222222`,
     },
     {
-      email: application.email,
+      email: branchSubmission.email,
       type: VerificationType.PASSWORD_RESET,
       code: `APP-RESET-${String(index + 1).padStart(2, "0")}-333333`,
     },
   ],
 );
 
-const SEED_APPLICATION_DOCUMENT_TYPES = [
-  ApplicationDocumentType.TAX_CERTIFICATE,
-  ApplicationDocumentType.COMMERCIAL_REGISTER,
-  ApplicationDocumentType.NATIONAL_ID,
-  ApplicationDocumentType.FACILITY_LICENSE,
+const SEED_BRANCH_DOCUMENT_TYPES = [
+  BranchDocumentType.TAX_CERTIFICATE,
+  BranchDocumentType.COMMERCIAL_REGISTER,
+  BranchDocumentType.NATIONAL_ID,
+  BranchDocumentType.FACILITY_LICENSE,
 ];
 
 const prisma = new PrismaClient();
@@ -709,6 +721,32 @@ async function main() {
     update: {},
     create: { key: LOGIN_COUNTER_KEY, value: 0 },
   });
+
+  let starterPlan = null;
+  for (const plan of DEFAULT_PLANS) {
+    const ensuredPlan = await prisma.plan.upsert({
+      where: { name: plan.name },
+      update: {
+        price: plan.price,
+        maxStaff: plan.maxStaff,
+        maxServices: plan.maxServices,
+        loyaltyEnabled: plan.loyaltyEnabled,
+        offersEnabled: plan.offersEnabled,
+        isActive: plan.isActive,
+      },
+      create: plan,
+    });
+
+    if (ensuredPlan.name === "Starter") {
+      starterPlan = ensuredPlan;
+    }
+  }
+
+  if (!starterPlan) {
+    throw new Error("Starter plan seed was not created.");
+  }
+
+  console.log("Plans ensured successfully!\n");
 
   const superAdminPasswordHash = await bcrypt.hash(
     SUPER_ADMIN_PASSWORD,
@@ -820,7 +858,7 @@ async function main() {
           ...SEED_USERS.map((user) => user.email),
           ...SEED_INITIAL_STAFF_USERS.map((staff) => staff.email),
           ...SEED_STAFF.map((staff) => staff.email),
-          ...SEED_BRANCH_APPLICATIONS.map((application) => application.email),
+          ...SEED_BRANCH_SUBMISSIONS.map((branchSubmission) => branchSubmission.email),
         ],
       },
     },
@@ -887,7 +925,7 @@ async function main() {
 
   if (!branchAdminTableExists) {
     console.log(
-      "⚠️  Branch admin table is missing. Skipping branch admin pending applications.",
+      "⚠️  Branch admin table is missing. Skipping branch admin pending submissions.",
     );
     console.log(
       "   Run migrations first, then re-run seed to insert pending branch admin records.\n",
@@ -895,29 +933,31 @@ async function main() {
     return;
   }
 
-  for (const application of SEED_BRANCH_APPLICATIONS) {
+  const seededApprovedBranches = [];
+
+  for (const branchSubmission of SEED_BRANCH_SUBMISSIONS) {
     const ownerPasswordHash = await bcrypt.hash(
-      application.password,
+      branchSubmission.password,
       SALT_ROUNDS,
     );
 
     // Create or get the branch admin user
     const branchAdminUser = await prisma.user.upsert({
-      where: { email: application.email },
+      where: { email: branchSubmission.email },
       update: {
-        name: application.ownerName,
+        name: branchSubmission.ownerName,
         password: ownerPasswordHash,
-        phone: application.phone,
+        phone: branchSubmission.phone,
         role: Role.branch_admin,
         status: UserStatus.ACTIVE,
         emailVerified: true,
         phoneVerified: true,
       },
       create: {
-        name: application.ownerName,
-        email: application.email,
+        name: branchSubmission.ownerName,
+        email: branchSubmission.email,
         password: ownerPasswordHash,
-        phone: application.phone,
+        phone: branchSubmission.phone,
         role: Role.branch_admin,
         status: UserStatus.ACTIVE,
         emailVerified: true,
@@ -925,66 +965,68 @@ async function main() {
       },
     });
 
-    // Create or update branch admin application
-    const existingApplication = await prisma.branchAdmin.findFirst({
+    // Create or update branch admin submission
+    const existingBranchSubmission = await prisma.branchAdmin.findFirst({
       where: {
-        email: application.email,
-        phone: application.phone,
+        email: branchSubmission.email,
+        phone: branchSubmission.phone,
       },
     });
 
     let branchAdmin;
-    if (existingApplication) {
+    if (existingBranchSubmission) {
       branchAdmin = await prisma.branchAdmin.update({
-        where: { id: existingApplication.id },
+        where: { id: existingBranchSubmission.id },
         data: {
-          ownerName: application.ownerName,
+          ownerName: branchSubmission.ownerName,
+          planId: existingBranchSubmission.planId ?? starterPlan.id,
           passwordHash: ownerPasswordHash,
-          businessName: application.businessName,
-          category: application.category,
-          description: application.description,
-          commercialRegisterNumber: application.commercialRegisterNumber,
-          taxId: application.taxId,
-          city: application.city,
-          district: application.district,
-          address: application.address,
-          latitude: application.latitude,
-          longitude: application.longitude,
-          status: application.status,
+          businessName: branchSubmission.businessName,
+          category: branchSubmission.category,
+          description: branchSubmission.description,
+          commercialRegisterNumber: branchSubmission.commercialRegisterNumber,
+          taxId: branchSubmission.taxId,
+          city: branchSubmission.city,
+          district: branchSubmission.district,
+          address: branchSubmission.address,
+          latitude: branchSubmission.latitude,
+          longitude: branchSubmission.longitude,
+          status: branchSubmission.status,
           emailVerified: true,
           phoneVerified: true,
-          rejectionReason: application.rejectionReason,
+          rejectionReason: branchSubmission.rejectionReason,
           userId: branchAdminUser.id,
         },
       });
     } else {
       branchAdmin = await prisma.branchAdmin.create({
         data: {
-          ownerName: application.ownerName,
-          email: application.email,
-          phone: application.phone,
+          ownerName: branchSubmission.ownerName,
+          email: branchSubmission.email,
+          phone: branchSubmission.phone,
+          planId: starterPlan.id,
           passwordHash: ownerPasswordHash,
-          businessName: application.businessName,
-          category: application.category,
-          description: application.description,
-          commercialRegisterNumber: application.commercialRegisterNumber,
-          taxId: application.taxId,
-          city: application.city,
-          district: application.district,
-          address: application.address,
-          latitude: application.latitude,
-          longitude: application.longitude,
-          status: application.status,
+          businessName: branchSubmission.businessName,
+          category: branchSubmission.category,
+          description: branchSubmission.description,
+          commercialRegisterNumber: branchSubmission.commercialRegisterNumber,
+          taxId: branchSubmission.taxId,
+          city: branchSubmission.city,
+          district: branchSubmission.district,
+          address: branchSubmission.address,
+          latitude: branchSubmission.latitude,
+          longitude: branchSubmission.longitude,
+          status: branchSubmission.status,
           emailVerified: true,
           phoneVerified: true,
-          rejectionReason: application.rejectionReason,
+          rejectionReason: branchSubmission.rejectionReason,
           userId: branchAdminUser.id,
         },
       });
     }
 
     console.log(
-      `🏢 Seeded branch: ${application.businessName} (${application.status}) - Owner: ${branchAdminUser.email}`,
+      `🏢 Seeded branch: ${branchSubmission.businessName} (${branchSubmission.status}) - Owner: ${branchAdminUser.email}`,
     );
     console.log(
       JSON.stringify(
@@ -1013,31 +1055,38 @@ async function main() {
       ),
     );
 
-    await prisma.applicationDocument.deleteMany({
-      where: { applicationId: branchAdmin.id },
+    if (branchSubmission.status === BranchStatus.APPROVED) {
+      seededApprovedBranches.push({
+        id: branchAdmin.id,
+        planId: branchAdmin.planId,
+      });
+    }
+
+    await prisma.branchDocument.deleteMany({
+      where: { branchAdminId: branchAdmin.id },
     });
 
     const documentTypes =
-      application.status === ApplicationStatus.APPROVED
-        ? SEED_APPLICATION_DOCUMENT_TYPES
-        : SEED_APPLICATION_DOCUMENT_TYPES.slice(0, 2);
+      branchSubmission.status === BranchStatus.APPROVED
+        ? SEED_BRANCH_DOCUMENT_TYPES
+        : SEED_BRANCH_DOCUMENT_TYPES.slice(0, 2);
 
     for (const documentType of documentTypes) {
-      await prisma.applicationDocument.create({
+      await prisma.branchDocument.create({
         data: {
-          applicationId: branchAdmin.id,
+          branchAdminId: branchAdmin.id,
           type: documentType,
-          fileUrl: getApplicationDocumentUrl(documentType),
+          fileUrl: getBranchDocumentUrl(documentType),
         },
       });
     }
 
-    await prisma.applicationVerificationCode.deleteMany({
-      where: { applicationId: branchAdmin.id },
+    await prisma.branchVerificationCode.deleteMany({
+      where: { branchAdminId: branchAdmin.id },
     });
 
-    const verificationCodes = SEED_APPLICATION_VERIFICATION_CODES.filter(
-      (seed) => seed.email === application.email,
+    const verificationCodes = SEED_BRANCH_VERIFICATION_CODES.filter(
+      (seed) => seed.email === branchSubmission.email,
     );
 
     for (const verificationCode of verificationCodes) {
@@ -1046,9 +1095,9 @@ async function main() {
         SALT_ROUNDS,
       );
 
-      await prisma.applicationVerificationCode.create({
+      await prisma.branchVerificationCode.create({
         data: {
-          applicationId: branchAdmin.id,
+          branchAdminId: branchAdmin.id,
           type: verificationCode.type,
           codeHash,
           expiresAt: dayjs().add(3, "day").toDate(),
@@ -1058,7 +1107,7 @@ async function main() {
       });
     }
 
-    if (application.status === ApplicationStatus.APPROVED) {
+    if (branchSubmission.status === BranchStatus.APPROVED) {
       for (const servicePlan of SERVICE_PLANS) {
         await prisma.serviceCategory.upsert({
           where: {
@@ -1113,7 +1162,7 @@ async function main() {
               : servicePlan.status === ServiceApprovalStatus.PENDING_APPROVAL
                 ? 45
                 : 60,
-          imageUrl: getServiceImage(application.category, branchAdmin.id % 2),
+          imageUrl: getServiceImage(branchSubmission.category, branchAdmin.id % 2),
           status: servicePlan.status,
           approvedAt:
             servicePlan.status === ServiceApprovalStatus.APPROVED
@@ -1196,6 +1245,50 @@ async function main() {
           },
         });
       }
+    }
+  }
+
+  const activatedSeedBranches = seededApprovedBranches.slice(0, 6);
+
+  if (activatedSeedBranches.length > 0) {
+    await prisma.subscriptionPayment.deleteMany({
+      where: {
+        branchId: {
+          in: activatedSeedBranches.map((branch) => branch.id),
+        },
+      },
+    });
+
+    const now = new Date();
+
+    for (const branch of activatedSeedBranches) {
+      const branchPlan = await prisma.plan.findUnique({
+        where: { id: branch.planId },
+        select: { price: true },
+      });
+
+      if (!branchPlan) {
+        continue;
+      }
+
+      await prisma.subscriptionPayment.create({
+        data: {
+          branchId: branch.id,
+          planId: branch.planId,
+          amount: branchPlan.price,
+          status: PaymentStatus.PAID,
+          paymentMethod: PaymentMethod.CARD,
+          paidAt: now,
+        },
+      });
+
+      await prisma.branchAdmin.update({
+        where: { id: branch.id },
+        data: {
+          isSubscriptionActive: true,
+          subscriptionStartedAt: now,
+        },
+      });
     }
   }
 
@@ -1348,18 +1441,18 @@ async function main() {
   });
 
   console.log("\n🏢 BRANCH ADMINS (LINKED with users & services):");
-  SEED_BRANCH_APPLICATIONS.forEach((app) => {
-    console.log(`   ${app.businessName}`);
-    console.log(`      Owner:    ${app.ownerName}`);
-    console.log(`      Email:    ${app.email} (Password: ${app.password})`);
-    console.log(`      Category: ${app.category}`);
-    console.log(`      Status:   ${app.status}`);
+  SEED_BRANCH_SUBMISSIONS.forEach((branchSubmission) => {
+    console.log(`   ${branchSubmission.businessName}`);
+    console.log(`      Owner:    ${branchSubmission.ownerName}`);
+    console.log(`      Email:    ${branchSubmission.email} (Password: ${branchSubmission.password})`);
+    console.log(`      Category: ${branchSubmission.category}`);
+    console.log(`      Status:   ${branchSubmission.status}`);
   });
 
   console.log(
     "\n✨ LINKAGES CREATED:",
   );
-  console.log("   ✓ Branch Admin Users linked with BranchAdmin applications");
+  console.log("   ✓ Branch Admin Users linked with BranchAdmin submissions");
   console.log("   ✓ Service Categories linked with respective branches");
   console.log("   ✓ Services linked with categories and branches");
   console.log("   ✓ Staff members linked with branches");
