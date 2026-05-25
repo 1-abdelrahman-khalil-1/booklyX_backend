@@ -39,6 +39,7 @@ export async function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.warn("Missing or malformed Authorization header in request to", req.headers.authorization, req.originalUrl);
     errorResponse(res, 401, t(tr.AUTH_TOKEN_REQUIRED, lang));
     return;
   }

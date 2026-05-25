@@ -77,8 +77,8 @@ components:
       schema:
         type: string
         enum: [APP, WEB]
-        default: APP
-        example: APP
+        default: WEB
+        example: WEB
       examples:
         app:
           summary: Mobile app client

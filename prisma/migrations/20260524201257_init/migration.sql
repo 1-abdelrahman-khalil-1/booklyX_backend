@@ -53,9 +53,27 @@ CREATE TABLE `Staff` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
+CREATE TABLE `Plan` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(191) NOT NULL,
+    `price` DECIMAL(10, 2) NOT NULL,
+    `maxStaff` INTEGER NULL,
+    `maxServices` INTEGER NULL,
+    `loyaltyEnabled` BOOLEAN NOT NULL DEFAULT false,
+    `offersEnabled` BOOLEAN NOT NULL DEFAULT false,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `Plan_name_key`(`name`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `BranchAdmin` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `userId` INTEGER NULL,
+    `planId` INTEGER NOT NULL,
     `ownerName` VARCHAR(191) NOT NULL,
     `email` VARCHAR(191) NOT NULL,
     `phone` VARCHAR(191) NOT NULL,
@@ -79,6 +97,8 @@ CREATE TABLE `BranchAdmin` (
     `status` ENUM('PENDING_VERIFICATION', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING_VERIFICATION',
     `emailVerified` BOOLEAN NOT NULL DEFAULT false,
     `phoneVerified` BOOLEAN NOT NULL DEFAULT false,
+    `isSubscriptionActive` BOOLEAN NOT NULL DEFAULT false,
+    `subscriptionStartedAt` DATETIME(3) NULL,
     `rejectionReason` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
@@ -86,6 +106,7 @@ CREATE TABLE `BranchAdmin` (
     `reviewCount` INTEGER NOT NULL DEFAULT 0,
 
     UNIQUE INDEX `BranchAdmin_userId_key`(`userId`),
+    INDEX `BranchAdmin_planId_idx`(`planId`),
     INDEX `BranchAdmin_status_idx`(`status`),
     INDEX `BranchAdmin_email_idx`(`email`),
     INDEX `BranchAdmin_phone_idx`(`phone`),
@@ -122,9 +143,9 @@ CREATE TABLE `RefreshToken` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `ApplicationVerificationCode` (
+CREATE TABLE `BranchVerificationCode` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `applicationId` INTEGER NOT NULL,
+    `branchAdminId` INTEGER NOT NULL,
     `type` ENUM('EMAIL', 'PHONE', 'PASSWORD_RESET') NOT NULL,
     `codeHash` VARCHAR(191) NOT NULL,
     `expiresAt` DATETIME(3) NOT NULL,
@@ -132,19 +153,19 @@ CREATE TABLE `ApplicationVerificationCode` (
     `attempts` INTEGER NOT NULL DEFAULT 0,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
-    INDEX `ApplicationVerificationCode_applicationId_type_idx`(`applicationId`, `type`),
+    INDEX `BranchVerificationCode_branchAdminId_type_idx`(`branchAdminId`, `type`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `ApplicationDocument` (
+CREATE TABLE `BranchDocument` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `applicationId` INTEGER NOT NULL,
+    `branchAdminId` INTEGER NOT NULL,
     `type` ENUM('TAX_CERTIFICATE', 'COMMERCIAL_REGISTER', 'NATIONAL_ID', 'FACILITY_LICENSE') NOT NULL,
     `fileUrl` VARCHAR(191) NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
-    INDEX `ApplicationDocument_applicationId_idx`(`applicationId`),
+    INDEX `BranchDocument_branchAdminId_idx`(`branchAdminId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -211,7 +232,6 @@ CREATE TABLE `Service` (
     `description` VARCHAR(191) NULL,
     `price` DOUBLE NOT NULL,
     `durationMinutes` INTEGER NOT NULL,
-    `duration` INTEGER NULL,
     `imageUrl` VARCHAR(191) NULL,
     `status` ENUM('PENDING_APPROVAL', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING_APPROVAL',
     `rejectionReason` VARCHAR(191) NULL,
@@ -249,6 +269,7 @@ CREATE TABLE `Offer` (
     `discountValue` DOUBLE NOT NULL,
     `startDate` DATETIME(3) NOT NULL,
     `endDate` DATETIME(3) NOT NULL,
+    `imageUrl` VARCHAR(191) NULL,
     `isActive` BOOLEAN NOT NULL DEFAULT true,
     `usageLimit` INTEGER NULL,
     `usedCount` INTEGER NOT NULL DEFAULT 0,
@@ -340,6 +361,24 @@ CREATE TABLE `SystemCounter` (
     PRIMARY KEY (`key`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `SubscriptionPayment` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `branchId` INTEGER NOT NULL,
+    `planId` INTEGER NOT NULL,
+    `amount` DECIMAL(10, 2) NOT NULL,
+    `status` ENUM('PENDING', 'PAID', 'FAILED') NOT NULL,
+    `paymentMethod` ENUM('CARD') NOT NULL DEFAULT 'CARD',
+    `paidAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `SubscriptionPayment_branchId_idx`(`branchId`),
+    INDEX `SubscriptionPayment_planId_idx`(`planId`),
+    INDEX `SubscriptionPayment_status_idx`(`status`),
+    INDEX `SubscriptionPayment_paidAt_idx`(`paidAt`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `Client` ADD CONSTRAINT `Client_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -353,16 +392,19 @@ ALTER TABLE `Staff` ADD CONSTRAINT `Staff_branchId_fkey` FOREIGN KEY (`branchId`
 ALTER TABLE `BranchAdmin` ADD CONSTRAINT `BranchAdmin_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `BranchAdmin` ADD CONSTRAINT `BranchAdmin_planId_fkey` FOREIGN KEY (`planId`) REFERENCES `Plan`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `VerificationCode` ADD CONSTRAINT `VerificationCode_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `RefreshToken` ADD CONSTRAINT `RefreshToken_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `ApplicationVerificationCode` ADD CONSTRAINT `ApplicationVerificationCode_applicationId_fkey` FOREIGN KEY (`applicationId`) REFERENCES `BranchAdmin`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `BranchVerificationCode` ADD CONSTRAINT `BranchVerificationCode_branchAdminId_fkey` FOREIGN KEY (`branchAdminId`) REFERENCES `BranchAdmin`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `ApplicationDocument` ADD CONSTRAINT `ApplicationDocument_applicationId_fkey` FOREIGN KEY (`applicationId`) REFERENCES `BranchAdmin`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `BranchDocument` ADD CONSTRAINT `BranchDocument_branchAdminId_fkey` FOREIGN KEY (`branchAdminId`) REFERENCES `BranchAdmin`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `StaffProfessionalProfile` ADD CONSTRAINT `StaffProfessionalProfile_staffId_fkey` FOREIGN KEY (`staffId`) REFERENCES `Staff`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -429,3 +471,9 @@ ALTER TABLE `Appointment` ADD CONSTRAINT `Appointment_branchId_fkey` FOREIGN KEY
 
 -- AddForeignKey
 ALTER TABLE `StaffAvailability` ADD CONSTRAINT `StaffAvailability_staffId_fkey` FOREIGN KEY (`staffId`) REFERENCES `Staff`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `SubscriptionPayment` ADD CONSTRAINT `SubscriptionPayment_branchId_fkey` FOREIGN KEY (`branchId`) REFERENCES `BranchAdmin`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `SubscriptionPayment` ADD CONSTRAINT `SubscriptionPayment_planId_fkey` FOREIGN KEY (`planId`) REFERENCES `Plan`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

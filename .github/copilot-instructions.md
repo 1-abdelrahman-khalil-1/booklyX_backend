@@ -6,18 +6,28 @@
 
 ## 1. Project Architecture (Feature-Based)
 
-- The application is divided into `src/modules/*` (e.g., `auth`, `users`, `admin`, `branch_admin`)
-- Strict flow per request: `Route -> Controller -> Service -> Prisma (through src/lib/prisma.js)`
-- Mental model for this booking backend (Fresha-like):
-  - `auth`: identity and verification lifecycle
-  - `users`: internal account creation and management
-  - `branch_admin`: onboarding applications and verification
-  - `admin`: approval/rejection and supervision flows
-- Each module MUST contain:
+- The application is divided into `src/modules/*` (examples: `auth`, `users`, `admin`, `branch_admin`, `plans`, `offers`, `staff`, `reviews`).
+- Strict request flow: Route -> Controller -> Service -> Prisma (use the centralized `src/lib/prisma.js`).
+- Key mental model:
+  - `auth`: identity, session, verification lifecycle
+  - `branch_admin`: branch onboarding, verification, subscription and management
+  - `admin` / `super_admin`: moderation, approvals, global actions
+  - `staff`: staff profiles, schedules, earnings
+  - `plans`: subscription plans and limits
+- Each module MUST contain (unless module is intentionally lightweight):
   - `[module].controller.js`
   - `[module].service.js`
   - `[module].routes.js`
-  - `[module].validation.js` (if needed)
+  - `[module].validation.js` (Zod schemas and validator helpers)
+
+### 1.1 IDs and Identifiers
+
+- All primary identifiers are integers (`Int`) with `autoincrement()` in Prisma models. Do not use UUIDs in new models; existing schema uses integer IDs.
+
+### 1.2 Prisma Enums and Models
+
+- Prefer Prisma enums (defined in `prisma/schema.prisma`) for persisted domain values (roles, statuses, platform, etc.). Use `src/utils/enums.js` only for non-persisted, app-level enumerations.
+- Notable persistent enums: `Role` (client, staff, branch_admin, super_admin), `BranchStatus`, `ServiceApprovalStatus`, `AppointmentStatus`, `Plan` relation on `BranchAdmin`, and `OfferDiscountType`.
 
 ### 1.1. Prisma Enum vs. Custom Enum
 
@@ -34,11 +44,13 @@
   - Call validation (if needed)
   - Call service
   - Return response
-- **New Rule**: Do not call `getLanguage(req)` or `t(tr.KEY, lang)` inside the controller. This is now handled by the global error handler.
+    -- **Translation in controllers**: Controllers SHOULD call `getLanguage(req)` and may use `t(tr.KEY, lang)` for success responses. Services must still throw `AppError` with `tr.KEY` for errors; the global error handler performs translation for thrown errors.
 
 - Must use:
   - `asyncHandler`
   - `successResponse`
+
+- Validation MUST happen in the controller before calling services (see Implementation Checklist). Controllers build validated payloads and convert uploaded files to URLs.
 
 - Controller output contract:
   - Success responses must be sent through `successResponse`
@@ -64,6 +76,20 @@
   - Not found domain entities -> `404`
   - Conflict/duplicate state -> `409`
 
+### 3.1 Service Contracts & Translation
+
+- Services must throw domain `AppError` instances containing translation keys (`tr.KEY`) and optional `params`. Do not attempt to translate inside services; the global error handler performs translation using request language.
+
+### 3.2 Subscription & Plan Enforcements (Service-level guards)
+
+- Use `src/utils/subscriptionGuards.js` to enforce plan and subscription rules from services and controllers. Stable helpers present in the codebase:
+  - `ensureActiveSubscription(branchId, branchRecord?)` → throws `SubscriptionRequiredError` if branch not APPROVED or not subscribed.
+  - `ensureServiceLimitNotExceeded(branchId, branchRecord?)` → throws `PlanLimitExceededError` when approved services count >= plan.maxServices.
+  - `ensureStaffLimitNotExceeded(branchId, branchRecord?)` → throws `PlanLimitExceededError` when active staff count >= plan.maxStaff.
+  - `ensureOffersEnabled(branchId)` and `ensureLoyaltyEnabled(branchId)` → throw `FeatureNotEnabledError` when plan feature flags are disabled.
+
+Apply these guards in services responsible for creating services, staff, offers, and reporting endpoints that require subscription activation.
+
 ---
 
 ## 4. Validation Rules (Zod)
@@ -85,6 +111,8 @@
   - Validation helpers should return translation keys and params only; do not translate inside validation helpers
 
 - Never trust `req.body`
+
+Note: The project enforces controller-side validation using Zod helpers that throw `AppError`-derived validation errors with `tr.KEY` codes.
 
 ---
 
@@ -122,6 +150,8 @@
   - formats response
   - handles translation
 
+Important: Services and validation helpers must not call translation functions directly; put `tr.KEY` into thrown errors and let the global middleware translate based on `Accept-Language`.
+
 ---
 
 ## 7. Localization (i18n)
@@ -156,6 +186,18 @@
 - Use transactions for multi-step operations
 - Avoid N+1 queries
 
+### 8.2 Prisma usage: explicit selects
+
+- Never return Prisma model raw objects if they contain sensitive or internal fields (passwords, token hashes, internal flags, etc.). Always use explicit `select` or shape the returned object before sending to clients.
+
+### 8.1 Prisma schema realities (stable)
+
+- Database provider: MySQL (see `prisma/schema.prisma` datasource).
+- IDs: primary keys are `Int` with `autoincrement()` across models (no UUIDs).
+- Important models and relations (as implemented): `User`, `Client`, `Staff`, `BranchAdmin`, `Plan`, `Service`, `Offer`, `Review`, `Appointment`, `SubscriptionPayment`, `ServiceExecution`.
+
+When adding or modifying relations, keep `@@index` and `@@map` conventions consistent with existing models.
+
 ---
 
 ## 9. Security Rules
@@ -165,6 +207,12 @@
 - Sanitize sensitive data (e.g., remove password)
 - Do not expose internal errors
 - Use proper HTTP status codes
+
+### 9.1 Token & Platform enforcement
+
+- Access token format: `<loginSequence>|<jwt>` (examples and validation are enforced in `src/middleware/authenticate.js`).
+- The `platform` header is required and must match the token's `platform` claim. Token verification enforces the platform match and validates `decoded.sub` (numeric user id) and `decoded.role`.
+- Use `authenticate` then `authorize(Role.xxx)` middleware order for protected routes.
 
 ---
 
@@ -192,6 +240,8 @@
 - Never use raw `res.json`
 - Keep response structure consistent: `{ status, error, message, data }`
 
+Responses follow `snake_case` keys in OpenAPI examples (see `openapi.yaml`). Keep response payloads consistent with documented schemas.
+
 ---
 
 ## 13. Routing
@@ -199,6 +249,11 @@
 - Define routes in `[module].routes.js`
 - Register all modules in `src/routes/index.js`
 - Do NOT touch `server.js`
+
+Route-level patterns:
+
+- Protect write/update routes with `authenticate` + `authorize(Role.branch_admin)` or appropriate role checks.
+- File upload routes must use configured `multer` middleware and controllers should convert files to public URLs before validation.
 
 ---
 
@@ -208,6 +263,8 @@
 - Place tests inside `__tests__` per module
 - Mock Prisma & external services
 - Focus on service layer
+
+Stable tests in repo show unit tests for service layer under `src/modules/*/__tests__`. Follow that pattern and mock `prisma` client via jest mocks.
 
 ---
 
@@ -233,15 +290,13 @@ import { someServiceFunction } from "./example.service.js";
 import { someSchema, validateModuleInput } from "./example.validation.js";
 
 export const exampleHandler = asyncHandler(async (req, res) => {
-  const lang = getLanguage(req);
-
-  // ✅ VALIDATE INPUT in controller before passing to service
+  // Validation must happen in controller
   const data = validateModuleInput(someSchema, req.body);
 
   // ✅ Pass validated data to service (service receives clean data)
   const result = await someServiceFunction(data);
 
-  successResponse(res, 200, t(tr.SUCCESS_KEY, lang), result);
+  successResponse(res, 200, t(tr.SUCCESS_KEY, req.language), result);
 });
 ```
 
@@ -336,6 +391,8 @@ export function validateModuleInput(schema, data) {
 
   throw new ModuleValidationError(firstIssue.message);
 }
+
+Note: Validation helpers should return structured translation keys and params; controllers or middleware are responsible for setting `req.language` (global error handler reads `Accept-Language`).
 ```
 
 ### 16.4 `[module].controller.js` — File Upload Handling
