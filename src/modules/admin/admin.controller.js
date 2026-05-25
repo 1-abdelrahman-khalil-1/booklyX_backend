@@ -79,7 +79,7 @@ export const listServicesHandler = asyncHandler(async (req, res) => {
   successResponse(res, 200, t(tr.SERVICES_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 
-export const getServiceDetailsHandle = asyncHandler(async (req, res) => {
+export const getServiceDetailsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { id } = validateAdminInput(idParamSchema, req.params);
   const result = await getServiceDetails(id);
