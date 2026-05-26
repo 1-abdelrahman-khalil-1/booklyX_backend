@@ -139,7 +139,6 @@ export async function approveBranch(id) {
   await prisma.branchAdmin.update({
     where: { id: branch.id },
     data: {
-      userId: branch.userId,
       status: BranchStatus.APPROVED,
       rejectionReason: null,
     },

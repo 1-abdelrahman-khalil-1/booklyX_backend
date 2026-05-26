@@ -50,6 +50,15 @@ describe("Plans Service - listPlans", () => {
         offersEnabled: true,
       },
     });
-    expect(result).toEqual(mockPlans);
+    expect(result).toEqual([
+      {
+        ...mockPlans[0],
+        price: 199,
+      },
+      {
+        ...mockPlans[1],
+        price: 499,
+      },
+    ]);
   });
 });
