@@ -1383,19 +1383,19 @@ components:
         taxCertificateUrl:
           type: string
           nullable: true
-          example: https://booklyxbackend-production.up.railway.app/files/download/tax-certificate.pdf
+          example: https://booklyxbackend-production.up.railway.app/files/public/tax-certificate.png
         commercialRegisterUrl:
           type: string
           nullable: true
-          example: https://booklyxbackend-production.up.railway.app/files/download/commercial-register.pdf
+          example: https://booklyxbackend-production.up.railway.app/files/public/commercial-register.png
         nationalIdUrl:
           type: string
           nullable: true
-          example: https://booklyxbackend-production.up.railway.app/files/download/national-id.pdf
+          example: https://booklyxbackend-production.up.railway.app/files/public/national-id.png
         facilityLicenseUrl:
           type: string
           nullable: true
-          example: https://booklyxbackend-production.up.railway.app/files/download/facility-license.pdf
+          example: https://booklyxbackend-production.up.railway.app/files/public/facility-license.png
         city:
           type: string
           example: Cairo
@@ -1787,7 +1787,7 @@ components:
                   issuer: International Barber Academy
                   issue_date: 2025-01-10T00:00:00.000Z
                   expiry_date: 2027-01-10T00:00:00.000Z
-                  file_url: https://cdn.booklyx.com/certificates/barber-cert.pdf
+                  file_url: https://cdn.booklyx.com/certificates/barber-cert.png
                   verified: true
                   created_at: 2025-01-10T00:00:00.000Z
               availabilities:
@@ -2361,7 +2361,7 @@ components:
           documents:
             - id: 1
               type: COMMERCIAL_REGISTER
-              fileUrl: https://booklyxbackend-production.up.railway.app/files/download/commercial-register.pdf
+              fileUrl: https://booklyxbackend-production.up.railway.app/files/public/commercial-register.png
               created_at: 2026-04-09T09:50:00.000Z
           verificationCodes:
             - id: 12
@@ -2945,7 +2945,7 @@ paths:
     post:
       tags: [Branch_admin/Registration]
       summary: Submit branch_admin application
-      description: Submit branch_admin application.
+      description: Submit branch_admin application. Upload fields are image-only and stored as Cloudinary image URLs.
       operationId: postBranchAdminApply
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
@@ -3218,35 +3218,252 @@ paths:
                       data:
                         type: object
                         properties:
-                          user:
+                          id:
+                            type: integer
+                          ownerName:
+                            type: string
+                          email:
+                            type: string
+                          phone:
+                            type: string
+                          businessName:
+                            type: string
+                          category:
+                            type: string
+                          description:
+                            type: string
+                            nullable: true
+                          logoUrl:
+                            type: string
+                            nullable: true
+                          operatingHours:
+                            type: string
+                            nullable: true
+                          address:
+                            type: string
+                          city:
+                            type: string
+                          district:
+                            type: string
+                          status:
+                            type: string
+                          isSubscriptionActive:
+                            type: boolean
+                          subscriptionStartedAt:
+                            type: string
+                            format: date-time
+                            nullable: true
+                          selectedPlan:
+                            type: object
+                            nullable: true
+                          currentSubscription:
+                            type: object
+                          bookingSettings:
                             type: object
                             properties:
-                              id:
+                              allowCancellationBeforeHours:
                                 type: integer
-                              ownerName:
-                                type: string
-                              email:
-                                type: string
-                              phone:
-                                type: string
-                              businessName:
-                                type: string
-                              category:
-                                type: string
+                          notificationSettings:
+                            type: object
+                            properties:
+                              bookingNotificationsEnabled:
+                                type: boolean
+                              marketingNotificationsEnabled:
+                                type: boolean
+                          branchAvailability:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                dayOfWeek:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 6
+                                startTime:
+                                  type: string
+                                  example: "09:00"
+                                endTime:
+                                  type: string
+                                  example: "17:00"
+                                status:
+                                  type: string
               examples:
                 default:
                   value:
                     status: 200
                     error: false
-                    message: Profile retrieved successfully.
+                    message: Branch profile retrieved successfully.
                     data:
-                      user:
+                      id: 1
+                      ownerName: Prime Salon
+                      email: branch@example.com
+                      phone: "01000000022"
+                      businessName: Prime Salon
+                      category: SPA
+                      description: Premium beauty and skincare services.
+                      logoUrl: https://res.cloudinary.com/booklyx/image/upload/v123/booklyx/images/logo.png
+                      operatingHours: 09:00-22:00
+                      address: 12 Makram Ebeid Street
+                      city: Cairo
+                      district: Nasr City
+                      status: APPROVED
+                      isSubscriptionActive: true
+                      subscriptionStartedAt: 2026-05-25T12:00:00.000Z
+                      selectedPlan:
                         id: 1
-                        ownerName: Prime Salon
-                        email: branch@example.com
-                        phone: "01000000022"
-                        businessName: Prime Salon
-                        category: SALON
+                        name: Basic Plan
+                      currentSubscription:
+                        plan:
+                          id: 1
+                          name: Basic Plan
+                        isSubscriptionActive: true
+                        subscriptionStartedAt: 2026-05-25T12:00:00.000Z
+                      bookingSettings:
+                        allowCancellationBeforeHours: 4
+                      notificationSettings:
+                        bookingNotificationsEnabled: true
+                        marketingNotificationsEnabled: false
+                      branchAvailability:
+                        - id: 11
+                          dayOfWeek: 0
+                          startTime: "09:00"
+                          endTime: "17:00"
+                          status: AVAILABLE
+
+  /branch-admin/availability:
+    put:
+      tags: [Branch_admin/Profile]
+      summary: Update branch availability for a day
+      description: Upsert branch availability for the authenticated branch_admin.
+      operationId: putBranchAdminAvailability
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dayOfWeek, startTime, endTime]
+              properties:
+                dayOfWeek:
+                  type: integer
+                  minimum: 0
+                  maximum: 6
+                startTime:
+                  type: string
+                  example: "09:00"
+                endTime:
+                  type: string
+                  example: "17:00"
+                status:
+                  type: string
+                  example: AVAILABLE
+      responses:
+        "200":
+          description: Availability updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /branch-admin/booking-settings:
+    put:
+      tags: [Branch_admin/Profile]
+      summary: Update booking settings
+      description: Update booking-related settings for the authenticated branch_admin.
+      operationId: putBranchAdminBookingSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [allowCancellationBeforeHours]
+              properties:
+                allowCancellationBeforeHours:
+                  type: integer
+                  minimum: 0
+      responses:
+        "200":
+          description: Booking settings updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /branch-admin/notification-settings:
+    put:
+      tags: [Branch_admin/Profile]
+      summary: Update notification settings
+      description: Update notification settings for the authenticated branch_admin.
+      operationId: putBranchAdminNotificationSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bookingNotificationsEnabled:
+                  type: boolean
+                marketingNotificationsEnabled:
+                  type: boolean
+      responses:
+        "200":
+          description: Notification settings updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   /branch-admin/create-staff:
     post:
@@ -3518,56 +3735,11 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
-  /branch-admin/services/create-service:
+  /branch-admin/services:
     post:
       tags: [Branch_admin/Services]
       summary: Create service (pending approval)
       description: Create service (pending approval).
-      operationId: postBranchAdminServicesCreateService
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateServiceRequestJson"
-            examples:
-              default:
-                $ref: "#/components/examples/CreateServiceRequest"
-          multipart/form-data:
-            schema:
-              $ref: "#/components/schemas/CreateServiceRequestMultipart"
-      responses:
-        "201":
-          description: Service created
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiSuccess"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/Service"
-              examples:
-                default:
-                  $ref: "#/components/examples/ServiceCreatedResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-
-  /branch-admin/services:
-    post:
-      tags: [Branch_admin/Services]
-      summary: Create service (alias)
-      description: Alias endpoint for creating a service (pending approval).
       operationId: postBranchAdminServices
       security:
         - bearerAuth: []
@@ -3614,40 +3786,6 @@ paths:
       summary: List current branch_admin services
       description: List current branch_admin services.
       operationId: getBranchAdminServicesMyServices
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
-        - $ref: "#/components/parameters/ServiceStatusQuery"
-      responses:
-        "200":
-          description: Services fetched
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiSuccess"
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/Service"
-              examples:
-                default:
-                  $ref: "#/components/examples/ServicesListResponse"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-
-  /branch-admin/my-services:
-    get:
-      tags: [Branch_admin/Services]
-      summary: List current branch_admin services (alias)
-      description: Backward-compatible alias for listing current branch_admin services.
-      operationId: getBranchAdminMyServices
       security:
         - bearerAuth: []
       parameters:
@@ -4783,6 +4921,278 @@ paths:
         "409":
           $ref: "#/components/responses/Conflict"
 
+  /branch-admin/subscription/renew:
+    post:
+      tags: [Branch_admin/Subscription]
+      summary: Renew branch subscription
+      description: Creates a paid subscription payment and activates subscription for approved branch.
+      operationId: postBranchAdminSubscriptionRenew
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      responses:
+        "200":
+          description: Subscription renewed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /branch-admin/subscription/cancel:
+    post:
+      tags: [Branch_admin/Subscription]
+      summary: Cancel branch subscription
+      description: Deactivates current subscription for approved branch.
+      operationId: postBranchAdminSubscriptionCancel
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      responses:
+        "200":
+          description: Subscription canceled
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /branch-admin/appointments:
+    get:
+      tags: [Branch_admin/Appointments]
+      summary: List branch appointments
+      description: List appointments for the authenticated branch_admin with optional filtering.
+      operationId: getBranchAdminAppointments
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: staffId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Appointments fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /branch-admin/appointments/{id}:
+    get:
+      tags: [Branch_admin/Appointments]
+      summary: Get appointment details
+      description: Get details for a branch appointment by id.
+      operationId: getBranchAdminAppointmentsById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      responses:
+        "200":
+          description: Appointment details fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /branch-admin/appointments/{id}/cancel:
+    patch:
+      tags: [Branch_admin/Appointments]
+      summary: Cancel appointment
+      description: Cancel a branch appointment by id when cancellation is allowed.
+      operationId: patchBranchAdminAppointmentsByIdCancel
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      responses:
+        "200":
+          description: Appointment canceled
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /branch-admin/booking-payments:
+    get:
+      tags: [Branch_admin/Payments]
+      summary: List booking payments
+      description: List booking payments for the authenticated branch_admin.
+      operationId: getBranchAdminBookingPayments
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Booking payments fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /branch-admin/booking-payments/{id}:
+    get:
+      tags: [Branch_admin/Payments]
+      summary: Get booking payment details
+      description: Get booking payment details by id for the authenticated branch_admin.
+      operationId: getBranchAdminBookingPaymentsById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      responses:
+        "200":
+          description: Booking payment details fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /branch-admin/analytics/dashboard:
     get:
       tags: [Branch_admin/Analytics]
@@ -5273,6 +5683,44 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+    delete:
+      tags: [Branch_admin/Offers]
+      summary: Delete offer by id
+      description: Delete an offer owned by authenticated branch_admin.
+      operationId: deleteOffersById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      responses:
+        "200":
+          description: Offer deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
+              examples:
+                default:
+                  value:
+                    status: 200
+                    error: false
+                    message: Offer deleted successfully.
+                    data:
+                      id: 7
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /offers/{id}/toggle:
     patch:
       tags: [Branch_admin/Offers]
@@ -5717,10 +6165,37 @@ paths:
                                 type: string
                               category:
                                 type: string
-                              average_rating:
+                              description:
+                                type: string
+                                nullable: true
+                              logoUrl:
+                                type: string
+                                nullable: true
+                              city:
+                                type: string
+                              district:
+                                type: string
+                              address:
+                                type: string
+                              status:
+                                type: string
+                              selectedPlan:
+                                type: object
+                                nullable: true
+                              currentSubscription:
+                                type: object
+                              bookingSettings:
+                                type: object
+                              notificationSettings:
+                                type: object
+                              branchAvailability:
+                                type: array
+                                items:
+                                  type: object
+                              averageRating:
                                 type: number
                                 format: float
-                              total_reviews:
+                              reviewCount:
                                 type: integer
                           reviews:
                             type: array

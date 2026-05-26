@@ -202,6 +202,9 @@ model BranchAdmin {
   district                 String
   address                  String
   operatingHours           String?
+  allowCancellationBeforeHours Int                       @default(24)
+  bookingNotificationsEnabled Boolean                     @default(true)
+  marketingNotificationsEnabled Boolean                    @default(true)
   latitude                 Float
   longitude                Float
   status                   BranchStatus                  @default(PENDING_VERIFICATION)
@@ -214,11 +217,13 @@ model BranchAdmin {
   updatedAt                DateTime                      @updatedAt
   verificationCodes        BranchVerificationCode[]
   documents                BranchDocument[]
+  branchAvailabilities     BranchAvailability[]
   serviceCategories        ServiceCategory[]
   services                 Service[]
   offers                   Offer[]
   staffs                   Staff[]
   appointments             Appointment[]
+  bookingPayments          BookingPayment[]
   reviews                  Review[]
   subscriptionPayments     SubscriptionPayment[]
   user                     User?                         @relation(fields: [userId], references: [id])
@@ -228,6 +233,7 @@ model BranchAdmin {
 
   @@index([planId])
   @@index([status])
+  @@index([status, isSubscriptionActive])
   @@index([email])
   @@index([phone])
   @@map("BranchAdmin")
@@ -285,6 +291,22 @@ model BranchDocument {
 
   branchAdmin BranchAdmin @relation(fields: [branchAdminId], references: [id], onDelete: Cascade)
 
+  @@index([branchAdminId])
+}
+
+model BranchAvailability {
+  id            Int                @id @default(autoincrement())
+  branchAdminId Int
+  dayOfWeek     Int
+  startTime     String
+  endTime       String
+  status        AvailabilityStatus @default(AVAILABLE)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  branchAdmin BranchAdmin @relation(fields: [branchAdminId], references: [id], onDelete: Cascade)
+
+  @@unique([branchAdminId, dayOfWeek])
   @@index([branchAdminId])
 }
 
@@ -467,6 +489,7 @@ model Appointment {
   service          Service            @relation(fields: [serviceId], references: [id])
   branch           BranchAdmin        @relation(fields: [branchId], references: [id])
   review           Review?
+  bookingPayment   BookingPayment?
   serviceExcutions ServiceExecution[]
 
   @@index([clientId])
@@ -474,6 +497,25 @@ model Appointment {
   @@index([serviceId])
   @@index([branchId])
   @@index([status])
+}
+
+model BookingPayment {
+  id            Int           @id @default(autoincrement())
+  branchId      Int
+  appointmentId Int           @unique
+  amount        Decimal       @db.Decimal(10, 2)
+  status        PaymentStatus @default(PENDING)
+  paymentMethod PaymentMethod @default(CARD)
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  branch      BranchAdmin @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([branchId])
+  @@index([status])
+  @@index([paidAt])
 }
 
 model StaffAvailability {

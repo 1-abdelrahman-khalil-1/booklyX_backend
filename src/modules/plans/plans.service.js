@@ -11,7 +11,7 @@ export async function listPlans() {
       maxStaff: true,
       maxServices: true,
       loyaltyEnabled: true,
-      offersEnabled: true,
+      offersEnabled: true, 
     },
   });
 }

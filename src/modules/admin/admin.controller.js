@@ -2,27 +2,27 @@ import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
-    approveBranch,
-    approveService,
-    getBranchDetails,
-    getBranchPaymentDetails,
-    getPlatformAnalytics,
-    getServiceDetails,
-    getUserProfile,
-    listBranchPayments,
-    listBranches,
-    listServices,
-    rejectBranch,
-    rejectService,
+  approveBranch,
+  approveService,
+  getBranchDetails,
+  getBranchPaymentDetails,
+  getPlatformAnalytics,
+  getServiceDetails,
+  getUserProfile,
+  listBranchPayments,
+  listBranches,
+  listServices,
+  rejectBranch,
+  rejectService,
 } from "./admin.service.js";
 import {
-    idParamSchema,
-    listBranchesQuerySchema,
-    listServicesQuerySchema,
-    paymentIdParamSchema,
-    periodQuerySchema,
-    rejectReasonSchema,
-    validateAdminInput
+  idParamSchema,
+  listBranchesQuerySchema,
+  listServicesQuerySchema,
+  paymentIdParamSchema,
+  periodQuerySchema,
+  rejectReasonSchema,
+  validateAdminInput
 } from "./admin.validation.js";
 
 // ─── List Branches Handler ─────────────────────────────────────────────────
@@ -59,7 +59,7 @@ export const approveBranchHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { id } = validateAdminInput(idParamSchema, req.params);
   const result = await approveBranch(id);
-  successResponse(res, 200, t(result.message, lang), result.user);
+  successResponse(res, 200, t(result.message, lang));
 });
 
 // ─── Reject Branch Handler ──────────────────────────────────────────────────

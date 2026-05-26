@@ -1,6 +1,8 @@
 import bcrypt from "bcrypt";
+import dayjs from "dayjs";
 import {
   AppointmentStatus,
+  AvailabilityStatus,
   BranchStatus,
   PaymentMethod,
   PaymentStatus,
@@ -46,6 +48,8 @@ const CODE_EXPIRES_MINUTES = parseInt(
   10,
 );
 const MAX_ATTEMPTS = 5;
+const DEFAULT_BRANCH_OPEN_TIME = "09:00";
+const DEFAULT_BRANCH_CLOSE_TIME = "17:00";
 
 function mapServiceResponse(service) {
   return {
@@ -64,6 +68,151 @@ function mapServiceResponse(service) {
     updatedAt: service.updatedAt ?? null,
     createdAt: service.createdAt ?? null,
     category: service.category ?? null,
+  };
+}
+
+function mapBranchAvailability(availability) {
+  return {
+    id: availability.id,
+    dayOfWeek: availability.dayOfWeek,
+    startTime: availability.startTime,
+    endTime: availability.endTime,
+    status: availability.status,
+    createdAt: availability.createdAt,
+    updatedAt: availability.updatedAt,
+  };
+}
+
+function mapBranchProfile(branchAdmin) {
+  return {
+    id: branchAdmin.id,
+    ownerName: branchAdmin.ownerName,
+    email: branchAdmin.email,
+    phone: branchAdmin.phone,
+    businessName: branchAdmin.businessName,
+    category: branchAdmin.category,
+    description: branchAdmin.description ?? null,
+    logoUrl: branchAdmin.logoUrl ?? null,
+    operatingHours: branchAdmin.operatingHours ?? null,
+    address: branchAdmin.address,
+    city: branchAdmin.city,
+    district: branchAdmin.district,
+    status: branchAdmin.status,
+    isSubscriptionActive: branchAdmin.isSubscriptionActive,
+    subscriptionStartedAt: branchAdmin.subscriptionStartedAt,
+    emailVerified: branchAdmin.emailVerified,
+    phoneVerified: branchAdmin.phoneVerified,
+    createdAt: branchAdmin.createdAt,
+    updatedAt: branchAdmin.updatedAt,
+    selectedPlan: branchAdmin.plan,
+    currentSubscription: {
+      plan: branchAdmin.plan,
+      isSubscriptionActive: branchAdmin.isSubscriptionActive,
+      subscriptionStartedAt: branchAdmin.subscriptionStartedAt,
+    },
+    bookingSettings: {
+      allowCancellationBeforeHours:
+        branchAdmin.allowCancellationBeforeHours,
+    },
+    notificationSettings: {
+      bookingNotificationsEnabled:
+        branchAdmin.bookingNotificationsEnabled,
+      marketingNotificationsEnabled:
+        branchAdmin.marketingNotificationsEnabled,
+    },
+    branchAvailability: (branchAdmin.branchAvailabilities ?? [])
+      .map(mapBranchAvailability)
+      .sort((left, right) => left.dayOfWeek - right.dayOfWeek),
+  };
+}
+
+function buildBranchProfileSelect() {
+  return {
+    id: true,
+    ownerName: true,
+    email: true,
+    phone: true,
+    businessName: true,
+    category: true,
+    description: true,
+    logoUrl: true,
+    operatingHours: true,
+    address: true,
+    city: true,
+    district: true,
+    status: true,
+    isSubscriptionActive: true,
+    subscriptionStartedAt: true,
+    emailVerified: true,
+    phoneVerified: true,
+    createdAt: true,
+    updatedAt: true,
+    allowCancellationBeforeHours: true,
+    bookingNotificationsEnabled: true,
+    marketingNotificationsEnabled: true,
+    plan: {
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        maxStaff: true,
+        maxServices: true,
+        loyaltyEnabled: true,
+        offersEnabled: true,
+      },
+    },
+    branchAvailabilities: {
+      select: {
+        id: true,
+        dayOfWeek: true,
+        startTime: true,
+        endTime: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    },
+  };
+}
+
+function buildPublicBranchProfileSelect() {
+  return {
+    id: true,
+    businessName: true,
+    category: true,
+    description: true,
+    logoUrl: true,
+    city: true,
+    district: true,
+    address: true,
+    status: true,
+    isSubscriptionActive: true,
+    subscriptionStartedAt: true,
+    averageRating: true,
+    reviewCount: true,
+    allowCancellationBeforeHours: true,
+    bookingNotificationsEnabled: true,
+    marketingNotificationsEnabled: true,
+    plan: {
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        maxStaff: true,
+        maxServices: true,
+        loyaltyEnabled: true,
+        offersEnabled: true,
+      },
+    },
+    branchAvailabilities: {
+      select: {
+        id: true,
+        dayOfWeek: true,
+        startTime: true,
+        endTime: true,
+        status: true,
+      },
+    },
   };
 }
 
@@ -155,6 +304,62 @@ export class StaffNotFoundError extends AppError {
   constructor() {
     super(tr.STAFF_NOT_FOUND, 404);
     this.name = "StaffNotFoundError";
+  }
+}
+
+export class AppointmentNotFoundError extends AppError {
+  constructor() {
+    super(tr.APPOINTMENT_NOT_FOUND, 404);
+    this.name = "AppointmentNotFoundError";
+  }
+}
+
+export class AppointmentAccessError extends AppError {
+  constructor() {
+    super(tr.APPOINTMENT_ACCESS_DENIED, 403);
+    this.name = "AppointmentAccessError";
+  }
+}
+
+export class BranchAvailabilityNotFoundError extends AppError {
+  constructor() {
+    super(tr.BRANCH_AVAILABILITY_NOT_FOUND, 404);
+    this.name = "BranchAvailabilityNotFoundError";
+  }
+}
+
+export class ServiceDependencyError extends AppError {
+  constructor() {
+    super(tr.SERVICE_HAS_DEPENDENCIES, 409);
+    this.name = "ServiceDependencyError";
+  }
+}
+
+export class SubscriptionCancellationError extends AppError {
+  constructor() {
+    super(tr.INVALID_SUBSCRIPTION_CANCELLATION, 409);
+    this.name = "SubscriptionCancellationError";
+  }
+}
+
+export class BookingPaymentNotFoundError extends AppError {
+  constructor() {
+    super(tr.PAYMENT_NOT_FOUND, 404);
+    this.name = "BookingPaymentNotFoundError";
+  }
+}
+
+export class BookingPaymentAccessError extends AppError {
+  constructor() {
+    super(tr.PAYMENT_ACCESS_DENIED, 403);
+    this.name = "BookingPaymentAccessError";
+  }
+}
+
+export class AppointmentCancellationError extends AppError {
+  constructor() {
+    super(tr.APPOINTMENT_CANCELLATION_NOT_ALLOWED, 409);
+    this.name = "AppointmentCancellationError";
   }
 }
 
@@ -467,6 +672,16 @@ export async function createStaff(body, branchAdminUserId) {
       id: true,
       status: true,
       isSubscriptionActive: true,
+      branchAvailabilities: {
+        select: {
+          id: true,
+          dayOfWeek: true,
+          startTime: true,
+          endTime: true,
+          status: true,
+        },
+        orderBy: { dayOfWeek: "asc" },
+      },
       plan: {
         select: {
           id: true,
@@ -517,6 +732,16 @@ export async function createStaff(body, branchAdminUserId) {
     throw new BranchAdminValidationError(tr.INVALID_STAFF_SERVICE_SELECTION);
   }
 
+  const branchAvailabilities =
+    branchAdmin.branchAvailabilities && branchAdmin.branchAvailabilities.length > 0
+      ? branchAdmin.branchAvailabilities
+      : Array.from({ length: 7 }, (_, dayOfWeek) => ({
+          dayOfWeek,
+          startTime: DEFAULT_BRANCH_OPEN_TIME,
+          endTime: DEFAULT_BRANCH_CLOSE_TIME,
+          status: AvailabilityStatus.AVAILABLE,
+        }));
+
   const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
 
   let user;
@@ -537,6 +762,14 @@ export async function createStaff(body, branchAdminUserId) {
             startDate: new Date(data.startDate),
             staffRole: data.staffRole,
             commissionPercentage: data.commissionPercentage,
+            availabilities: {
+              create: branchAvailabilities.map((availability) => ({
+                dayOfWeek: availability.dayOfWeek,
+                startTime: availability.startTime,
+                endTime: availability.endTime,
+                status: availability.status,
+              })),
+            },
             services: {
               create: uniqueServiceIds.map((serviceId) => ({
                 service: { connect: { id: serviceId } },
@@ -1122,50 +1355,13 @@ export async function updateBranchAdminProfile(body, branchAdminUserId) {
 export async function getBranchAdminProfile(branchAdminUserId) {
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
-    select: {
-      id: true,
-      ownerName: true,
-      email: true,
-      phone: true,
-      businessName: true,
-      category: true,
-      logoUrl: true,
-      operatingHours: true,
-      address: true,
-      city: true,
-      district: true,
-      status: true,
-      isSubscriptionActive: true,
-      subscriptionStartedAt: true,
-      emailVerified: true,
-      phoneVerified: true,
-      createdAt: true,
-      updatedAt: true,
-      plan: {
-        select: {
-          id: true,
-          name: true,
-          price: true,
-          maxStaff: true,
-          maxServices: true,
-          loyaltyEnabled: true,
-          offersEnabled: true,
-        },
-      },
-    },
+    select: /** @type {any} */ (buildBranchProfileSelect()),
   });
 
   if (!branchAdmin) throw new BranchNotFoundError();
 
   return {
-    user: {
-      ...branchAdmin,
-      currentSubscription: {
-        plan: branchAdmin.plan,
-        isSubscriptionActive: branchAdmin.isSubscriptionActive,
-        subscriptionStartedAt: branchAdmin.subscriptionStartedAt,
-      },
-    },
+    user: mapBranchProfile(branchAdmin),
   };
 }
 
@@ -1189,6 +1385,25 @@ export async function deleteService(body, branchAdminUserId) {
 
   if (!service) {
     throw new BranchNotFoundError();
+  }
+
+  const [hasAppointmentLinks, hasReviewLinks, hasStaffLinks] = await Promise.all([
+    prisma.appointment.findFirst({
+      where: { serviceId: service.id },
+      select: { id: true },
+    }),
+    prisma.review.findFirst({
+      where: { serviceId: service.id },
+      select: { id: true },
+    }),
+    prisma.staffService.findFirst({
+      where: { serviceId: service.id },
+      select: { staffId: true },
+    }),
+  ]);
+
+  if (hasAppointmentLinks || hasReviewLinks || hasStaffLinks) {
+    throw new ServiceDependencyError();
   }
 
   if (service.status !== ServiceApprovalStatus.PENDING_APPROVAL) {
@@ -1282,6 +1497,142 @@ export async function activateSubscription(branchAdminUserId) {
       plan: branchAdmin.plan,
       isSubscriptionActive: result.updatedBranch.isSubscriptionActive,
       subscriptionStartedAt: result.updatedBranch.subscriptionStartedAt,
+    },
+  };
+}
+
+export async function renewSubscription(branchAdminUserId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: {
+      id: true,
+      status: true,
+      isSubscriptionActive: true,
+      planId: true,
+      plan: {
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          maxStaff: true,
+          maxServices: true,
+          loyaltyEnabled: true,
+          offersEnabled: true,
+        },
+      },
+    },
+  });
+
+  if (!branchAdmin) {
+    throw new BranchNotFoundError();
+  }
+
+  if (branchAdmin.status !== BranchStatus.APPROVED) {
+    throw new SubscriptionActivationForbiddenError();
+  }
+
+  if (branchAdmin.isSubscriptionActive) {
+    throw new SubscriptionAlreadyActiveError();
+  }
+
+  const now = new Date();
+  const result = await prisma.$transaction(async (tx) => {
+    const payment = await tx.subscriptionPayment.create({
+      data: {
+        branchId: branchAdmin.id,
+        planId: branchAdmin.planId,
+        amount: branchAdmin.plan.price,
+        status: PaymentStatus.PAID,
+        paymentMethod: PaymentMethod.CARD,
+        paidAt: now,
+      },
+      select: {
+        id: true,
+        amount: true,
+        status: true,
+        paymentMethod: true,
+        paidAt: true,
+      },
+    });
+
+    const updatedBranch = await tx.branchAdmin.update({
+      where: { id: branchAdmin.id },
+      data: {
+        isSubscriptionActive: true,
+        subscriptionStartedAt: now,
+      },
+      select: {
+        id: true,
+        isSubscriptionActive: true,
+        subscriptionStartedAt: true,
+      },
+    });
+
+    return { payment, updatedBranch };
+  });
+
+  return {
+    message: tr.SUBSCRIPTION_RENEWED,
+    payment: result.payment,
+    currentSubscription: {
+      plan: branchAdmin.plan,
+      isSubscriptionActive: result.updatedBranch.isSubscriptionActive,
+      subscriptionStartedAt: result.updatedBranch.subscriptionStartedAt,
+    },
+  };
+}
+
+export async function cancelSubscription(branchAdminUserId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: {
+      id: true,
+      status: true,
+      isSubscriptionActive: true,
+      plan: {
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          maxStaff: true,
+          maxServices: true,
+          loyaltyEnabled: true,
+          offersEnabled: true,
+        },
+      },
+    },
+  });
+
+  if (!branchAdmin) {
+    throw new BranchNotFoundError();
+  }
+
+  if (branchAdmin.status !== BranchStatus.APPROVED) {
+    throw new SubscriptionActivationForbiddenError();
+  }
+
+  if (!branchAdmin.isSubscriptionActive) {
+    throw new SubscriptionCancellationError();
+  }
+
+  const updatedBranch = await prisma.branchAdmin.update({
+    where: { id: branchAdmin.id },
+    data: {
+      isSubscriptionActive: false,
+    },
+    select: {
+      id: true,
+      isSubscriptionActive: true,
+      subscriptionStartedAt: true,
+    },
+  });
+
+  return {
+    message: tr.SUBSCRIPTION_CANCELED,
+    currentSubscription: {
+      plan: branchAdmin.plan,
+      isSubscriptionActive: updatedBranch.isSubscriptionActive,
+      subscriptionStartedAt: updatedBranch.subscriptionStartedAt,
     },
   };
 }
@@ -1447,18 +1798,10 @@ export async function getStaffEarnings(branchAdminUserId, period = "this_month")
 }
 
 export async function getBranchPublicProfile(branchId, authUser) {
-  const branch = await prisma.branchAdmin.findUnique({
+  const branch = /** @type {any} */ (await prisma.branchAdmin.findUnique({
     where: { id: Number(branchId) },
-    select: {
-      id: true,
-      businessName: true,
-      category: true,
-      status: true,
-      isSubscriptionActive: true,
-      averageRating: true,
-      reviewCount: true,
-    },
-  });
+    select: /** @type {any} */ (buildPublicBranchProfileSelect()),
+  }));
 
   if (!branch) throw new BranchNotFoundError();
 
@@ -1473,8 +1816,7 @@ export async function getBranchPublicProfile(branchId, authUser) {
     }
   }
 
-  // Fetch only latest 5 visible reviews for lightweight profile preview
-  const reviews = await prisma.review.findMany({
+  const reviews = /** @type {any} */ (await prisma.review.findMany({
     where: { branchId: branch.id, isVisible: true },
     take: 5,
     orderBy: { createdAt: "desc" },
@@ -1488,7 +1830,7 @@ export async function getBranchPublicProfile(branchId, authUser) {
       service: { select: { id: true, name: true } },
       staff: { select: { id: true, user: { select: { id: true, name: true } } } },
     },
-  });
+  }));
 
   const formatted = reviews.map(r => ({
     id: r.id,
@@ -1506,9 +1848,505 @@ export async function getBranchPublicProfile(branchId, authUser) {
       id: branch.id,
       businessName: branch.businessName,
       category: branch.category,
+      description: branch.description ?? null,
+      logoUrl: branch.logoUrl ?? null,
+      city: branch.city,
+      district: branch.district,
+      address: branch.address,
+      status: branch.status,
+      selectedPlan: branch.plan,
+      currentSubscription: {
+        plan: branch.plan,
+        isSubscriptionActive: branch.isSubscriptionActive,
+        subscriptionStartedAt: branch.subscriptionStartedAt,
+      },
       average_rating: branch.averageRating,
       total_reviews: branch.reviewCount,
+      bookingSettings: {
+        allowCancellationBeforeHours:
+          branch.allowCancellationBeforeHours,
+      },
+      notificationSettings: {
+        bookingNotificationsEnabled:
+          branch.bookingNotificationsEnabled,
+        marketingNotificationsEnabled:
+          branch.marketingNotificationsEnabled,
+      },
+      branchAvailability: (branch.branchAvailabilities ?? []).map(
+        mapBranchAvailability,
+      ),
     },
     reviews: formatted,
+  };
+}
+
+export async function updateBranchAvailability(body, branchAdminUserId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: {
+      id: true,
+      status: true,
+    },
+  });
+
+  if (!branchAdmin) {
+    throw new BranchNotFoundError();
+  }
+
+  if (branchAdmin.status !== BranchStatus.APPROVED) {
+    throw new BranchAdminValidationError(tr.BRANCH_IS_UNDER_REVIEW);
+  }
+
+  const availability = await prisma.branchAvailability.upsert({
+    where: {
+      branchAdminId_dayOfWeek: {
+        branchAdminId: branchAdmin.id,
+        dayOfWeek: body.dayOfWeek,
+      },
+    },
+    create: {
+      branchAdminId: branchAdmin.id,
+      dayOfWeek: body.dayOfWeek,
+      startTime: body.startTime,
+      endTime: body.endTime,
+      status: body.status ?? AvailabilityStatus.AVAILABLE,
+    },
+    update: {
+      ...(body.startTime !== undefined ? { startTime: body.startTime } : {}),
+      ...(body.endTime !== undefined ? { endTime: body.endTime } : {}),
+      ...(body.status !== undefined ? { status: body.status } : {}),
+    },
+    select: {
+      id: true,
+      dayOfWeek: true,
+      startTime: true,
+      endTime: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return availability;
+}
+
+export async function updateBookingSettings(body, branchAdminUserId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: { id: true, status: true },
+  });
+
+  if (!branchAdmin) {
+    throw new BranchNotFoundError();
+  }
+
+  if (branchAdmin.status !== BranchStatus.APPROVED) {
+    throw new BranchAdminValidationError(tr.BRANCH_IS_UNDER_REVIEW);
+  }
+
+  const updated = await prisma.branchAdmin.update({
+    where: { id: branchAdmin.id },
+    data: {
+      ...(body.allowCancellationBeforeHours !== undefined
+        ? { allowCancellationBeforeHours: body.allowCancellationBeforeHours }
+        : {}),
+    },
+    select: {
+      id: true,
+      allowCancellationBeforeHours: true,
+    },
+  });
+
+  return updated;
+}
+
+export async function updateNotificationSettings(body, branchAdminUserId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: { id: true, status: true },
+  });
+
+  if (!branchAdmin) {
+    throw new BranchNotFoundError();
+  }
+
+  if (branchAdmin.status !== BranchStatus.APPROVED) {
+    throw new BranchAdminValidationError(tr.BRANCH_IS_UNDER_REVIEW);
+  }
+
+  const updated = await prisma.branchAdmin.update({
+    where: { id: branchAdmin.id },
+    data: {
+      ...(body.bookingNotificationsEnabled !== undefined
+        ? { bookingNotificationsEnabled: body.bookingNotificationsEnabled }
+        : {}),
+      ...(body.marketingNotificationsEnabled !== undefined
+        ? { marketingNotificationsEnabled: body.marketingNotificationsEnabled }
+        : {}),
+    },
+    select: {
+      id: true,
+      bookingNotificationsEnabled: true,
+      marketingNotificationsEnabled: true,
+    },
+  });
+
+  return updated;
+}
+
+export async function listAppointments(branchAdminUserId, query = {}) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: { id: true },
+  });
+
+  if (!branchAdmin) {
+    throw new BranchNotFoundError();
+  }
+
+  const where = /** @type {any} */ ({
+    branchId: branchAdmin.id,
+    ...(query.status ? { status: query.status } : {}),
+    ...(query.staffId ? { staffId: query.staffId } : {}),
+  });
+
+  if (query.date) {
+    const targetDate = dayjs(query.date).toDate();
+    where.scheduledAt = {
+      gte: dayjs(targetDate).startOf("day").toDate(),
+      lte: dayjs(targetDate).endOf("day").toDate(),
+    };
+  }
+
+  const appointments = await prisma.appointment.findMany({
+    where,
+    orderBy: { scheduledAt: "desc" },
+    select: {
+      id: true,
+      scheduledAt: true,
+      status: true,
+      client: {
+        select: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            },
+          },
+        },
+      },
+      staff: {
+        select: {
+          id: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      service: {
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          durationMinutes: true,
+        },
+      },
+      bookingPayment: {
+        select: {
+          status: true,
+          paymentMethod: true,
+          paidAt: true,
+          amount: true,
+        },
+      },
+    },
+  });
+
+  return appointments.map((appointment) => ({
+    id: appointment.id,
+    scheduledAt: appointment.scheduledAt,
+    status: appointment.status,
+    client: appointment.client?.user ?? null,
+    staff: appointment.staff?.user ?? null,
+    service: appointment.service,
+    paymentStatus: appointment.bookingPayment?.status ?? PaymentStatus.PENDING,
+  }));
+}
+
+export async function getAppointmentDetails(branchAdminUserId, appointmentId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: { id: true },
+  });
+
+  if (!branchAdmin) {
+    throw new BranchNotFoundError();
+  }
+
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    select: {
+      id: true,
+      branchId: true,
+      scheduledAt: true,
+      status: true,
+      client: {
+        select: {
+          id: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            },
+          },
+        },
+      },
+      staff: {
+        select: {
+          id: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      service: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          durationMinutes: true,
+        },
+      },
+      bookingPayment: {
+        select: {
+          status: true,
+          paymentMethod: true,
+          paidAt: true,
+          amount: true,
+        },
+      },
+      serviceExcutions: {
+        select: {
+          notes: true,
+          attachments: true,
+        },
+      },
+    },
+  });
+
+  if (!appointment) {
+    throw new AppointmentNotFoundError();
+  }
+
+  if (appointment.branchId !== branchAdmin.id) {
+    throw new AppointmentAccessError();
+  }
+
+  return {
+    id: appointment.id,
+    scheduledAt: appointment.scheduledAt,
+    status: appointment.status,
+    client: appointment.client?.user ?? null,
+    staff: appointment.staff?.user ?? null,
+    service: appointment.service,
+    paymentStatus: appointment.bookingPayment?.status ?? PaymentStatus.PENDING,
+    paymentMethod: appointment.bookingPayment?.paymentMethod ?? null,
+    paidAt: appointment.bookingPayment?.paidAt ?? null,
+    amount: appointment.bookingPayment?.amount ?? null,
+    notes: appointment.serviceExcutions?.[0]?.notes ?? null,
+    attachments: appointment.serviceExcutions?.[0]?.attachments ?? null,
+  };
+}
+
+export async function cancelAppointment(branchAdminUserId, appointmentId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: { id: true },
+  });
+
+  if (!branchAdmin) {
+    throw new BranchNotFoundError();
+  }
+
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    select: {
+      id: true,
+      branchId: true,
+      status: true,
+    },
+  });
+
+  if (!appointment) {
+    throw new AppointmentNotFoundError();
+  }
+
+  if (appointment.branchId !== branchAdmin.id) {
+    throw new AppointmentAccessError();
+  }
+
+  if (
+    appointment.status === AppointmentStatus.COMPLETED ||
+    appointment.status === AppointmentStatus.CANCELED
+  ) {
+    throw new AppointmentCancellationError();
+  }
+
+  const updated = await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: {
+      status: AppointmentStatus.CANCELED,
+    },
+    select: {
+      id: true,
+      status: true,
+      updatedAt: true,
+    },
+  });
+
+  return updated;
+}
+
+export async function listBookingPayments(branchAdminUserId, query = {}) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: { id: true },
+  });
+
+  if (!branchAdmin) {
+    throw new BranchNotFoundError();
+  }
+
+  const where = /** @type {any} */ ({
+    branchId: branchAdmin.id,
+    ...(query.status ? { status: query.status } : {}),
+  });
+
+  if (query.date) {
+    const targetDate = dayjs(query.date).toDate();
+    where.paidAt = {
+      gte: dayjs(targetDate).startOf("day").toDate(),
+      lte: dayjs(targetDate).endOf("day").toDate(),
+    };
+  }
+
+  const payments = await prisma.bookingPayment.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      amount: true,
+      status: true,
+      paymentMethod: true,
+      paidAt: true,
+      appointment: {
+        select: {
+          id: true,
+          scheduledAt: true,
+          status: true,
+          client: {
+            select: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+          service: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return payments.map((payment) => ({
+    id: payment.id,
+    amount: payment.amount,
+    paymentStatus: payment.status,
+    paymentMethod: payment.paymentMethod,
+    paidAt: payment.paidAt,
+    appointment: payment.appointment,
+    client: payment.appointment.client?.user ?? null,
+  }));
+}
+
+export async function getBookingPaymentDetails(branchAdminUserId, paymentId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: { id: true },
+  });
+
+  if (!branchAdmin) {
+    throw new BranchNotFoundError();
+  }
+
+  const payment = await prisma.bookingPayment.findUnique({
+    where: { id: paymentId },
+    select: {
+      id: true,
+      branchId: true,
+      amount: true,
+      status: true,
+      paymentMethod: true,
+      paidAt: true,
+      appointment: {
+        select: {
+          id: true,
+          scheduledAt: true,
+          status: true,
+          client: {
+            select: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+          service: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!payment) {
+    throw new BookingPaymentNotFoundError();
+  }
+
+  if (payment.branchId !== branchAdmin.id) {
+    throw new BookingPaymentAccessError();
+  }
+
+  return {
+    id: payment.id,
+    amount: payment.amount,
+    paymentStatus: payment.status,
+    paymentMethod: payment.paymentMethod,
+    paidAt: payment.paidAt,
+    appointment: payment.appointment,
+    client: payment.appointment.client?.user ?? null,
   };
 }

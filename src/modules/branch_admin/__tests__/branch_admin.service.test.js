@@ -1,36 +1,36 @@
 import {
-    afterEach,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    jest
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest
 } from "@jest/globals";
 import bcrypt from "bcrypt";
 import {
-    BranchStatus,
-    Role,
-    StaffRole,
-    UserStatus,
+  BranchStatus,
+  Role,
+  StaffRole,
+  UserStatus,
 } from "../../../generated/prisma/client.js";
 import prisma from "../../../lib/prisma.js";
 import {
-    activateSubscription,
-    BranchAdminValidationError,
-    BranchNotFoundError,
-    createStaff,
-    deleteStaff,
-    InactivePlanError,
-    InvalidPlanError,
-    StaffNotFoundError,
-    submitBranch,
-    SubscriptionActivationForbiddenError,
-    SubscriptionAlreadyActiveError,
-    updateBranchAdminProfile,
+  activateSubscription,
+  BranchAdminValidationError,
+  BranchNotFoundError,
+  createStaff,
+  deleteStaff,
+  InactivePlanError,
+  InvalidPlanError,
+  StaffNotFoundError,
+  submitBranch,
+  SubscriptionActivationForbiddenError,
+  SubscriptionAlreadyActiveError,
+  updateBranchAdminProfile,
 } from "../branch_admin.service.js";
 import {
-    applySchema,
-    validateBranchAdminInput,
+  applySchema,
+  validateBranchAdminInput,
 } from "../branch_admin.validation.js";
 
 const validBranchSubmissionData = {
@@ -266,6 +266,14 @@ describe("Branch Admin Service - createStaff", () => {
             startDate: new Date(validStaffData.startDate),
             staffRole: validStaffData.staffRole,
             commissionPercentage: validStaffData.commissionPercentage,
+            availabilities: {
+              create: [0, 1, 2, 3, 4, 5, 6].map((dayOfWeek) => ({
+                dayOfWeek,
+                startTime: "09:00",
+                endTime: "17:00",
+                status: "AVAILABLE",
+              })),
+            },
             services: {
               create: [
                 { service: { connect: { id: 100 } } },

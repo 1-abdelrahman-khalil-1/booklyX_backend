@@ -40,6 +40,16 @@ Core route groups:
 - `/admin`
 - `/files`
 
+## Recent Branch Admin Additions
+
+- Branch subscription actions: renew and cancel.
+- Branch configuration: availability, booking settings, and notification settings.
+- Appointment management: list, details, and cancel.
+- Booking payment history: list and details.
+- Offer management: delete offer.
+- Upload flow: image uploads are Cloudinary-backed and image-only.
+- Public branch profile now includes the expanded branch data used by the branch admin dashboard.
+
 ## Tech Stack
 
 - Node.js
@@ -182,7 +192,7 @@ Stable test logins:
 
 ### Branch admin onboarding
 
-```text
+````text
 1. POST /branch-admin/apply
 2. POST /branch-admin/verify-email
 3. POST /branch-admin/verify-phone
@@ -200,7 +210,7 @@ Stable test logins:
 4. GET /staff/schedule (to see daily plan)
 5. PATCH /staff/appointments/:id/start
 6. PATCH /staff/appointments/:id/complete
-```
+````
 
 ## Useful Commands
 

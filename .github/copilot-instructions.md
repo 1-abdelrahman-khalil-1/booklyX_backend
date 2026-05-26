@@ -4,6 +4,31 @@
 
 ---
 
+## Human Approval Gate (Mandatory)
+
+If any of the following occurs, STOP and ask for confirmation before continuing:
+
+- Architectural uncertainty
+- Multiple valid implementation approaches
+- Ambiguous business logic
+- Schema or migration changes
+- Prisma model modifications
+- Breaking API changes
+- Deleting or renaming files
+- Refactoring shared/core logic
+- Security-sensitive decisions
+- RBAC behavior changes
+- Changes affecting authentication or tokens
+- Unclear translation keys or localization behavior
+- Any operation with potential data loss
+- Any action that modifies more files/modules than originally expected
+
+Do not assume intent in ambiguous situations.
+Present the options, tradeoffs, and recommended approach first.
+Continue only after explicit confirmation.
+This rule has higher priority than implementation speed.
+When uncertain, asking is REQUIRED — not optional.
+
 ## 1. Project Architecture (Feature-Based)
 
 - The application is divided into `src/modules/*` (examples: `auth`, `users`, `admin`, `branch_admin`, `plans`, `offers`, `staff`, `reviews`).
@@ -118,22 +143,67 @@ Note: The project enforces controller-side validation using Zod helpers that thr
 
 ## 5. Package-First Approach (IMPORTANT)
 
-- Do NOT implement common logic manually if a well-known package exists
+**MANDATORY WORKFLOW**: Before implementing any feature, utility, or data generation, you MUST check for existing libraries first.
 
-### Always prefer:
+### 5.1 Workflow (Always Follow This Order)
 
-- Validation → `zod`
-- Hashing → `bcrypt`
-- Auth → `jsonwebtoken`
-- Date → `dayjs`
-- Env → `dotenv`
-- DB → `prisma`
+1. **Search for existing solutions** → Check npm ecosystem, your project dependencies
+2. **Check package.json** → Verify what's already installed in the project
+3. **Ask or confirm** → If multiple options exist, ask the user which library to use
+4. **Install if needed** → Use `npm install` or `npm install --save-dev`
+5. **Integrate the library** → Use the library instead of manual implementation
+6. **Only code manually** → When no suitable library exists AND the user confirms the approach
 
-### Rules:
+### 5.2 Common Task → Library Mapping
 
-- Avoid reinventing the wheel
-- Use stable, well-known libraries only
-- Keep usage consistent across project
+| Task | Preferred Library | Alternatives | Notes |
+|------|------------------|---------------|-------|
+| Input Validation | `zod` | joi, yup | Already in project |
+| Password Hashing | `bcrypt` | argon2 | Already in project |
+| JWT Auth | `jsonwebtoken` | jose | Already in project |
+| Date/Time | `dayjs` | date-fns, moment | Already in project |
+| Environment Variables | `dotenv` | - | Already in project |
+| Database ORM | `prisma` | - | Already in project |
+| **Data Generation** | **`@faker-js/faker`** | **casual, chance** | **For testing/seeding** |
+| HTTP Client | `axios` | fetch | Check if installed |
+| File Upload | `multer` | express-fileupload | Already in project |
+| Logging | Check project | winston, pino | Use what's configured |
+| Testing | `jest` | vitest, mocha | Already in project |
+
+### 5.3 Rules
+
+- **Avoid reinventing the wheel** - If a mature package exists, use it
+- **Use stable, well-known libraries only** - No experimental or unmaintained packages
+- **Keep usage consistent** - Use the same library across the project for the same purpose
+- **Check project dependencies first** - Don't duplicate packages
+- **Ask before installing new libraries** - New deps impact project size and maintenance
+- **Document non-obvious choices** - If you pick a less common library, explain why
+
+### 5.4 Example: The Right Way (Seed Data Generation)
+
+❌ **Wrong**: Manually create hundreds of hardcoded seed records
+```javascript
+const CLIENTS = [
+  { name: "Client 1", email: "client1@...", phone: "0100..." },
+  { name: "Client 2", email: "client2@...", phone: "0100..." },
+  // ... manually typed 100 more
+];
+```
+
+✅ **Right**: Use faker library with stable accounts preserved
+```javascript
+import { faker } from "@faker-js/faker";
+
+const STABLE_ACCOUNTS = [/* preserved accounts */];
+function generateFakeClients(count) {
+  return Array.from({ length: count }, () => ({
+    name: faker.person.fullName(),
+    email: faker.internet.email(),
+    phone: faker.phone.number("0##########"),
+  }));
+}
+const CLIENTS = [...STABLE_ACCOUNTS, ...generateFakeClients()];
+```
 
 ---
 
@@ -150,7 +220,7 @@ Note: The project enforces controller-side validation using Zod helpers that thr
   - formats response
   - handles translation
 
-Important: Services and validation helpers must not call translation functions directly; put `tr.KEY` into thrown errors and let the global middleware translate based on `Accept-Language`.
+Important: Services and validation helpers must not call translation functions directlظy; put `tr.KEY` into thrown errors and let the global middleware translate based on `Accept-Language`.
 
 ---
 

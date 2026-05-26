@@ -1,6 +1,9 @@
 import { z } from "zod";
 import {
+    AppointmentStatus,
+    AvailabilityStatus,
     BusinessCategory,
+    PaymentStatus,
     ServiceApprovalStatus,
     StaffRole,
     VerificationType,
@@ -160,6 +163,14 @@ export const staffIdSchema = z.object({
   id: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
 });
 
+export const appointmentIdSchema = z.object({
+  id: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
+});
+
+export const paymentIdSchema = z.object({
+  id: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
+});
+
 export const addServiceCategorySchema = z.object({
   name: z
     .string({ error: tr.CATEGORY_REQUIRED })
@@ -280,6 +291,69 @@ export const updateBranchAdminProfileSchema = z
       });
     }
   });
+
+export const updateBranchAvailabilitySchema = z
+  .object({
+    dayOfWeek: z.coerce.number().int().min(0).max(6),
+    startTime: z
+      .string({ error: tr.STAFF_START_TIME_REQUIRED })
+      .regex(/^\d{2}:\d{2}$/, tr.STAFF_TIME_FORMAT_INVALID),
+    endTime: z
+      .string({ error: tr.STAFF_END_TIME_REQUIRED })
+      .regex(/^\d{2}:\d{2}$/, tr.STAFF_TIME_FORMAT_INVALID),
+    status: z.enum(Object.values(AvailabilityStatus), {
+      error: tr.INVALID_ENUM_VALUE,
+    }).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.startTime >= data.endTime) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["endTime"],
+        message: tr.STAFF_END_TIME_AFTER_START_TIME,
+      });
+    }
+  });
+
+export const updateBookingSettingsSchema = z.object({
+  allowCancellationBeforeHours: z.coerce
+    .number()
+    .int()
+    .min(0, tr.INVALID_ID),
+});
+
+export const updateNotificationSettingsSchema = z
+  .object({
+    bookingNotificationsEnabled: z.boolean().optional(),
+    marketingNotificationsEnabled: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.bookingNotificationsEnabled === undefined &&
+      data.marketingNotificationsEnabled === undefined
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["bookingNotificationsEnabled"],
+        message: tr.PROFILE_UPDATE_FIELDS_REQUIRED,
+      });
+    }
+  });
+
+export const branchAppointmentsQuerySchema = z.object({
+  date: z.coerce.date().optional(),
+  status: z.enum(Object.values(AppointmentStatus), {
+    error: tr.INVALID_ENUM_VALUE,
+  }).optional(),
+  staffId: z.coerce.number().int().positive({ message: tr.INVALID_ID }).optional(),
+});
+
+export const bookingPaymentsQuerySchema = z.object({
+  date: z.coerce.date().optional(),
+  status: z.enum(Object.values(PaymentStatus), {
+    error: tr.INVALID_ENUM_VALUE,
+  }).optional(),
+});
 
 export const verifyBranchSchema = z.object({
   id: z.number(),

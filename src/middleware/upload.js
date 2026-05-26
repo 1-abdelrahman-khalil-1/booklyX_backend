@@ -1,154 +1,114 @@
 import crypto from "crypto";
-import fs from "fs";
 import multer from "multer";
-import path from "path";
+
+import cloudinary from "../lib/cloudinary.js";
 import { tr } from "../lib/i18n/index.js";
 import { AppError } from "../utils/AppError.js";
-
-const uploadDir = path.resolve("uploads");
-fs.mkdirSync(uploadDir, { recursive: true });
-
-// Magic bytes (file signatures) for validation
-const MAGIC_BYTES = {
-  jpeg: [0xff, 0xd8, 0xff],
-  png: [0x89, 0x50, 0x4e, 0x47],
-  gif: [0x47, 0x49, 0x46],
-  webp: [0x52, 0x49, 0x46, 0x46], // RIFF
-  pdf: [0x25, 0x50, 0x44, 0x46], // %PDF
-};
-
-/**
- * Validate file content against known magic byte signatures.
- * Returns true if file matches one of the expected signatures.
- */
-async function validateFileMagicBytes(filePath, allowedTypes) {
-  return new Promise((resolve) => {
-    const buffer = Buffer.alloc(8);
-    const fd = fs.openSync(filePath, "r");
-    try {
-      fs.readSync(fd, buffer, 0, 8, 0);
-      fs.closeSync(fd);
-
-      for (const type of allowedTypes) {
-        const magicBytes = MAGIC_BYTES[type];
-        if (
-          magicBytes &&
-          buffer.slice(0, magicBytes.length).equals(Buffer.from(magicBytes))
-        ) {
-          resolve(true);
-          return;
-        }
-      }
-      resolve(false);
-    } catch (_err) {
-      fs.closeSync(fd);
-      resolve(false);
-    }
-  });
-}
-
-const sharedStorageFactory = () =>
-  multer.diskStorage({
-    destination: (_req, _file, cb) => {
-      cb(null, uploadDir);
-    },
-    filename: (_req, file, cb) => {
-      const safeBaseName = path
-        .parse(file.originalname)
-        .name.replace(/[^a-zA-Z0-9_-]/g, "")
-        .slice(0, 40);
-      const ext = path.extname(file.originalname).toLowerCase();
-      const unique = crypto.randomBytes(8).toString("hex");
-      cb(null, `${Date.now()}-${unique}-${safeBaseName || "file"}${ext}`);
-    },
-  });
 
 const maxFileSize = Number(
   process.env.UPLOAD_MAX_FILE_SIZE_BYTES || 5 * 1024 * 1024,
 );
 
-/**
- * Upload middleware for images only (service images, etc).
- * Strict validation: JPEG, PNG, GIF, WebP only.
- */
-export const imageOnlyUpload = multer({
-  storage: sharedStorageFactory(),
-  limits: { fileSize: maxFileSize },
-  fileFilter: (_req, file, cb) => {
-    const allowedImageMimes = [
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-    ];
-    if (!allowedImageMimes.includes(file.mimetype)) {
-      cb(new AppError(tr.INVALID_FILE_TYPE, 400));
-      return;
-    }
-    cb(null, true);
-  },
-});
+const allowedImageMimes = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+];
 
-/**
- * Upload middleware for documents (branch submissions, KYC, etc).
- * Allows images and PDF only. Magic byte validation applied post-upload.
- */
-export const documentsUpload = multer({
-  storage: sharedStorageFactory(),
-  limits: { fileSize: maxFileSize },
-  fileFilter: async (_req, file, cb) => {
-    const allowedDocMimes = [
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-      "application/pdf",
-    ];
-    if (!allowedDocMimes.includes(file.mimetype)) {
-      cb(new AppError(tr.INVALID_FILE_TYPE, 400));
-      return;
-    }
-    cb(null, true);
-  },
-});
+function createCloudinaryStorage(folder) {
+  return {
+    _handleFile(_req, file, cb) {
+      const publicId = generatePublicId();
 
-/**
- * Middleware to validate magic bytes of uploaded files.
- * Must be called AFTER multer, on successful uploads.
- * Deletes file if validation fails.
- */
-export const validateUploadedFilesmagicbytes =
-  (allowedTypes) => (req, res, next) => {
-    if (!req.files || Object.keys(req.files).length === 0) {
-      return next();
-    }
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          public_id: publicId,
+          resource_type: "image",
+        },
+        (error, result) => {
+          if (error) {
+            cb(error);
+            return;
+          }
 
-    const filesToValidate = [];
-    for (const [fieldName, fileList] of Object.entries(req.files)) {
-      if (Array.isArray(fileList)) {
-        for (const file of fileList) {
-          filesToValidate.push({ fieldName, file, types: allowedTypes });
-        }
+          if (!result) {
+            cb(new AppError(tr.INTERNAL_SERVER_ERROR, 500));
+            return;
+          }
+
+          cb(null, {
+            path: result.secure_url,
+            url: result.secure_url,
+            filename: result.public_id,
+            public_id: result.public_id,
+            resource_type: result.resource_type,
+            format: result.format,
+            size: result.bytes,
+          });
+        },
+      );
+
+      file.stream.on("error", (error) => {
+        uploadStream.destroy(error);
+        cb(error);
+      });
+
+      file.stream.pipe(uploadStream);
+    },
+
+    _removeFile(_req, file, cb) {
+      if (!file?.public_id) {
+        cb(null);
+        return;
       }
+
+      cloudinary.uploader.destroy(
+        file.public_id,
+        {
+          resource_type: file.resource_type ?? "image",
+        },
+        (error) => {
+          cb(error ?? null);
+        },
+      );
+    },
+  };
+}
+
+export const imageOnlyUpload = multer({
+  storage: createCloudinaryStorage("booklyx/images"),
+
+  limits: {
+    fileSize: maxFileSize,
+  },
+
+  fileFilter: (_req, file, cb) => {
+    if (!allowedImageMimes.includes(file.mimetype)) {
+      return cb(new AppError(tr.INVALID_FILE_TYPE, 400));
     }
 
-    Promise.all(
-      filesToValidate.map(async ({ file, types }) => {
-        const isValid = await validateFileMagicBytes(
-          file.path,
-          types || ["jpeg", "png", "gif", "webp", "pdf"],
-        );
-        if (!isValid) {
-          fs.unlinkSync(file.path);
-          throw new AppError(tr.INVALID_FILE_TYPE, 400);
-        }
-      }),
-    )
-      .then(() => next())
-      .catch((err) => next(err));
-  };
+    cb(null, true);
+  },
+});
 
-export function getUploadedFileUrl(req, file) {
-  if (!file) return undefined;
-  return `${req.protocol}://${req.get("host")}/uploads/${file.filename}`;
+export const documentsUpload = multer({
+  storage: createCloudinaryStorage("booklyx/documents"),
+
+  limits: {
+    fileSize: maxFileSize,
+  },
+
+  fileFilter: (_req, file, cb) => {
+    if (!allowedImageMimes.includes(file.mimetype)) {
+      return cb(new AppError(tr.INVALID_FILE_TYPE, 400));
+    }
+
+    cb(null, true);
+  },
+});
+
+export function generatePublicId(prefix = "booklyx") {
+  return `${prefix}/${Date.now()}-${crypto.randomBytes(8).toString("hex")}`;
 }

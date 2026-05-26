@@ -24,6 +24,16 @@ To avoid duplicated documentation:
 - `/admin`
 - `/files`
 
+## Recently Documented Branch Admin Coverage
+
+- Subscription renew and cancel endpoints.
+- Branch availability, booking settings, and notification settings.
+- Appointment list, appointment details, and appointment cancel endpoints.
+- Booking payment list and booking payment details endpoints.
+- Offer delete endpoint.
+- Image-only upload handling for branch/profile/service assets.
+- Expanded public branch profile response.
+
 ## Common headers
 
 ```http

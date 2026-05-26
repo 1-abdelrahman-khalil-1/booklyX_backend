@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { tr } from "../../lib/i18n/index.js";
 import { AppError } from "../../utils/AppError.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
@@ -17,12 +18,12 @@ export const downloadFileHandler = asyncHandler(async (req, res) => {
 
   // Prevent path traversal: reject any filename with path separators
   if (filename.includes("..") || filename.includes("/") || filename.includes("\\")) {
-    throw new AppError("Invalid filename", 400);
+    throw new AppError(tr.INVALID_FILENAME, 400);
   }
 
   // Validate filename length
   if (filename.length > MAX_FILENAME_LENGTH || filename.length === 0) {
-    throw new AppError("Invalid filename", 400);
+    throw new AppError(tr.INVALID_FILENAME, 400);
   }
 
   const filePath = path.join(uploadDir, filename);
@@ -30,12 +31,12 @@ export const downloadFileHandler = asyncHandler(async (req, res) => {
   // Ensure resolved path is still within uploads directory (prevent directory escape)
   const resolvedPath = path.resolve(filePath);
   if (!resolvedPath.startsWith(path.resolve(uploadDir))) {
-    throw new AppError("Invalid filename", 400);
+    throw new AppError(tr.INVALID_FILENAME, 400);
   }
 
   // Check if file exists
   if (!fs.existsSync(resolvedPath)) {
-    throw new AppError("File not found", 404);
+    throw new AppError(tr.FILE_NOT_FOUND, 404);
   }
 
   // Serve the file with proper headers

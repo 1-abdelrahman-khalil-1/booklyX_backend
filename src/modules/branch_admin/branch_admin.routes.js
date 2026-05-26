@@ -6,10 +6,14 @@ import {
   activateSubscriptionHandler,
   addServiceCategoryHandler,
   applyHandler,
+  cancelAppointmentHandler,
+  cancelSubscriptionHandler,
   createServiceHandler,
   createStaffHandler,
   deleteServiceHandler,
   deleteStaffHandler,
+  getAppointmentDetailsHandler,
+  getBookingPaymentDetailsHandler,
   getBranchAdminProfileHandler,
   getBranchDashboardStatsHandler,
   getBranchPublicProfileHandler,
@@ -18,8 +22,14 @@ import {
   getMyStaffByIdHandler,
   getMyStaffHandler,
   getStaffEarningsHandler,
+  listAppointmentsHandler,
+  listBookingPaymentsHandler,
+  renewSubscriptionHandler,
   resendCodeHandler,
+  updateBookingSettingsHandler,
   updateBranchAdminProfileHandler,
+  updateBranchAvailabilityHandler,
+  updateNotificationSettingsHandler,
   updateServiceHandler,
   updateStaffHandler,
   verifyEmailHandler,
@@ -54,6 +64,20 @@ branchAdminRouter.post(
   activateSubscriptionHandler,
 );
 
+branchAdminRouter.post(
+  "/subscription/renew",
+  authenticate,
+  authorize(Role.branch_admin),
+  renewSubscriptionHandler,
+);
+
+branchAdminRouter.post(
+  "/subscription/cancel",
+  authenticate,
+  authorize(Role.branch_admin),
+  cancelSubscriptionHandler,
+);
+
 branchAdminRouter.get(
   "/profile",
   authenticate,
@@ -75,6 +99,27 @@ branchAdminRouter.put(
   authorize(Role.branch_admin),
   profileUploadField,
   updateBranchAdminProfileHandler,
+);
+
+branchAdminRouter.put(
+  "/availability",
+  authenticate,
+  authorize(Role.branch_admin),
+  updateBranchAvailabilityHandler,
+);
+
+branchAdminRouter.put(
+  "/booking-settings",
+  authenticate,
+  authorize(Role.branch_admin),
+  updateBookingSettingsHandler,
+);
+
+branchAdminRouter.put(
+  "/notification-settings",
+  authenticate,
+  authorize(Role.branch_admin),
+  updateNotificationSettingsHandler,
 );
 
 branchAdminRouter.post(
@@ -126,14 +171,6 @@ branchAdminRouter.get(
   getMyServiceCategoriesHandler,
 );
 
-branchAdminRouter.post(
-  "/services/create-service",
-  authenticate,
-  authorize(Role.branch_admin),
-  serviceUploadField,
-  createServiceHandler,
-);
-
 branchAdminRouter.get(
   "/services/my-services",
   authenticate,
@@ -155,14 +192,6 @@ branchAdminRouter.get(
   getStaffEarningsHandler,
 );
 
-// Backward-compatible alias.
-branchAdminRouter.get(
-  "/my-services",
-  authenticate,
-  authorize(Role.branch_admin),
-  getMyServicesHandler,
-);
-
 branchAdminRouter.put(
   "/services/:id",
   authenticate,
@@ -176,6 +205,41 @@ branchAdminRouter.delete(
   authenticate,
   authorize(Role.branch_admin),
   deleteServiceHandler,
+);
+
+branchAdminRouter.get(
+  "/appointments",
+  authenticate,
+  authorize(Role.branch_admin),
+  listAppointmentsHandler,
+);
+
+branchAdminRouter.get(
+  "/appointments/:id",
+  authenticate,
+  authorize(Role.branch_admin),
+  getAppointmentDetailsHandler,
+);
+
+branchAdminRouter.patch(
+  "/appointments/:id/cancel",
+  authenticate,
+  authorize(Role.branch_admin),
+  cancelAppointmentHandler,
+);
+
+branchAdminRouter.get(
+  "/booking-payments",
+  authenticate,
+  authorize(Role.branch_admin),
+  listBookingPaymentsHandler,
+);
+
+branchAdminRouter.get(
+  "/booking-payments/:id",
+  authenticate,
+  authorize(Role.branch_admin),
+  getBookingPaymentDetailsHandler,
 );
 
 // Public branch profile with reviews (clients and branch_admin can view)

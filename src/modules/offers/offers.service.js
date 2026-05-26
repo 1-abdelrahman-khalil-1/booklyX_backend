@@ -1,7 +1,7 @@
 import {
-    BranchStatus,
-    OfferDiscountType,
-    ServiceApprovalStatus,
+  BranchStatus,
+  OfferDiscountType,
+  ServiceApprovalStatus,
 } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
@@ -259,6 +259,31 @@ export async function toggleOffer(id, branchAdminUserId) {
       updatedAt: true,
     },
   });
+}
+
+export async function deleteOffer(id, branchAdminUserId) {
+  const branchAdmin = await getApprovedBranchAdmin(branchAdminUserId);
+  await ensureOffersEnabled(branchAdmin.id);
+
+  const offer = await prisma.offer.findFirst({
+    where: {
+      id,
+      branchId: branchAdmin.id,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!offer) {
+    throw new OfferNotFoundError();
+  }
+
+  await prisma.offer.delete({
+    where: { id: offer.id },
+  });
+
+  return { id: offer.id };
 }
 
 export async function listBranchOffers(branchAdminUserId) {

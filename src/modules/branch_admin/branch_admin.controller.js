@@ -4,10 +4,14 @@ import { successResponse } from "../../utils/response.js";
 import {
     activateSubscription,
     addServiceCategory,
+    cancelAppointment,
+    cancelSubscription,
     createService,
     createStaff,
     deleteService,
     deleteStaff,
+    getAppointmentDetails,
+    getBookingPaymentDetails,
     getBranchAdminProfile,
     getBranchDashboardStats,
     getBranchPublicProfile,
@@ -16,9 +20,15 @@ import {
     getMyStaff,
     getMyStaffById,
     getStaffEarnings,
+    listAppointments,
+    listBookingPayments,
+    renewSubscription,
     resendBranchCode,
     submitBranch,
+    updateBookingSettings,
     updateBranchAdminProfile,
+    updateBranchAvailability,
+    updateNotificationSettings,
     updateService,
     updateStaff,
     verifyBranchEmail,
@@ -27,13 +37,20 @@ import {
 import {
     addServiceCategorySchema,
     applySchema,
+    appointmentIdSchema,
+    bookingPaymentsQuerySchema,
+    branchAppointmentsQuerySchema,
     createServiceSchema,
     createStaffSchema,
     myServicesQuerySchema,
+    paymentIdSchema,
     periodQuerySchema,
     resendCodeSchema,
     staffIdSchema,
+    updateBookingSettingsSchema,
     updateBranchAdminProfileSchema,
+    updateBranchAvailabilitySchema,
+    updateNotificationSettingsSchema,
     updateServiceSchema,
     updateStaffSchema,
     validateBranchAdminInput,
@@ -52,7 +69,7 @@ function firstUploadedFile(req, fieldName) {
  */
 function getDocumentDownloadUrl(req, file) {
   if (!file) return undefined;
-  return `${req.protocol}://${req.get("host")}/files/download/${file.filename}`;
+  return file.path ?? `${req.protocol}://${req.get("host")}/files/download/${file.filename}`;
 }
 
 /**
@@ -61,7 +78,7 @@ function getDocumentDownloadUrl(req, file) {
  */
 function getPublicImageUrl(req, file) {
   if (!file) return undefined;
-  return `${req.protocol}://${req.get("host")}/files/public/${file.filename}`;
+  return file.path ?? `${req.protocol}://${req.get("host")}/files/public/${file.filename}`;
 }
 
 function buildBranchPayload(req) {
@@ -109,6 +126,23 @@ export const activateSubscriptionHandler = asyncHandler(async (req, res) => {
   const result = await activateSubscription(req.user.sub);
   successResponse(res, 200, t(result.message, lang), {
     payment: result.payment,
+    currentSubscription: result.currentSubscription,
+  });
+});
+
+export const renewSubscriptionHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const result = await renewSubscription(req.user.sub);
+  successResponse(res, 200, t(result.message, lang), {
+    payment: result.payment,
+    currentSubscription: result.currentSubscription,
+  });
+});
+
+export const cancelSubscriptionHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const result = await cancelSubscription(req.user.sub);
+  successResponse(res, 200, t(result.message, lang), {
     currentSubscription: result.currentSubscription,
   });
 });
@@ -238,14 +272,70 @@ export const updateBranchAdminProfileHandler = asyncHandler(async (req, res) => 
 export const getBranchAdminProfileHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const result = await getBranchAdminProfile(req.user.sub);
-  successResponse(res, 200, t(tr.PROFILE_RETRIEVED_SUCCESSFULLY, lang), result);
+  successResponse(res, 200, t(tr.BRANCH_PROFILE_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 
 export const getBranchPublicProfileHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const branchId = Number(req.params.id);
   const profile = await getBranchPublicProfile(branchId, req.user);
-  successResponse(res, 200, t(tr.PROFILE_RETRIEVED_SUCCESSFULLY, lang), profile);
+  successResponse(res, 200, t(tr.BRANCH_PROFILE_RETRIEVED_SUCCESSFULLY, lang), profile);
+});
+
+export const updateBranchAvailabilityHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const data = validateBranchAdminInput(updateBranchAvailabilitySchema, req.body);
+  const result = await updateBranchAvailability(data, req.user.sub);
+  successResponse(res, 200, t(tr.BRANCH_AVAILABILITY_UPDATED_SUCCESSFULLY, lang), result);
+});
+
+export const updateBookingSettingsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const data = validateBranchAdminInput(updateBookingSettingsSchema, req.body);
+  const result = await updateBookingSettings(data, req.user.sub);
+  successResponse(res, 200, t(tr.BOOKING_SETTINGS_UPDATED_SUCCESSFULLY, lang), result);
+});
+
+export const updateNotificationSettingsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const data = validateBranchAdminInput(updateNotificationSettingsSchema, req.body);
+  const result = await updateNotificationSettings(data, req.user.sub);
+  successResponse(res, 200, t(tr.NOTIFICATION_SETTINGS_UPDATED_SUCCESSFULLY, lang), result);
+});
+
+export const listAppointmentsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const query = validateBranchAdminInput(branchAppointmentsQuerySchema, req.query);
+  const result = await listAppointments(req.user.sub, query);
+  successResponse(res, 200, t(tr.APPOINTMENTS_RETRIEVED_SUCCESSFULLY, lang), result);
+});
+
+export const getAppointmentDetailsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { id } = validateBranchAdminInput(appointmentIdSchema, req.params);
+  const result = await getAppointmentDetails(req.user.sub, id);
+  successResponse(res, 200, t(tr.APPOINTMENT_DETAILS_RETRIEVED_SUCCESSFULLY, lang), result);
+});
+
+export const cancelAppointmentHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { id } = validateBranchAdminInput(appointmentIdSchema, req.params);
+  const result = await cancelAppointment(req.user.sub, id);
+  successResponse(res, 200, t(tr.APPOINTMENT_CANCELED, lang), result);
+});
+
+export const listBookingPaymentsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const query = validateBranchAdminInput(bookingPaymentsQuerySchema, req.query);
+  const result = await listBookingPayments(req.user.sub, query);
+  successResponse(res, 200, t(tr.BOOKING_PAYMENTS_RETRIEVED_SUCCESSFULLY, lang), result);
+});
+
+export const getBookingPaymentDetailsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { id } = validateBranchAdminInput(paymentIdSchema, req.params);
+  const result = await getBookingPaymentDetails(req.user.sub, id);
+  successResponse(res, 200, t(tr.BOOKING_PAYMENT_DETAILS_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 
 export const getBranchDashboardStatsHandler = asyncHandler(async (req, res) => {

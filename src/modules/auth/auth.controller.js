@@ -3,28 +3,28 @@ import { getLanguage, t, tr } from "../../lib/i18n/index.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
-    login,
-    logout,
-    refresh,
-    register,
-    requestPasswordReset,
-    resendCode,
-    resetPassword,
-    verifyEmail,
-    verifyPasswordReset,
-    verifyPhone,
+  login,
+  logout,
+  refresh,
+  register,
+  requestPasswordReset,
+  resendCode,
+  resetPassword,
+  verifyEmail,
+  verifyPasswordReset,
+  verifyPhone,
 } from "./auth.service.js";
 import {
-    loginSchema,
-    platformSchema,
-    registerSchema,
-    requestPasswordResetSchema,
-    resendCodeSchema,
-    resetPasswordSchema,
-    validateAuthInput,
-    verifyEmailSchema,
-    verifyPasswordResetSchema,
-    verifyPhoneSchema,
+  loginSchema,
+  platformSchema,
+  registerSchema,
+  requestPasswordResetSchema,
+  resendCodeSchema,
+  resetPasswordSchema,
+  validateAuthInput,
+  verifyEmailSchema,
+  verifyPasswordResetSchema,
+  verifyPhoneSchema,
 } from "./auth.validation.js";
 
 // ─── Login ────────────────
@@ -140,7 +140,7 @@ export const refreshHandler = asyncHandler(async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     const { refreshToken: _refreshToken, ...responseBody } = result;
-    return void successResponse(res, 200, t(tr.token, lang), responseBody);
+    return void successResponse(res, 200, t(tr.TOKEN_REFRESHED_SUCCESSFULLY, lang), responseBody);
   }
 
   successResponse(res, 200, t(tr.LOGIN_SUCCESS, lang), result);
@@ -166,5 +166,5 @@ export const logoutHandler = asyncHandler(async (req, res) => {
     });
   }
 
-  successResponse(res, 200, t("Logged out successfully.", lang));
+  successResponse(res, 200, t(tr.LOGOUT_SUCCESS, lang));
 });

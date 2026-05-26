@@ -1,9 +1,9 @@
 import {
-    BranchStatus,
-    PaymentStatus,
-    Role,
-    ServiceApprovalStatus,
-    UserStatus,
+  BranchStatus,
+  PaymentStatus,
+  Role,
+  ServiceApprovalStatus,
+  UserStatus,
 } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
@@ -136,39 +136,15 @@ export async function approveBranch(id) {
     throw new BranchIsNotPendingError();
   }
 
-  return prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: {
-        name: branch.ownerName,
-        email: branch.email,
-        phone: branch.phone,
-        password: branch.passwordHash,
-        role: Role.branch_admin,
-        status: UserStatus.ACTIVE,
-        emailVerified: true,
-        phoneVerified: true,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        role: true,
-        status: true,
-      },
-    });
-
-    await tx.branchAdmin.update({
-      where: { id: branch.id },
-      data: {
-        userId: user.id,
-        status: BranchStatus.APPROVED,
-        rejectionReason: null,
-      },
-    });
-
-    return { user, message: tr.BRANCH_APPROVED };
+  await prisma.branchAdmin.update({
+    where: { id: branch.id },
+    data: {
+      userId: branch.userId,
+      status: BranchStatus.APPROVED,
+      rejectionReason: null,
+    },
   });
+  return { message: tr.BRANCH_APPROVED };
 }
 
 export async function rejectBranch(id, reason) {

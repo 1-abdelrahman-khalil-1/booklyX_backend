@@ -3,6 +3,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
   createOffer,
+  deleteOffer,
   listBranchOffers,
   toggleOffer,
   updateOffer,
@@ -34,6 +35,13 @@ export const toggleOfferHandler = asyncHandler(async (req, res) => {
   const { id } = validateOffersInput(offerIdSchema, req.params);
   const result = await toggleOffer(id, req.user.sub);
   successResponse(res, 200, t(tr.OFFER_TOGGLED, lang), result);
+});
+
+export const deleteOfferHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { id } = validateOffersInput(offerIdSchema, req.params);
+  const result = await deleteOffer(id, req.user.sub);
+  successResponse(res, 200, t(tr.OFFER_DELETED, lang), result);
 });
 
 export const listBranchOffersHandler = asyncHandler(async (req, res) => {
