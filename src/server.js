@@ -17,7 +17,6 @@ const app = express();
 let server;
 
 const frontendUrl = process.env.FRONTEND_URL;
-const vercelProjectName = process.env.VERCEL_PROJECT_NAME;
 
 const allowedOrigins = new Set([frontendUrl].filter(Boolean));
 
@@ -34,20 +33,20 @@ function isAllowedOrigin(origin) {
     return true;
   }
 
-  if (allowedOrigins.has(origin)) {
-    return true;
-  }
-
-  if (!vercelProjectName) {
-    return false;
-  }
-
   try {
     const parsedOrigin = new URL(origin);
-    return (
-      parsedOrigin.hostname.endsWith(".vercel.app") &&
-      parsedOrigin.hostname.startsWith(`${vercelProjectName}-`)
-    );
+
+    // Allow any Vercel deployment
+    if (parsedOrigin.hostname.endsWith(".vercel.app")) {
+      return true;
+    }
+
+    // Allow manually added origins
+    if (allowedOrigins.has(origin)) {
+      return true;
+    }
+
+    return false;
   } catch {
     return false;
   }
@@ -55,7 +54,13 @@ function isAllowedOrigin(origin) {
 
 const corsOptions = {
   origin(origin, callback) {
-    callback(null, isAllowedOrigin(origin));
+    const allowed = isAllowedOrigin(origin);
+
+    if (allowed) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
   },
   credentials: true,
 };
@@ -105,6 +110,23 @@ async function gracefulShutdown(signal, exitCode = 0) {
 
 process.on("unhandledRejection", (err) => {
   console.error("UNHANDLED REJECTION! 💥 Shutting down...");
+
+  if (err instanceof Error) {
+    console.error(err.name, err.message);
+  } else {
+    console.error(err);
+  }
+
+  void gracefulShutdown("UNHANDLED_REJECTION", 1);
+});
+
+process.on("SIGTERM", () => {
+  void gracefulShutdown("SIGTERM", 0);
+});
+
+process.on("SIGINT", () => {
+  void gracefulShutdown("SIGINT", 0);
+});  console.error("UNHANDLED REJECTION! 💥 Shutting down...");
   if (err instanceof Error) {
     console.error(err.name, err.message);
   } else {
