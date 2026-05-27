@@ -126,19 +126,4 @@ process.on("SIGTERM", () => {
 
 process.on("SIGINT", () => {
   void gracefulShutdown("SIGINT", 0);
-});  console.error("UNHANDLED REJECTION! 💥 Shutting down...");
-  if (err instanceof Error) {
-    console.error(err.name, err.message);
-  } else {
-    console.error(err);
-  }
-  void gracefulShutdown("UNHANDLED_REJECTION", 1);
-});
-
-process.on("SIGTERM", () => {
-  void gracefulShutdown("SIGTERM", 0);
-});
-
-process.on("SIGINT", () => {
-  void gracefulShutdown("SIGINT", 0);
 });
