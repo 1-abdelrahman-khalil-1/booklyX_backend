@@ -166,70 +166,70 @@ model Staff {
 }
 
 model Plan {
-  id             Int           @id @default(autoincrement())
-  name           String        @unique
-  price          Decimal       @db.Decimal(10, 2)
-  maxStaff       Int?
-  maxServices    Int?
-  loyaltyEnabled Boolean       @default(false)
-  offersEnabled  Boolean       @default(false)
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  branches       BranchAdmin[]
+  id                   Int                   @id @default(autoincrement())
+  name                 String                @unique
+  price                Int                   @db.UnsignedInt
+  maxStaff             Int?
+  maxServices          Int?
+  loyaltyEnabled       Boolean               @default(false)
+  offersEnabled        Boolean               @default(false)
+  isActive             Boolean               @default(true)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  branches             BranchAdmin[]
   subscriptionPayments SubscriptionPayment[]
 }
 
 model BranchAdmin {
-  id                       Int                           @id @default(autoincrement())
-  userId                   Int?                          @unique
-  planId                   Int
-  ownerName                String
-  email                    String
-  phone                    String
-  passwordHash             String
-  businessName             String
-  category                 BusinessCategory
-  description              String?
-  commercialRegisterNumber String
-  taxId                    String
-  logoUrl                  String?
-  taxCertificateUrl        String?
-  commercialRegisterUrl    String?
-  nationalIdUrl            String?
-  facilityLicenseUrl       String?
-  city                     String
-  district                 String
-  address                  String
-  operatingHours           String?
-  allowCancellationBeforeHours Int                       @default(24)
-  bookingNotificationsEnabled Boolean                     @default(true)
-  marketingNotificationsEnabled Boolean                    @default(true)
-  latitude                 Float
-  longitude                Float
-  status                   BranchStatus                  @default(PENDING_VERIFICATION)
-  emailVerified            Boolean                       @default(false)
-  phoneVerified            Boolean                       @default(false)
-  isSubscriptionActive     Boolean                       @default(false)
-  subscriptionStartedAt    DateTime?
-  rejectionReason          String?
-  createdAt                DateTime                      @default(now())
-  updatedAt                DateTime                      @updatedAt
-  verificationCodes        BranchVerificationCode[]
-  documents                BranchDocument[]
-  branchAvailabilities     BranchAvailability[]
-  serviceCategories        ServiceCategory[]
-  services                 Service[]
-  offers                   Offer[]
-  staffs                   Staff[]
-  appointments             Appointment[]
-  bookingPayments          BookingPayment[]
-  reviews                  Review[]
-  subscriptionPayments     SubscriptionPayment[]
-  user                     User?                         @relation(fields: [userId], references: [id])
-  plan                     Plan                          @relation(fields: [planId], references: [id])
-  averageRating            Float                         @default(0)
-  reviewCount              Int                           @default(0)
+  id                            Int                      @id @default(autoincrement())
+  userId                        Int?                     @unique
+  planId                        Int
+  ownerName                     String
+  email                         String
+  phone                         String
+  passwordHash                  String
+  businessName                  String
+  category                      BusinessCategory
+  description                   String?
+  commercialRegisterNumber      String
+  taxId                         String
+  logoUrl                       String?
+  taxCertificateUrl             String?
+  commercialRegisterUrl         String?
+  nationalIdUrl                 String?
+  facilityLicenseUrl            String?
+  city                          String
+  district                      String
+  address                       String
+  operatingHours                String?
+  allowCancellationBeforeHours  Int                      @default(24)
+  bookingNotificationsEnabled   Boolean                  @default(true)
+  marketingNotificationsEnabled Boolean                  @default(true)
+  latitude                      Float
+  longitude                     Float
+  status                        BranchStatus             @default(PENDING_VERIFICATION)
+  emailVerified                 Boolean                  @default(false)
+  phoneVerified                 Boolean                  @default(false)
+  isSubscriptionActive          Boolean                  @default(false)
+  subscriptionStartedAt         DateTime?
+  rejectionReason               String?
+  createdAt                     DateTime                 @default(now())
+  updatedAt                     DateTime                 @updatedAt
+  verificationCodes             BranchVerificationCode[]
+  documents                     BranchDocument[]
+  branchAvailabilities          BranchAvailability[]
+  serviceCategories             ServiceCategory[]
+  services                      Service[]
+  offers                        Offer[]
+  staffs                        Staff[]
+  appointments                  Appointment[]
+  bookingPayments               BookingPayment[]
+  reviews                       Review[]
+  subscriptionPayments          SubscriptionPayment[]
+  user                          User?                    @relation(fields: [userId], references: [id])
+  plan                          Plan                     @relation(fields: [planId], references: [id])
+  averageRating                 Float                    @default(0)
+  reviewCount                   Int                      @default(0)
 
   @@index([planId])
   @@index([status])
@@ -283,11 +283,11 @@ model BranchVerificationCode {
 }
 
 model BranchDocument {
-  id            Int                     @id @default(autoincrement())
+  id            Int                @id @default(autoincrement())
   branchAdminId Int
   type          BranchDocumentType
   fileUrl       String
-  createdAt     DateTime                @default(now())
+  createdAt     DateTime           @default(now())
 
   branchAdmin BranchAdmin @relation(fields: [branchAdminId], references: [id], onDelete: Cascade)
 
@@ -474,15 +474,15 @@ model Review {
 }
 
 model Appointment {
-  id            Int               @id @default(autoincrement())
-  clientId      Int
-  staffId       Int
-  serviceId     Int
-  branchId      Int
-  scheduledAt   DateTime
-  status        AppointmentStatus @default(PENDING)
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id          Int               @id @default(autoincrement())
+  clientId    Int
+  staffId     Int
+  serviceId   Int
+  branchId    Int
+  scheduledAt DateTime
+  status      AppointmentStatus @default(PENDING)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   client           Client             @relation(fields: [clientId], references: [id])
   staff            Staff              @relation(fields: [staffId], references: [id])
@@ -503,7 +503,7 @@ model BookingPayment {
   id            Int           @id @default(autoincrement())
   branchId      Int
   appointmentId Int           @unique
-  amount        Decimal       @db.Decimal(10, 2)
+  amount        Int           @db.UnsignedInt
   status        PaymentStatus @default(PENDING)
   paymentMethod PaymentMethod @default(CARD)
   paidAt        DateTime?
@@ -543,7 +543,7 @@ model SubscriptionPayment {
   id            Int           @id @default(autoincrement())
   branchId      Int
   planId        Int
-  amount        Decimal       @db.Decimal(10, 2)
+  amount        Int           @db.UnsignedInt
   status        PaymentStatus
   paymentMethod PaymentMethod @default(CARD)
   paidAt        DateTime      @default(now())

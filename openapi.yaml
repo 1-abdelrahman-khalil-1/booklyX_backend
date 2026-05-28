@@ -728,6 +728,400 @@ components:
           items:
             $ref: "#/components/schemas/StaffAppointment"
 
+    ProfilePlan:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        price:
+          type: number
+        maxStaff:
+          type: integer
+        maxServices:
+          type: integer
+        loyaltyEnabled:
+          type: boolean
+        offersEnabled:
+          type: boolean
+
+    ProfileBranchSettings:
+      type: object
+      properties:
+        allowCancellationBeforeHours:
+          type: integer
+
+    ProfileNotificationSettings:
+      type: object
+      properties:
+        bookingNotificationsEnabled:
+          type: boolean
+        marketingNotificationsEnabled:
+          type: boolean
+
+    BranchAvailability:
+      type: object
+      properties:
+        id:
+          type: integer
+        dayOfWeek:
+          type: integer
+          minimum: 0
+          maximum: 6
+        startTime:
+          type: string
+          example: "09:00"
+        endTime:
+          type: string
+          example: "17:00"
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    StaffProfessionalProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        bio:
+          type: string
+          nullable: true
+        experience:
+          type: integer
+        licenseNumber:
+          type: string
+          nullable: true
+        specialization:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    StaffCertificate:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        issuer:
+          type: string
+        issueDate:
+          type: string
+          format: date-time
+        expiryDate:
+          type: string
+          format: date-time
+          nullable: true
+        fileUrl:
+          type: string
+          nullable: true
+        verified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    StaffAvailability:
+      type: object
+      properties:
+        id:
+          type: integer
+        dayOfWeek:
+          type: integer
+          minimum: 0
+          maximum: 6
+        startTime:
+          type: string
+          example: "09:00"
+        endTime:
+          type: string
+          example: "17:00"
+        status:
+          type: string
+
+    StaffServiceLink:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+        duration_minutes:
+          type: integer
+        imageUrl:
+          type: string
+          nullable: true
+        status:
+          type: string
+
+    StaffReview:
+      type: object
+      properties:
+        id:
+          type: integer
+        rating:
+          type: number
+        comment:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        reviewer:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            phone:
+              type: string
+        service:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        appointmentId:
+          type: integer
+          nullable: true
+
+    BranchReview:
+      type: object
+      properties:
+        id:
+          type: integer
+        rating:
+          type: number
+        comment:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        reviewer:
+          type: object
+          properties:
+            name:
+              type: string
+            phone:
+              type: string
+        service:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        staff:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        appointmentId:
+          type: integer
+          nullable: true
+
+    BranchAdminProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        ownerName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        businessName:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+          nullable: true
+        logoUrl:
+          type: string
+          nullable: true
+        operatingHours:
+          type: string
+          nullable: true
+        address:
+          type: string
+        city:
+          type: string
+        district:
+          type: string
+        status:
+          type: string
+        isSubscriptionActive:
+          type: boolean
+        subscriptionStartedAt:
+          type: string
+          format: date-time
+          nullable: true
+        emailVerified:
+          type: boolean
+        phoneVerified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        plan:
+          allOf:
+            - $ref: "#/components/schemas/ProfilePlan"
+          nullable: true
+        bookingSettings:
+          $ref: "#/components/schemas/ProfileBranchSettings"
+        notificationSettings:
+          $ref: "#/components/schemas/ProfileNotificationSettings"
+        branchAvailability:
+          type: array
+          items:
+            $ref: "#/components/schemas/BranchAvailability"
+
+    BranchAdminProfileResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/BranchAdminProfile"
+
+    BranchAdminProfileUpdate:
+      type: object
+      properties:
+        id:
+          type: integer
+        ownerName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        businessName:
+          type: string
+        category:
+          type: string
+        logoUrl:
+          type: string
+          nullable: true
+        operatingHours:
+          type: string
+          nullable: true
+        address:
+          type: string
+        city:
+          type: string
+        district:
+          type: string
+        status:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+
+    BranchPublicProfile:
+      type: object
+      properties:
+        branch:
+          type: object
+          properties:
+            id:
+              type: integer
+            businessName:
+              type: string
+            category:
+              type: string
+            description:
+              type: string
+              nullable: true
+            logoUrl:
+              type: string
+              nullable: true
+            city:
+              type: string
+            district:
+              type: string
+            address:
+              type: string
+            status:
+              type: string
+            selectedPlan:
+              allOf:
+                - $ref: "#/components/schemas/ProfilePlan"
+              nullable: true
+            currentSubscription:
+              type: object
+              properties:
+                plan:
+                  allOf:
+                    - $ref: "#/components/schemas/ProfilePlan"
+                  nullable: true
+                isSubscriptionActive:
+                  type: boolean
+                subscriptionStartedAt:
+                  type: string
+                  format: date-time
+                  nullable: true
+            average_rating:
+              type: number
+              format: float
+            total_reviews:
+              type: integer
+            bookingSettings:
+              $ref: "#/components/schemas/ProfileBranchSettings"
+            notificationSettings:
+              $ref: "#/components/schemas/ProfileNotificationSettings"
+            branchAvailability:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  dayOfWeek:
+                    type: integer
+                    minimum: 0
+                    maximum: 6
+                  startTime:
+                    type: string
+                    example: "09:00"
+                  endTime:
+                    type: string
+                    example: "17:00"
+                  status:
+                    type: string
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/BranchReview"
+
     StaffProfile:
       type: object
       properties:
@@ -785,24 +1179,126 @@ components:
                     category:
                       type: string
                 professionalProfile:
-                  type: object
+                  allOf:
+                    - $ref: "#/components/schemas/StaffProfessionalProfile"
                   nullable: true
                 certificates:
                   type: array
                   items:
-                    type: object
+                    $ref: "#/components/schemas/StaffCertificate"
                 availabilities:
                   type: array
                   items:
-                    type: object
+                    $ref: "#/components/schemas/StaffAvailability"
                 services:
                   type: array
                   items:
-                    type: object
+                    $ref: "#/components/schemas/StaffServiceLink"
                 reviews:
                   type: array
                   items:
-                    type: object
+                    $ref: "#/components/schemas/StaffReview"
+                averageRating:
+                  type: number
+                reviewCount:
+                  type: integer
+
+    StaffPublicProfile:
+      type: object
+      properties:
+        average_rating:
+          type: number
+          format: float
+        total_reviews:
+          type: integer
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffReview"
+        staff:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            profileImageUrl:
+              type: string
+              nullable: true
+            staffRole:
+              type: string
+            isActive:
+              type: boolean
+
+    AdminUserProfile:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            email:
+              type: string
+            phone:
+              type: string
+            role:
+              type: string
+            status:
+              type: string
+            emailVerified:
+              type: boolean
+            phoneVerified:
+              type: boolean
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+            branchAdmin:
+              type: object
+              nullable: true
+              properties:
+                id:
+                  type: integer
+                businessName:
+                  type: string
+                status:
+                  type: string
+                isSubscriptionActive:
+                  type: boolean
+                subscriptionStartedAt:
+                  type: string
+                  format: date-time
+                  nullable: true
+                plan:
+                  allOf:
+                    - $ref: "#/components/schemas/ProfilePlan"
+                  nullable: true
+            staff:
+              type: object
+              nullable: true
+              properties:
+                id:
+                  type: integer
+                branchId:
+                  type: integer
+                profileImageUrl:
+                  type: string
+                  nullable: true
+                age:
+                  type: integer
+                staffRole:
+                  type: string
+                commissionPercentage:
+                  type: number
+                professionalProfile:
+                  allOf:
+                    - $ref: "#/components/schemas/StaffProfessionalProfile"
+                  nullable: true
                 averageRating:
                   type: number
                 reviewCount:
@@ -899,25 +1395,92 @@ components:
         logoUrl: https://cdn.booklyx.com/branches/hassan-beauty-salon-logo.png
 
     BranchAdminApplyRequestMultipart:
-      allOf:
-        - $ref: "#/components/schemas/BranchAdminApplyRequestJson"
-        - type: object
-          properties:
-            logo:
-              type: string
-              format: binary
-            taxCertificate:
-              type: string
-              format: binary
-            commercialRegister:
-              type: string
-              format: binary
-            nationalId:
-              type: string
-              format: binary
-            facilityLicense:
-              type: string
-              format: binary
+      type: object
+      required:
+        - planId
+        - ownerName
+        - email
+        - phone
+        - password
+        - businessName
+        - category
+        - description
+        - city
+        - district
+        - address
+        - taxId
+        - commercialRegisterNumber
+        - latitude
+        - longitude
+      properties:
+        planId:
+          type: integer
+          minimum: 1
+          example: 1
+        ownerName:
+          type: string
+          example: Mahmoud Ibrahim
+        email:
+          type: string
+          format: email
+          example: mahmoud.ibrahim@booklyx.com
+        phone:
+          type: string
+          pattern: '^\\d{11}$'
+          example: "01000000011"
+        password:
+          type: string
+          minLength: 8
+          example: "12345678"
+        businessName:
+          type: string
+          example: Hassan Beauty Salon
+        category:
+          type: string
+          enum: [SPA, CLINIC, BARBER]
+          default: SPA
+          example: SPA
+        description:
+          type: string
+          example: Premium beauty and skincare services for women.
+        city:
+          type: string
+          example: Cairo
+        district:
+          type: string
+          example: Nasr City
+        address:
+          type: string
+          example: 12 Makram Ebeid Street
+        taxId:
+          type: string
+          example: TAX-2026-010
+        commercialRegisterNumber:
+          type: string
+          example: CR-2026-010
+        latitude:
+          type: number
+          format: double
+          example: 30.0626
+        longitude:
+          type: number
+          format: double
+          example: 31.3368
+        logo:
+          type: string
+          format: binary
+        taxCertificate:
+          type: string
+          format: binary
+        commercialRegister:
+          type: string
+          format: binary
+        nationalId:
+          type: string
+          format: binary
+        facilityLicense:
+          type: string
+          format: binary
 
     BranchResendCodeRequest:
       type: object
@@ -1126,13 +1689,44 @@ components:
         imageUrl: https://cdn.booklyx.com/services/haircut.png
 
     CreateServiceRequestMultipart:
-      allOf:
-        - $ref: "#/components/schemas/CreateServiceRequestJson"
-        - type: object
-          properties:
-            image:
-              type: string
-              format: binary
+      type: object
+      required: [name, description, price, durationMinutes]
+      properties:
+        name:
+          type: string
+          example: Haircut
+        description:
+          type: string
+          example: Professional haircut with styling
+        price:
+          type: number
+          minimum: 0.01
+          example: 150
+        durationMinutes:
+          type: integer
+          minimum: 1
+          example: 30
+        categoryId:
+          type: integer
+          minimum: 1
+          example: 1
+        categoryName:
+          type: string
+          example: Hair Care
+        imageUrl:
+          type: string
+          format: uri
+          description: Optional. If not uploading `image`, provide an existing public URL.
+          example: https://cdn.booklyx.com/services/haircut.png
+        image:
+          type: string
+          format: binary
+      example:
+        name: Haircut
+        description: Professional haircut with styling
+        price: 150
+        durationMinutes: 30
+        categoryName: Hair Care
 
     UpdateServiceRequestJson:
       type: object
@@ -1176,13 +1770,47 @@ components:
         imageUrl: https://cdn.booklyx.com/services/premium-haircut.png
 
     UpdateServiceRequestMultipart:
-      allOf:
-        - $ref: "#/components/schemas/UpdateServiceRequestJson"
-        - type: object
-          properties:
-            image:
-              type: string
-              format: binary
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          example: 1
+        name:
+          type: string
+          example: Premium Haircut
+        description:
+          type: string
+          example: Professional haircut with wash and styling
+        price:
+          type: number
+          minimum: 0.01
+          example: 180
+        durationMinutes:
+          type: integer
+          minimum: 1
+          example: 40
+        categoryId:
+          type: integer
+          minimum: 1
+          example: 1
+        categoryName:
+          type: string
+          example: Hair Care
+        imageUrl:
+          type: string
+          format: uri
+          description: Optional. If not uploading `image`, provide an existing public URL.
+          example: https://cdn.booklyx.com/services/premium-haircut.png
+        image:
+          type: string
+          format: binary
+      example:
+        name: Premium Haircut
+        description: Professional haircut with wash and styling
+        price: 180
+        durationMinutes: 40
+        categoryId: 1
 
     Service:
       type: object
@@ -1306,7 +1934,7 @@ components:
         fileUrl:
           type: string
           format: uri
-          example: https://booklyxbackend-production.up.railway.app/files/download/commercial-register.pdf
+          example: https://res.cloudinary.com/demo/image/upload/v1/booklyx/documents/commercial-register.jpg
         createdAt:
           type: string
           format: date-time
@@ -1379,23 +2007,23 @@ components:
         logoUrl:
           type: string
           nullable: true
-          example: https://booklyxbackend-production.up.railway.app/files/public/glow-logo.png
+          example: https://res.cloudinary.com/demo/image/upload/v1/booklyx/documents/glow-logo.png
         taxCertificateUrl:
           type: string
           nullable: true
-          example: https://booklyxbackend-production.up.railway.app/files/public/tax-certificate.png
+          example: https://res.cloudinary.com/demo/image/upload/v1/booklyx/documents/tax-certificate.png
         commercialRegisterUrl:
           type: string
           nullable: true
-          example: https://booklyxbackend-production.up.railway.app/files/public/commercial-register.png
+          example: https://res.cloudinary.com/demo/image/upload/v1/booklyx/documents/commercial-register.png
         nationalIdUrl:
           type: string
           nullable: true
-          example: https://booklyxbackend-production.up.railway.app/files/public/national-id.png
+          example: https://res.cloudinary.com/demo/image/upload/v1/booklyx/documents/national-id.png
         facilityLicenseUrl:
           type: string
           nullable: true
-          example: https://booklyxbackend-production.up.railway.app/files/public/facility-license.png
+          example: https://res.cloudinary.com/demo/image/upload/v1/booklyx/documents/facility-license.png
         city:
           type: string
           example: Cairo
@@ -1472,9 +2100,20 @@ components:
         email: abdo.khalil@booklyx.com
         password: "12345678"
         phone: "01000000001"
+    RegisterClientRequest2:
+      value:
+        name: Eslam Wael
+        email: eslam.wael@booklyx.com
+        password: "12345678"
+        phone: "01000000002"
     LoginClientRequest:
       value:
         email: eslam.wael@booklyx.com
+        password: "12345678"
+        role: client
+    LoginClientRequest2:
+      value:
+        email: abdo.khalil@booklyx.com
         password: "12345678"
         role: client
     LoginStaffRequest:
@@ -1482,9 +2121,24 @@ components:
         email: mazen.tamer@booklyx.com
         password: "12345678"
         role: staff
+    LoginStaffRequest2:
+      value:
+        email: abdo.badr@booklyx.com
+        password: "12345678"
+        role: staff
     LoginBranchAdminRequest:
       value:
         email: mahmoud.ibrahim@booklyx.com
+        password: "12345678"
+        role: branch_admin
+    LoginBranchAdminRequest2:
+      value:
+        email: ahmed.samir@booklyx.com
+        password: "12345678"
+        role: branch_admin
+    LoginBranchAdminRequest3:
+      value:
+        email: eslam.branch@booklyx.com
         password: "12345678"
         role: branch_admin
     LoginSuperAdminRequest:
@@ -1759,54 +2413,56 @@ components:
             phone: "01000000021"
             role: staff
             status: ACTIVE
-            created_at: 2026-04-01T10:00:00.000Z
-            updated_at: 2026-05-01T10:00:00.000Z
+            createdAt: 2026-04-01T10:00:00.000Z
+            updatedAt: 2026-05-01T10:00:00.000Z
             staff:
               id: 7
-              profile_image_url: https://cdn.booklyx.com/staff/mazen-tamer.png
-              staff_role: BARBER
+              profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
+              staffRole: BARBER
               age: 28
-              commission_percentage: 15
-              is_active: true
-              created_at: 2026-04-01T10:00:00.000Z
-              updated_at: 2026-05-01T10:00:00.000Z
+              commissionPercentage: 15
+              isActive: true
+              createdAt: 2026-04-01T10:00:00.000Z
+              updatedAt: 2026-05-01T10:00:00.000Z
               branch:
                 id: 1
-                business_name: Hassan Beauty Salon
+                businessName: Hassan Beauty Salon
                 category: SPA
-              professional_profile:
+              professionalProfile:
                 bio: Senior stylist focused on modern cuts and beard shaping.
                 experience: 6
-                license_number: BARB-7845
+                licenseNumber: BARB-7845
                 specialization: BARBER
-                created_at: 2026-04-02T10:00:00.000Z
-                updated_at: 2026-05-02T10:00:00.000Z
+                createdAt: 2026-04-02T10:00:00.000Z
+                updatedAt: 2026-05-02T10:00:00.000Z
               certificates:
                 - id: 1
                   title: Advanced Barber Certification
                   issuer: International Barber Academy
-                  issue_date: 2025-01-10T00:00:00.000Z
-                  expiry_date: 2027-01-10T00:00:00.000Z
-                  file_url: https://cdn.booklyx.com/certificates/barber-cert.png
+                  issueDate: 2025-01-10T00:00:00.000Z
+                  expiryDate: 2027-01-10T00:00:00.000Z
+                  fileUrl: https://cdn.booklyx.com/certificates/barber-cert.png
                   verified: true
-                  created_at: 2025-01-10T00:00:00.000Z
+                  createdAt: 2025-01-10T00:00:00.000Z
               availabilities:
                 - id: 1
-                  day_of_week: 1
-                  start_time: "09:00"
-                  end_time: "17:00"
+                  dayOfWeek: 1
+                  startTime: "09:00"
+                  endTime: "17:00"
+                  status: AVAILABLE
               services:
                 - id: 11
                   name: Haircut
                   description: Professional haircut with styling
                   price: 150
                   duration_minutes: 30
-                  image_url: https://cdn.booklyx.com/services/haircut.png
+                  imageUrl: https://cdn.booklyx.com/services/haircut.png
+                  status: APPROVED
               reviews:
                 - id: 21
                   rating: 5
                   comment: Great attention to detail.
-                  created_at: 2026-04-20T12:00:00.000Z
+                  createdAt: 2026-04-20T12:00:00.000Z
                   reviewer:
                     id: 2
                     name: Abdo Khalil
@@ -1814,9 +2470,9 @@ components:
                   service:
                     id: 11
                     name: Haircut
-                  appointment_id: 31
-              average_rating: 4.7
-              review_count: 34
+                  appointmentId: 31
+              averageRating: 4.7
+              reviewCount: 34
     StaffScheduleResponse:
       value:
         status: 200
@@ -2361,7 +3017,7 @@ components:
           documents:
             - id: 1
               type: COMMERCIAL_REGISTER
-              fileUrl: https://booklyxbackend-production.up.railway.app/files/public/commercial-register.png
+              fileUrl: https://res.cloudinary.com/demo/image/upload/v1/booklyx/documents/commercial-register.png
               created_at: 2026-04-09T09:50:00.000Z
           verificationCodes:
             - id: 12
@@ -2557,8 +3213,10 @@ paths:
             schema:
               $ref: "#/components/schemas/RegisterRequest"
             examples:
-              default:
+              abdoKhalil:
                 $ref: "#/components/examples/RegisterClientRequest"
+              eslamWael:
+                $ref: "#/components/examples/RegisterClientRequest2"
       responses:
         "201":
           description: Registered successfully
@@ -2592,12 +3250,20 @@ paths:
             schema:
               $ref: "#/components/schemas/LoginRequest"
             examples:
-              client:
+              clientEslamWael:
                 $ref: "#/components/examples/LoginClientRequest"
-              staff:
+              clientAbdoKhalil:
+                $ref: "#/components/examples/LoginClientRequest2"
+              staffMazenTamer:
                 $ref: "#/components/examples/LoginStaffRequest"
-              branchAdmin:
+              staffAbdoBadr:
+                $ref: "#/components/examples/LoginStaffRequest2"
+              branchAdminMahmoudIbrahim:
                 $ref: "#/components/examples/LoginBranchAdminRequest"
+              branchAdminAhmedSamir:
+                $ref: "#/components/examples/LoginBranchAdminRequest2"
+              branchAdminEslamWael:
+                $ref: "#/components/examples/LoginBranchAdminRequest3"
               superAdmin:
                 $ref: "#/components/examples/LoginSuperAdminRequest"
       responses:
@@ -2945,22 +3611,25 @@ paths:
     post:
       tags: [Branch_admin/Registration]
       summary: Submit branch_admin application
-      description: Submit branch_admin application. Upload fields are image-only and stored as Cloudinary image URLs.
+      description: |
+        Submit branch_admin application.
+        This endpoint supports `multipart/form-data` to upload images (stored as Cloudinary URLs).
+        File field names: `logo`, `taxCertificate`, `commercialRegister`, `nationalId`, `facilityLicense`.
       operationId: postBranchAdminApply
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
       requestBody:
         required: true
         content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/BranchAdminApplyRequestMultipart"
           application/json:
             schema:
               $ref: "#/components/schemas/BranchAdminApplyRequestJson"
             examples:
               default:
                 $ref: "#/components/examples/BranchAdminApplyRequest"
-          multipart/form-data:
-            schema:
-              $ref: "#/components/schemas/BranchAdminApplyRequestMultipart"
       responses:
         "201":
           description: Application submitted
@@ -3148,29 +3817,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        properties:
-                          id:
-                            type: integer
-                          ownerName:
-                            type: string
-                          email:
-                            type: string
-                          phone:
-                            type: string
-                          businessName:
-                            type: string
-                          category:
-                            type: string
-                          logoUrl:
-                            type: string
-                            nullable: true
-                          operatingHours:
-                            type: string
-                            nullable: true
-                          address:
-                            type: string
-                            nullable: true
+                        $ref: "#/components/schemas/BranchAdminProfileUpdate"
               examples:
                 default:
                   value:
@@ -3187,6 +3834,10 @@ paths:
                       logoUrl: https://cdn.booklyx.com/branch/logo.png
                       operatingHours: 09:00-22:00
                       address: New address
+                      city: Cairo
+                      district: Nasr City
+                      status: APPROVED
+                      updatedAt: 2026-05-27T12:00:00.000Z
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -3216,79 +3867,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        properties:
-                          id:
-                            type: integer
-                          ownerName:
-                            type: string
-                          email:
-                            type: string
-                          phone:
-                            type: string
-                          businessName:
-                            type: string
-                          category:
-                            type: string
-                          description:
-                            type: string
-                            nullable: true
-                          logoUrl:
-                            type: string
-                            nullable: true
-                          operatingHours:
-                            type: string
-                            nullable: true
-                          address:
-                            type: string
-                          city:
-                            type: string
-                          district:
-                            type: string
-                          status:
-                            type: string
-                          isSubscriptionActive:
-                            type: boolean
-                          subscriptionStartedAt:
-                            type: string
-                            format: date-time
-                            nullable: true
-                          selectedPlan:
-                            type: object
-                            nullable: true
-                          currentSubscription:
-                            type: object
-                          bookingSettings:
-                            type: object
-                            properties:
-                              allowCancellationBeforeHours:
-                                type: integer
-                          notificationSettings:
-                            type: object
-                            properties:
-                              bookingNotificationsEnabled:
-                                type: boolean
-                              marketingNotificationsEnabled:
-                                type: boolean
-                          branchAvailability:
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                id:
-                                  type: integer
-                                dayOfWeek:
-                                  type: integer
-                                  minimum: 0
-                                  maximum: 6
-                                startTime:
-                                  type: string
-                                  example: "09:00"
-                                endTime:
-                                  type: string
-                                  example: "17:00"
-                                status:
-                                  type: string
+                        $ref: "#/components/schemas/BranchAdminProfileResponse"
               examples:
                 default:
                   value:
@@ -3296,41 +3875,47 @@ paths:
                     error: false
                     message: Branch profile retrieved successfully.
                     data:
-                      id: 1
-                      ownerName: Prime Salon
-                      email: branch@example.com
-                      phone: "01000000022"
-                      businessName: Prime Salon
-                      category: SPA
-                      description: Premium beauty and skincare services.
-                      logoUrl: https://res.cloudinary.com/booklyx/image/upload/v123/booklyx/images/logo.png
-                      operatingHours: 09:00-22:00
-                      address: 12 Makram Ebeid Street
-                      city: Cairo
-                      district: Nasr City
-                      status: APPROVED
-                      isSubscriptionActive: true
-                      subscriptionStartedAt: 2026-05-25T12:00:00.000Z
-                      selectedPlan:
+                      user:
                         id: 1
-                        name: Basic Plan
-                      currentSubscription:
+                        ownerName: Prime Salon
+                        email: branch@example.com
+                        phone: "01000000022"
+                        businessName: Prime Salon
+                        category: SPA
+                        description: Premium beauty and skincare services.
+                        logoUrl: https://res.cloudinary.com/booklyx/image/upload/v123/booklyx/images/logo.png
+                        operatingHours: "09:00-22:00"
+                        address: 12 Makram Ebeid Street
+                        city: Cairo
+                        district: Nasr City
+                        status: APPROVED
+                        isSubscriptionActive: true
+                        subscriptionStartedAt: 2026-05-25T12:00:00.000Z
+                        emailVerified: true
+                        phoneVerified: true
+                        createdAt: 2026-04-09T10:15:00.000Z
+                        updatedAt: 2026-05-25T12:00:00.000Z
                         plan:
                           id: 1
                           name: Basic Plan
-                        isSubscriptionActive: true
-                        subscriptionStartedAt: 2026-05-25T12:00:00.000Z
-                      bookingSettings:
-                        allowCancellationBeforeHours: 4
-                      notificationSettings:
-                        bookingNotificationsEnabled: true
-                        marketingNotificationsEnabled: false
-                      branchAvailability:
-                        - id: 11
-                          dayOfWeek: 0
-                          startTime: "09:00"
-                          endTime: "17:00"
-                          status: AVAILABLE
+                          price: 199
+                          maxStaff: 5
+                          maxServices: 10
+                          loyaltyEnabled: true
+                          offersEnabled: true
+                        bookingSettings:
+                          allowCancellationBeforeHours: 4
+                        notificationSettings:
+                          bookingNotificationsEnabled: true
+                          marketingNotificationsEnabled: false
+                        branchAvailability:
+                          - id: 11
+                            dayOfWeek: 0
+                            startTime: "09:00"
+                            endTime: "17:00"
+                            status: AVAILABLE
+                            createdAt: 2026-05-25T12:00:00.000Z
+                            updatedAt: 2026-05-25T12:00:00.000Z
 
   /branch-admin/availability:
     put:
@@ -4631,44 +5216,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        properties:
-                          user:
-                            type: object
-                            properties:
-                              id:
-                                type: integer
-                              ownerName:
-                                type: string
-                              email:
-                                type: string
-                              phone:
-                                type: string
-                              businessName:
-                                type: string
-                              category:
-                                type: string
-                              logoUrl:
-                                type: string
-                                nullable: true
-                              operatingHours:
-                                type: string
-                                nullable: true
-                              address:
-                                type: string
-                                nullable: true
-                              status:
-                                type: string
-                              emailVerified:
-                                type: boolean
-                              phoneVerified:
-                                type: boolean
-                              createdAt:
-                                type: string
-                                format: date-time
-                              updatedAt:
-                                type: string
-                                format: date-time
+                        $ref: "#/components/schemas/AdminUserProfile"
               examples:
                 default:
                   value:
@@ -4678,19 +5226,46 @@ paths:
                     data:
                       user:
                         id: 1
-                        ownerName: Prime Salon
-                        email: branch@example.com
-                        phone: "01000000022"
-                        businessName: Prime Salon
-                        category: SALON
-                        logoUrl: https://cdn.booklyx.com/branch/logo.png
-                        operatingHours: "09:00-22:00"
-                        address: "123 Main St"
-                        status: APPROVED
+                        name: Prime Salon Admin
+                        email: admin@booklyx.com
+                        phone: "01000000030"
+                        role: super_admin
+                        status: ACTIVE
                         emailVerified: true
                         phoneVerified: true
                         createdAt: "2026-04-09T10:15:00.000Z"
                         updatedAt: "2026-04-09T10:15:00.000Z"
+                        branchAdmin:
+                          id: 1
+                          businessName: Prime Salon
+                          status: APPROVED
+                          isSubscriptionActive: true
+                          subscriptionStartedAt: "2026-05-25T12:00:00.000Z"
+                          plan:
+                            id: 1
+                            name: Basic Plan
+                            price: 199
+                            maxStaff: 5
+                            maxServices: 10
+                            loyaltyEnabled: true
+                            offersEnabled: true
+                        staff:
+                          id: 7
+                          branchId: 1
+                          profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
+                          age: 28
+                          staffRole: BARBER
+                          commissionPercentage: 15
+                          professionalProfile:
+                            id: 3
+                            bio: Senior stylist focused on modern cuts and beard shaping.
+                            experience: 6
+                            licenseNumber: BARB-7845
+                            specialization: BARBER
+                            createdAt: "2026-04-02T10:00:00.000Z"
+                            updatedAt: "2026-05-02T10:00:00.000Z"
+                          averageRating: 4.7
+                          reviewCount: 34
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4899,7 +5474,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
       responses:
         "200":
           description: Subscription activated
@@ -4935,6 +5510,44 @@ paths:
       responses:
         "200":
           description: Subscription renewed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /branch-admin/subscription/{id}:
+    put:
+      tags: [Branch_admin/Subscription]
+      summary: Change branch subscription plan
+      description: Changes current subscription plan for approved branch.
+      operationId: postBranchAdminSubscriptionChangePlan
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Subscription plan changed
           content:
             application/json:
               schema:
@@ -5203,7 +5816,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
         - name: period
           in: query
           required: false
@@ -5238,7 +5851,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
         - name: period
           in: query
           required: false
@@ -5353,69 +5966,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
-  /files/download/{filename}:
-    get:
-      tags: [Files]
-      summary: Download sensitive file (requires authentication)
-      operationId: getFilesDownloadByFilename
-      description: Download sensitive files (documents, certificates) by stored filename. Requires user authentication. Access control is enforced server-side.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: filename
-          in: path
-          required: true
-          schema:
-            type: string
-            maxLength: 100
-          description: Stored upload filename.
-        - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
-      responses:
-        "200":
-          description: File stream
-          content:
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
-  /files/public/{filename}:
-    get:
-      tags: [Files]
-      summary: Download public file
-      operationId: getFilesPublicByFilename
-      description: Download public files (for example service images) by stored filename.
-      parameters:
-        - name: filename
-          in: path
-          required: true
-          schema:
-            type: string
-            maxLength: 100
-          description: Stored upload filename.
-        - $ref: "#/components/parameters/AcceptLanguageHeader"
-      responses:
-        "200":
-          description: File stream
-          content:
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -6092,32 +6642,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        properties:
-                          average_rating:
-                            type: number
-                            format: float
-                            description: Average staff rating
-                          total_reviews:
-                            type: integer
-                            description: Total number of reviews
-                          reviews:
-                            type: array
-                            items:
-                              $ref: "#/components/schemas/Review"
-                          staff:
-                            type: object
-                            properties:
-                              id:
-                                type: integer
-                              name:
-                                type: string
-                              profileImageUrl:
-                                type: string
-                              staffRole:
-                                type: string
-                              isActive:
-                                type: boolean
+                        $ref: "#/components/schemas/StaffPublicProfile"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -6135,7 +6660,7 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
         - name: id
           in: path
           required: true
@@ -6154,53 +6679,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        properties:
-                          branch:
-                            type: object
-                            properties:
-                              id:
-                                type: integer
-                              businessName:
-                                type: string
-                              category:
-                                type: string
-                              description:
-                                type: string
-                                nullable: true
-                              logoUrl:
-                                type: string
-                                nullable: true
-                              city:
-                                type: string
-                              district:
-                                type: string
-                              address:
-                                type: string
-                              status:
-                                type: string
-                              selectedPlan:
-                                type: object
-                                nullable: true
-                              currentSubscription:
-                                type: object
-                              bookingSettings:
-                                type: object
-                              notificationSettings:
-                                type: object
-                              branchAvailability:
-                                type: array
-                                items:
-                                  type: object
-                              averageRating:
-                                type: number
-                                format: float
-                              reviewCount:
-                                type: integer
-                          reviews:
-                            type: array
-                            items:
-                              $ref: "#/components/schemas/Review"
+                        $ref: "#/components/schemas/BranchPublicProfile"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":

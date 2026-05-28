@@ -1,6 +1,10 @@
 import { BranchStatus, Role } from "../../generated/prisma/client.js";
 import { AvailabilityStatus } from "../../generated/prisma/index.js";
 import { tr } from "../../lib/i18n/index.js";
+import {
+    mapStaffProfile,
+    mapStaffPublicProfile,
+} from "../../lib/mappers/profile.mapper.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 
@@ -9,71 +13,6 @@ class StaffNotFoundError extends AppError {
         super(tr.STAFF_NOT_FOUND, 404);
         this.name = "StaffNotFoundError";
     }
-}
-
-function toIsoString(value) {
-    if (!value) return null;
-    return value instanceof Date ? value.toISOString() : value;
-}
-
-function mapServiceLink(link) {
-    const service = link.service;
-
-    return {
-        id: service.id,
-        name: service.name,
-        description: service.description,
-        price: service.price,
-        duration_minutes: service.durationMinutes,
-        imageUrl: service.imageUrl,
-        status: service.status,
-    };
-}
-
-function mapCertificate(certificate) {
-    return {
-        id: certificate.id,
-        title: certificate.title,
-        issuer: certificate.issuer,
-        issueDate: toIsoString(certificate.issueDate),
-        expiryDate: toIsoString(certificate.expiryDate),
-        fileUrl: certificate.fileUrl,
-        verified: certificate.verified,
-        createdAt: toIsoString(certificate.createdAt),
-    };
-}
-
-function mapAvailability(availability) {
-    return {
-        id: availability.id,
-        dayOfWeek: availability.dayOfWeek,
-        startTime: availability.startTime,
-        endTime: availability.endTime,
-        status: availability.status,
-    };
-}
-
-function mapReview(review) {
-    return {
-        id: review.id,
-        rating: review.rating,
-        comment: review.comment,
-        createdAt: toIsoString(review.createdAt),
-        reviewer: review.client
-            ? {
-                id: review.client.user.id,
-                name: review.client.user.name,
-                phone: review.client.user.phone,
-            }
-            : null,
-        service: review.service
-            ? {
-                id: review.service.id,
-                name: review.service.name,
-            }
-            : null,
-        appointmentId: review.appointmentId,
-    };
 }
 
 export async function getStaffProfile(userId) {
@@ -196,50 +135,7 @@ export async function getStaffProfile(userId) {
         throw new StaffNotFoundError();
     }
 
-    return {
-        user: {
-            id: staff.user.id,
-            name: staff.user.name,
-            email: staff.user.email,
-            phone: staff.user.phone,
-            role: staff.user.role,
-            status: staff.user.status,
-            createdAt: toIsoString(staff.user.createdAt),
-            updatedAt: toIsoString(staff.user.updatedAt),
-            staff: {
-                id: staff.id,
-                profileImageUrl: staff.profileImageUrl,
-                staffRole: staff.staffRole,
-                age: staff.age,
-                commissionPercentage: staff.commissionPercentage,
-                isActive: staff.isActive,
-                createdAt: toIsoString(staff.createdAt),
-                updatedAt: toIsoString(staff.updatedAt),
-                branch: {
-                    id: staff.branch.id,
-                    businessName: staff.branch.businessName,
-                    category: staff.branch.category,
-                },
-                professionalProfile: staff.professionalProfile
-                    ? {
-                        id: staff.professionalProfile.id,
-                        bio: staff.professionalProfile.bio,
-                        experience: staff.professionalProfile.yearsOfExperience,
-                        licenseNumber: staff.professionalProfile.licenseNumber,
-                        specialization: staff.professionalProfile.specialization,
-                        createdAt: toIsoString(staff.professionalProfile.createdAt),
-                        updatedAt: toIsoString(staff.professionalProfile.updatedAt),
-                    }
-                    : null,
-                certificates: (staff.certificates || []).map(mapCertificate),
-                availabilities: (staff.availabilities || []).map(mapAvailability),
-                services: (staff.services || []).map(mapServiceLink),
-                reviews: (staff.reviews || []).map(mapReview),
-                averageRating: staff.averageRating,
-                reviewCount: staff.reviewCount,
-            },
-        },
-    };
+    return mapStaffProfile(staff);
 }
 
 export async function getStaffPublicProfile(staffId, authUser) {
@@ -303,26 +199,5 @@ export async function getStaffPublicProfile(staffId, authUser) {
         },
     });
 
-    const formatted = reviews.map(r => ({
-        id: r.id,
-        rating: r.rating,
-        comment: r.comment,
-        appointmentId: r.appointmentId,
-        createdAt: r.createdAt ? r.createdAt.toISOString() : null,
-        reviewer: r.client ? { id: r.client.user.id, name: r.client.user.name, phone: r.client.user.phone } : null,
-        service: r.service ? { id: r.service.id, name: r.service.name } : null,
-    }));
-
-    return {
-        average_rating: staff.averageRating,
-        total_reviews: staff.reviewCount,
-        reviews: formatted,
-        staff: {
-            id: staff.id,
-            name: staff.user.name,
-            profileImageUrl: staff.profileImageUrl,
-            staffRole: staff.staffRole,
-            isActive: staff.isActive,
-        },
-    };
+    return mapStaffPublicProfile(staff, reviews);
 }

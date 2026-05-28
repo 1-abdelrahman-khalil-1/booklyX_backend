@@ -1,17 +1,9 @@
 import { z } from "zod";
 import { OfferDiscountType } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
+import { createValidationInputValidator, requireAtLeastOneField } from "../../lib/validation/helpers.js";
+import { zId, zIsoDate } from "../../lib/validation/primitives.js";
 import { OffersValidationError } from "./offers.service.js";
-
-const isoDateSchema = z
-  .string({ error: tr.INVALID_DATE_FORMAT_USE_ISO_STRING })
-  .refine((date) => !isNaN(Date.parse(date)), {
-    message: tr.INVALID_DATE_FORMAT_USE_ISO_STRING,
-  });
-
-export const offerIdSchema = z.object({
-  id: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
-});
 
 export const createOfferSchema = z
   .object({
@@ -21,11 +13,11 @@ export const createOfferSchema = z
       error: tr.INVALID_ENUM_VALUE,
     }),
     discountValue: z.coerce.number({ error: tr.OFFER_DISCOUNT_VALUE_REQUIRED }).positive(tr.OFFER_DISCOUNT_VALUE_REQUIRED),
-    startDate: isoDateSchema,
-    endDate: isoDateSchema,
+    startDate: zIsoDate(),
+    endDate: zIsoDate(),
     usageLimit: z.coerce.number().int().positive().optional(),
     serviceIds: z
-      .array(z.coerce.number().int().positive({ message: tr.INVALID_ID }), {
+      .array(zId, {
         error: tr.OFFER_SERVICES_REQUIRED,
       })
       .min(1, tr.OFFER_SERVICES_REQUIRED),
@@ -58,12 +50,12 @@ export const updateOfferSchema = z
       })
       .optional(),
     discountValue: z.coerce.number({ error: tr.OFFER_DISCOUNT_VALUE_REQUIRED }).positive(tr.OFFER_DISCOUNT_VALUE_REQUIRED).optional(),
-    startDate: isoDateSchema.optional(),
-    endDate: isoDateSchema.optional(),
+    startDate: zIsoDate().optional(),
+    endDate: zIsoDate().optional(),
     isActive: z.boolean().optional(),
     usageLimit: z.coerce.number().int().positive().nullable().optional(),
     serviceIds: z
-      .array(z.coerce.number().int().positive({ message: tr.INVALID_ID }), {
+      .array(zId, {
         error: tr.OFFER_SERVICES_REQUIRED,
       })
       .min(1, tr.OFFER_SERVICES_REQUIRED)
@@ -90,42 +82,25 @@ export const updateOfferSchema = z
       });
     }
 
-    const hasUpdatableField = [
-      data.title,
-      data.description,
-      data.discountType,
-      data.discountValue,
-      data.startDate,
-      data.endDate,
-      data.isActive,
-      data.usageLimit,
-      data.serviceIds,
-    ].some((value) => value !== undefined);
-
-    if (!hasUpdatableField) {
-      ctx.addIssue({
-        code: "custom",
+    requireAtLeastOneField(
+      data,
+      ctx,
+      [
+        "title",
+        "description",
+        "discountType",
+        "discountValue",
+        "startDate",
+        "endDate",
+        "isActive",
+        "usageLimit",
+        "serviceIds",
+      ],
+      {
         path: ["title"],
         message: tr.OFFER_UPDATE_FIELDS_REQUIRED,
-      });
-    }
+      },
+    );
   });
 
-export function validateOffersInput(schema, data) {
-  const result = schema.safeParse(data);
-  if (result.success) return result.data;
-
-  const firstIssue = result.error.issues[0];
-  if (!firstIssue) {
-    throw new OffersValidationError("Invalid input");
-  }
-
-  if (firstIssue.code === "invalid_enum_value" || firstIssue.code === "invalid_value") {
-    const enumValues = firstIssue.options ?? firstIssue.values;
-    throw new OffersValidationError(tr.INVALID_ENUM_VALUE, {
-      values: Array.isArray(enumValues) ? enumValues.join(", ") : "",
-    });
-  }
-
-  throw new OffersValidationError(firstIssue.message);
-}
+export const validateOffersInput = createValidationInputValidator(OffersValidationError);

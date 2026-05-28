@@ -1,4 +1,5 @@
 import { getLanguage, t, tr } from "../../lib/i18n/index.js";
+import { createIdParamSchema } from "../../lib/validation/primitives.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
@@ -20,14 +21,11 @@ import {
 } from "./staff.service.js";
 import {
   appointmentActionSchema,
-  appointmentIdSchema,
   appointmentsQuerySchema,
-  availabilityIdSchema,
   availableSlotsQuerySchema,
   createAvailabilitySchema,
   incomeQuerySchema,
   scheduleQuerySchema,
-  serviceIdSchema,
   updateAvailabilitySchema,
   validateStaffInput,
 } from "./staff.validation.js";
@@ -56,7 +54,7 @@ export const getScheduleHandler = asyncHandler(async (req, res) => {
 export const getAppointmentsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const userId = req.user.sub;
-  const { status } = validateStaffInput(appointmentsQuerySchema, req.query );
+  const { status } = validateStaffInput(appointmentsQuerySchema, req.query);
 
   const requests = await getAppointments(userId, status);
   successResponse(res, 200, t(tr.REQUESTS_RETRIEVED_SUCCESSFULLY, lang), requests);
@@ -82,7 +80,7 @@ export const startAppointmentHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const userId = req.user.sub;
 
-  const { appointmentId } = validateStaffInput(appointmentIdSchema, req.params);
+  const { appointmentId } = validateStaffInput(createIdParamSchema("appointmentId"), req.params);
 
   const appointment = await startAppointment(userId, appointmentId);
   successResponse(res, 200, t(tr.APPOINTMENT_STARTED, lang), appointment);
@@ -93,7 +91,7 @@ export const completeAppointmentHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const userId = req.user.sub;
 
-  const { appointmentId } = validateStaffInput(appointmentIdSchema, req.params);
+  const { appointmentId } = validateStaffInput(createIdParamSchema("appointmentId"), req.params);
   const data = validateStaffInput(appointmentActionSchema, req.body);
 
   const appointment = await completeAppointment(userId, appointmentId, data);
@@ -125,7 +123,7 @@ export const addServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const userId = req.user.sub;
 
-  const { serviceId } = validateStaffInput(serviceIdSchema, req.body);
+  const { serviceId } = validateStaffInput(createIdParamSchema("serviceId"), req.body);
 
   const result = await addStaffService(userId, serviceId);
   successResponse(res, 201, t(tr.SERVICE_ADDED, lang), result);
@@ -156,7 +154,7 @@ export const updateAvailabilityHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const userId = req.user.sub;
 
-  const { availabilityId } = validateStaffInput(availabilityIdSchema, req.params);
+  const { availabilityId } = validateStaffInput(createIdParamSchema("availabilityId"), req.params);
   const data = validateStaffInput(updateAvailabilitySchema, req.body);
 
   const availability = await updateStaffAvailability(userId, availabilityId, data);
@@ -168,7 +166,7 @@ export const deleteAvailabilityHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const userId = req.user.sub;
 
-  const { availabilityId } = validateStaffInput(availabilityIdSchema, req.params);
+  const { availabilityId } = validateStaffInput(createIdParamSchema("availabilityId"), req.params);
 
   const result = await deleteStaffAvailability(userId, availabilityId);
   successResponse(res, 200, t(tr.AVAILABILITY_DELETED, lang), result);

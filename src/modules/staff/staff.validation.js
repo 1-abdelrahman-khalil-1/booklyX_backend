@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { tr } from "../../lib/i18n/index.js";
+import { createValidationInputValidator } from "../../lib/validation/helpers.js";
+import { zImageUrl } from "../../lib/validation/primitives.js";
 import { AppError } from "../../utils/AppError.js";
 import { IncomeRangeValues } from "../../utils/enums.js";
 
@@ -70,7 +72,7 @@ export const incomeQuerySchema = z.object({
 export const appointmentActionSchema = z.object({
   notes: z.string().optional().nullable(),
   attachments: z
-    .array(z.string().url({ message: tr.INVALID_URL }), {
+    .array(zImageUrl({ message: tr.INVALID_URL }), {
       error: "Attachments must be an array of URLs",
     })
     .optional()
@@ -101,43 +103,4 @@ export const availableSlotsQuerySchema = z.object({
     .positive({ message: tr.INVALID_ID }),
 });
 
-// ─── ID Schemas ─────
-export const appointmentIdSchema = z.object({
-  appointmentId: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
-});
-
-
-
-export const availabilityIdSchema = z.object({
-  availabilityId: z.coerce
-    .number()
-    .int()
-    .positive({ message: tr.INVALID_ID }),
-});
-
-// ─── Service ID Schema ──────────────────────────────────────────────────
-export const serviceIdSchema = z.object({
-  serviceId: z.coerce
-    .number()
-    .int()
-    .positive({ message: tr.INVALID_ID }),
-});
-
-export function validateStaffInput(schema, data) {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    const firstIssue = result.error.issues[0];
-    if (!firstIssue) {
-      throw new StaffValidationError("Invalid input", 400);
-    }
-    if (firstIssue.code === "invalid_enum_value" || firstIssue.code === "invalid_value") {
-      const enumValues = firstIssue.options ?? firstIssue.values;
-      throw new StaffValidationError(tr.INVALID_ENUM_VALUE, 400, {
-        values: Array.isArray(enumValues) ? enumValues.join(", ") : "",
-      });
-    }
-
-    throw new StaffValidationError(firstIssue.message, 400);
-  }
-  return result.data;
-}
+export const validateStaffInput = createValidationInputValidator(StaffValidationError);

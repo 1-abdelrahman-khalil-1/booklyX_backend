@@ -250,21 +250,6 @@ function toSafeUser(user) {
     return {
       ...safeBranchAdmin,
       role: user.role,
-      currentSubscription: {
-        plan: safeBranchAdmin.plan
-          ? {
-            id: safeBranchAdmin.plan.id,
-            name: safeBranchAdmin.plan.name,
-            price: safeBranchAdmin.plan.price,
-            maxStaff: safeBranchAdmin.plan.maxStaff,
-            maxServices: safeBranchAdmin.plan.maxServices,
-            loyaltyEnabled: safeBranchAdmin.plan.loyaltyEnabled,
-            offersEnabled: safeBranchAdmin.plan.offersEnabled,
-          }
-          : null,
-        isSubscriptionActive: safeBranchAdmin.isSubscriptionActive,
-        subscriptionStartedAt: safeBranchAdmin.subscriptionStartedAt,
-      },
     };
   }
   return safeUser;

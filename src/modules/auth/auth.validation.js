@@ -1,14 +1,11 @@
 import { z } from "zod";
 import { Platform, Role, VerificationType } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
+import { createValidationInputValidator } from "../../lib/validation/helpers.js";
+import { zEmail, zPassword, zPhone } from "../../lib/validation/primitives.js";
 import { AuthValidationError } from "./auth.service.js";
 export const loginSchema = z.object({
-  email: z.email({
-    error: (issue) => {
-      if (issue.input === undefined) return tr.EMAIL_REQUIRED;
-      return tr.EMAIL_INVALID;
-    },
-  }),
+  email: zEmail(),
   role: z.enum([Role.client, Role.branch_admin, Role.super_admin, Role.staff], {
     error: (issue) => {
       if (issue.input === undefined) return tr.ROLE_REQUIRED;
@@ -20,18 +17,9 @@ export const loginSchema = z.object({
 
 export const registerSchema = z.object({
   name: z.string({ error: tr.NAME_REQUIRED }),
-  email: z.email({
-    error: (issue) => {
-      if (issue.input === undefined) return tr.EMAIL_REQUIRED;
-      return tr.EMAIL_INVALID;
-    },
-  }),
-  password: z
-    .string({ error: tr.PASSWORD_REQUIRED })
-    .min(8, tr.PASSWORD_MIN_LENGTH),
-  phone: z
-    .string({ error: tr.PHONE_REQUIRED })
-    .regex(/^\d{11}$/, tr.PHONE_INVALID),
+  email: zEmail(),
+  password: zPassword(),
+  phone: zPhone(),
 });
 
 export const platformSchema = z.enum([Platform.APP, Platform.WEB], {
@@ -42,64 +30,33 @@ export const platformSchema = z.enum([Platform.APP, Platform.WEB], {
 });
 
 export const verifyEmailSchema = z.object({
-  email: z.email({
-    error: (issue) => {
-      if (issue.input === undefined) return tr.EMAIL_REQUIRED;
-      return tr.EMAIL_INVALID;
-    },
-  }),
+  email: zEmail(),
   code: z.string({ error: tr.OTP_REQUIRED }),
 });
 
 export const verifyPhoneSchema = z.object({
-  email: z.email({
-    error: (issue) => {
-      if (issue.input === undefined) return tr.EMAIL_REQUIRED;
-      return tr.EMAIL_INVALID;
-    },
-  }),
+  email: zEmail(),
   code: z.string({ error: tr.OTP_REQUIRED }),
 });
 
 export const requestPasswordResetSchema = z.object({
-  email: z.email({
-    error: (issue) => {
-      if (issue.input === undefined) return tr.EMAIL_REQUIRED;
-      return tr.EMAIL_INVALID;
-    },
-  }),
+  email: zEmail(),
 });
 
 export const verifyPasswordResetSchema = z.object({
-  email: z.email({
-    error: (issue) => {
-      if (issue.input === undefined) return tr.EMAIL_REQUIRED;
-      return tr.EMAIL_INVALID;
-    },
-  }),
+  email: zEmail(),
   code: z.string({ error: tr.OTP_REQUIRED }),
 });
 
 export const resetPasswordSchema = z.object({
   resetToken: z.string({ error: tr.TOKEN_REQUIRED }),
-  newPassword: z
-    .string({ error: tr.PASSWORD_REQUIRED })
-    .min(8, tr.PASSWORD_MIN_LENGTH),
+  newPassword: zPassword(),
 });
 
 export const resendCodeSchema = z
   .object({
-    email: z
-      .email({
-        error: (issue) => {
-          if (issue.input === undefined) return tr.EMAIL_REQUIRED;
-          return tr.EMAIL_INVALID;
-        },
-      })
-      .optional(),
-    phone: z
-      .string({ error: tr.PHONE_REQUIRED })
-      .regex(/^\d{11}$/, tr.PHONE_INVALID),
+    email: zEmail().optional(),
+    phone: zPhone(),
     type: z.enum([
       VerificationType.EMAIL,
       VerificationType.PHONE,
@@ -122,21 +79,4 @@ export const resendCodeSchema = z
     },
   );
 
-export function validateAuthInput(schema, data) {
-  const result = schema.safeParse(data);
-  if (result.success) return result.data;
-
-  const firstIssue = result.error.issues[0];
-  if (!firstIssue) {
-    throw new AuthValidationError("Invalid input");
-  }
-
-  if (firstIssue.code === "invalid_enum_value" || firstIssue.code === "invalid_value") {
-    const enumValues = firstIssue.options ?? firstIssue.values;
-    throw new AuthValidationError(tr.INVALID_ENUM_VALUE, {
-      values: Array.isArray(enumValues) ? enumValues.join(", ") : "",
-    });
-  }
-
-  throw new AuthValidationError(firstIssue.message);
-}
+export const validateAuthInput = createValidationInputValidator(AuthValidationError);

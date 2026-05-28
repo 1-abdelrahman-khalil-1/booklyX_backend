@@ -17,6 +17,10 @@ import {
   sendPhoneVerificationCode,
 } from "../../lib/email.js";
 import { tr } from "../../lib/i18n/index.js";
+import {
+  mapBranchAdminProfile,
+  mapBranchPublicProfile,
+} from "../../lib/mappers/profile.mapper.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import { toRangeWhere } from "../../utils/period.js";
@@ -29,10 +33,8 @@ import {
   addServiceCategorySchema,
   createServiceSchema,
   createStaffSchema,
-  deleteServiceSchema,
   myServicesQuerySchema,
   resendCodeSchema,
-  staffIdSchema,
   updateBranchAdminProfileSchema,
   updateServiceSchema,
   updateStaffSchema,
@@ -68,61 +70,6 @@ function mapServiceResponse(service) {
     updatedAt: service.updatedAt ?? null,
     createdAt: service.createdAt ?? null,
     category: service.category ?? null,
-  };
-}
-
-function mapBranchAvailability(availability) {
-  return {
-    id: availability.id,
-    dayOfWeek: availability.dayOfWeek,
-    startTime: availability.startTime,
-    endTime: availability.endTime,
-    status: availability.status,
-    createdAt: availability.createdAt,
-    updatedAt: availability.updatedAt,
-  };
-}
-
-function mapBranchProfile(branchAdmin) {
-  return {
-    id: branchAdmin.id,
-    ownerName: branchAdmin.ownerName,
-    email: branchAdmin.email,
-    phone: branchAdmin.phone,
-    businessName: branchAdmin.businessName,
-    category: branchAdmin.category,
-    description: branchAdmin.description ?? null,
-    logoUrl: branchAdmin.logoUrl ?? null,
-    operatingHours: branchAdmin.operatingHours ?? null,
-    address: branchAdmin.address,
-    city: branchAdmin.city,
-    district: branchAdmin.district,
-    status: branchAdmin.status,
-    isSubscriptionActive: branchAdmin.isSubscriptionActive,
-    subscriptionStartedAt: branchAdmin.subscriptionStartedAt,
-    emailVerified: branchAdmin.emailVerified,
-    phoneVerified: branchAdmin.phoneVerified,
-    createdAt: branchAdmin.createdAt,
-    updatedAt: branchAdmin.updatedAt,
-    selectedPlan: branchAdmin.plan,
-    currentSubscription: {
-      plan: branchAdmin.plan,
-      isSubscriptionActive: branchAdmin.isSubscriptionActive,
-      subscriptionStartedAt: branchAdmin.subscriptionStartedAt,
-    },
-    bookingSettings: {
-      allowCancellationBeforeHours:
-        branchAdmin.allowCancellationBeforeHours,
-    },
-    notificationSettings: {
-      bookingNotificationsEnabled:
-        branchAdmin.bookingNotificationsEnabled,
-      marketingNotificationsEnabled:
-        branchAdmin.marketingNotificationsEnabled,
-    },
-    branchAvailability: (branchAdmin.branchAvailabilities ?? [])
-      .map(mapBranchAvailability)
-      .sort((left, right) => left.dayOfWeek - right.dayOfWeek),
   };
 }
 
@@ -360,6 +307,13 @@ export class AppointmentCancellationError extends AppError {
   constructor() {
     super(tr.APPOINTMENT_CANCELLATION_NOT_ALLOWED, 409);
     this.name = "AppointmentCancellationError";
+  }
+}
+
+export class PlanNotFoundError extends AppError {
+  constructor() {
+    super(tr.PLAN_NOT_FOUND, 404);
+    this.name = "PlanNotFoundError";
   }
 }
 
@@ -736,11 +690,11 @@ export async function createStaff(body, branchAdminUserId) {
     branchAdmin.branchAvailabilities && branchAdmin.branchAvailabilities.length > 0
       ? branchAdmin.branchAvailabilities
       : Array.from({ length: 7 }, (_, dayOfWeek) => ({
-          dayOfWeek,
-          startTime: DEFAULT_BRANCH_OPEN_TIME,
-          endTime: DEFAULT_BRANCH_CLOSE_TIME,
-          status: AvailabilityStatus.AVAILABLE,
-        }));
+        dayOfWeek,
+        startTime: DEFAULT_BRANCH_OPEN_TIME,
+        endTime: DEFAULT_BRANCH_CLOSE_TIME,
+        status: AvailabilityStatus.AVAILABLE,
+      }));
 
   const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
 
@@ -975,9 +929,7 @@ export async function updateStaff(body, branchAdminUserId) {
   return getMyStaffById(staff.id, branchAdminUserId);
 }
 
-export async function deleteStaff(body, branchAdminUserId) {
-  const data = validateBranchAdminInput(staffIdSchema, body);
-
+export async function deleteStaff(id, branchAdminUserId) {
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
   });
@@ -988,7 +940,7 @@ export async function deleteStaff(body, branchAdminUserId) {
 
   const staff = await prisma.user.findFirst({
     where: {
-      id: data.id,
+      id,
       role: Role.staff,
       staff: {
         is: {
@@ -1361,13 +1313,11 @@ export async function getBranchAdminProfile(branchAdminUserId) {
   if (!branchAdmin) throw new BranchNotFoundError();
 
   return {
-    user: mapBranchProfile(branchAdmin),
+    user: mapBranchAdminProfile(branchAdmin),
   };
 }
 
-export async function deleteService(body, branchAdminUserId) {
-  const data = validateBranchAdminInput(deleteServiceSchema, body);
-
+export async function deleteService(id, branchAdminUserId) {
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
   });
@@ -1378,7 +1328,7 @@ export async function deleteService(body, branchAdminUserId) {
 
   const service = await prisma.service.findFirst({
     where: {
-      id: data.id,
+      id,
       branchId: branchAdmin.id,
     },
   });
@@ -1493,11 +1443,9 @@ export async function activateSubscription(branchAdminUserId) {
   return {
     message: tr.BRANCH_SUBSCRIPTION_ACTIVATED,
     payment: result.payment,
-    currentSubscription: {
-      plan: branchAdmin.plan,
-      isSubscriptionActive: result.updatedBranch.isSubscriptionActive,
-      subscriptionStartedAt: result.updatedBranch.subscriptionStartedAt,
-    },
+    plan: branchAdmin.plan,
+    isSubscriptionActive: result.updatedBranch.isSubscriptionActive,
+    subscriptionStartedAt: result.updatedBranch.subscriptionStartedAt,
   };
 }
 
@@ -1531,9 +1479,7 @@ export async function renewSubscription(branchAdminUserId) {
     throw new SubscriptionActivationForbiddenError();
   }
 
-  if (branchAdmin.isSubscriptionActive) {
-    throw new SubscriptionAlreadyActiveError();
-  }
+
 
   const now = new Date();
   const result = await prisma.$transaction(async (tx) => {
@@ -1574,13 +1520,106 @@ export async function renewSubscription(branchAdminUserId) {
   return {
     message: tr.SUBSCRIPTION_RENEWED,
     payment: result.payment,
-    currentSubscription: {
-      plan: branchAdmin.plan,
-      isSubscriptionActive: result.updatedBranch.isSubscriptionActive,
-      subscriptionStartedAt: result.updatedBranch.subscriptionStartedAt,
-    },
+    plan: branchAdmin.plan,
+    isSubscriptionActive: result.updatedBranch.isSubscriptionActive,
+    subscriptionStartedAt: result.updatedBranch.subscriptionStartedAt,
+
   };
 }
+
+export async function changeSubscriptionPlan(branchAdminUserId, newPlanId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: {
+      id: true,
+      status: true,
+      isSubscriptionActive: true,
+      planId: true,
+      plan: {
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          maxStaff: true,
+          maxServices: true,
+          loyaltyEnabled: true,
+          offersEnabled: true,
+        },
+      },
+    },
+  });
+
+  if (!branchAdmin) {
+    throw new BranchNotFoundError();
+  }
+
+  if (branchAdmin.status !== BranchStatus.APPROVED) {
+    throw new SubscriptionActivationForbiddenError();
+  }
+
+  const newPlan = await prisma.plan.findUnique({
+    where: { id: newPlanId },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      maxStaff: true,
+      maxServices: true,
+      loyaltyEnabled: true,
+      offersEnabled: true,
+    },
+  });
+
+  if (!newPlan) {
+    throw new PlanNotFoundError();
+  }
+
+  const now = new Date();
+  const result = await prisma.$transaction(async (tx) => {
+    const payment = await tx.subscriptionPayment.create({
+      data: {
+        branchId: branchAdmin.id,
+        planId: newPlan.id,
+        amount: newPlan.price,
+        status: PaymentStatus.PAID,
+        paymentMethod: PaymentMethod.CARD,
+        paidAt: now,
+      },
+      select: {
+        id: true,
+        amount: true,
+        status: true,
+        paymentMethod: true,
+        paidAt: true,
+      },
+    });
+
+    const updatedBranch = await tx.branchAdmin.update({
+      where: { id: branchAdmin.id },
+      data: {
+        planId: newPlan.id,
+        isSubscriptionActive: true,
+        subscriptionStartedAt: now,
+      },
+      select: {
+        id: true,
+        isSubscriptionActive: true,
+        subscriptionStartedAt: true,
+      },
+    });
+
+    return { payment, updatedBranch };
+  });
+
+  return {
+    message: tr.SUBSCRIPTION_PLAN_CHANGED,
+    payment: result.payment,
+    plan: newPlan,
+    isSubscriptionActive: result.updatedBranch.isSubscriptionActive,
+    subscriptionStartedAt: result.updatedBranch.subscriptionStartedAt,
+  };
+}
+
 
 export async function cancelSubscription(branchAdminUserId) {
   const branchAdmin = await prisma.branchAdmin.findUnique({
@@ -1629,11 +1668,9 @@ export async function cancelSubscription(branchAdminUserId) {
 
   return {
     message: tr.SUBSCRIPTION_CANCELED,
-    currentSubscription: {
-      plan: branchAdmin.plan,
-      isSubscriptionActive: updatedBranch.isSubscriptionActive,
-      subscriptionStartedAt: updatedBranch.subscriptionStartedAt,
-    },
+    plan: branchAdmin.plan,
+    isSubscriptionActive: updatedBranch.isSubscriptionActive,
+    subscriptionStartedAt: updatedBranch.subscriptionStartedAt,
   };
 }
 
@@ -1843,41 +1880,7 @@ export async function getBranchPublicProfile(branchId, authUser) {
     staff: r.staff ? { id: r.staff.id, name: r.staff.user.name } : null,
   }));
 
-  return {
-    branch: {
-      id: branch.id,
-      businessName: branch.businessName,
-      category: branch.category,
-      description: branch.description ?? null,
-      logoUrl: branch.logoUrl ?? null,
-      city: branch.city,
-      district: branch.district,
-      address: branch.address,
-      status: branch.status,
-      selectedPlan: branch.plan,
-      currentSubscription: {
-        plan: branch.plan,
-        isSubscriptionActive: branch.isSubscriptionActive,
-        subscriptionStartedAt: branch.subscriptionStartedAt,
-      },
-      average_rating: branch.averageRating,
-      total_reviews: branch.reviewCount,
-      bookingSettings: {
-        allowCancellationBeforeHours:
-          branch.allowCancellationBeforeHours,
-      },
-      notificationSettings: {
-        bookingNotificationsEnabled:
-          branch.bookingNotificationsEnabled,
-        marketingNotificationsEnabled:
-          branch.marketingNotificationsEnabled,
-      },
-      branchAvailability: (branch.branchAvailabilities ?? []).map(
-        mapBranchAvailability,
-      ),
-    },
-    reviews: formatted,
-  };
+  return mapBranchPublicProfile(branch, reviews);
 }
 
 export async function updateBranchAvailability(body, branchAdminUserId) {

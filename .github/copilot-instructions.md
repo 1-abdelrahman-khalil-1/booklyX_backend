@@ -93,6 +93,7 @@ When uncertain, asking is REQUIRED — not optional.
 - No dependency on Express داخل services
 
 - Preserve database-selected response shapes in services: avoid remapping or formatting DB query results inside services unless the API contract explicitly requires it. Keep any non-trivial response transformations documented and reviewed.
+- Use `src/lib/mappers/profile.mapper.js` for branch admin, staff, and admin user profile responses. Keep profile shaping centralized, explicit, and whitelisted rather than hand-mapping the same profile object in multiple services.
 
 - Error-to-HTTP guidance:
   - Validation/business input errors -> `400`
@@ -124,6 +125,10 @@ Apply these guards in services responsible for creating services, staff, offers,
 
 - Use Zod schemas only
 - Use helper function (e.g., `validateInput(schema, data)`)
+- Prefer shared validation primitives in `src/lib/validation/primitives.js` for repeated IDs, emails, phones, passwords, ISO dates, and URLs.
+- Prefer shared generic object schemas in `src/lib/validation/primitives.js` for repeated parameter shapes such as `zIdParamSchema` and `createIdParamSchema(name)`.
+- Prefer shared validation helpers in `src/lib/validation/helpers.js` for repeated `safeParse` wrappers, `requireAtLeastOneField`, `validateTimeRange`, and password-change validation.
+- Keep feature schemas readable and explicit; compose shared primitives/helpers instead of building large generic schemas.
 
 - Validation flow:
   - `safeParse`
@@ -134,6 +139,7 @@ Apply these guards in services responsible for creating services, staff, offers,
   - Always attach available enum options dynamically in error params from either shape: `{ values: (firstIssue.options ?? firstIssue.values)?.join(", ") }`
   - Prefer Prisma enums or shared constant enums for validation and business rules instead of hardcoded literal values
   - Validation helpers should return translation keys and params only; do not translate inside validation helpers
+  - Validation wrappers should be thin; use the shared helper in `src/lib/validation/helpers.js` instead of reimplementing `safeParse` logic in each module.
 
 - Never trust `req.body`
 
@@ -156,19 +162,19 @@ Note: The project enforces controller-side validation using Zod helpers that thr
 
 ### 5.2 Common Task → Library Mapping
 
-| Task | Preferred Library | Alternatives | Notes |
-|------|------------------|---------------|-------|
-| Input Validation | `zod` | joi, yup | Already in project |
-| Password Hashing | `bcrypt` | argon2 | Already in project |
-| JWT Auth | `jsonwebtoken` | jose | Already in project |
-| Date/Time | `dayjs` | date-fns, moment | Already in project |
-| Environment Variables | `dotenv` | - | Already in project |
-| Database ORM | `prisma` | - | Already in project |
-| **Data Generation** | **`@faker-js/faker`** | **casual, chance** | **For testing/seeding** |
-| HTTP Client | `axios` | fetch | Check if installed |
-| File Upload | `multer` | express-fileupload | Already in project |
-| Logging | Check project | winston, pino | Use what's configured |
-| Testing | `jest` | vitest, mocha | Already in project |
+| Task                  | Preferred Library     | Alternatives       | Notes                   |
+| --------------------- | --------------------- | ------------------ | ----------------------- |
+| Input Validation      | `zod`                 | joi, yup           | Already in project      |
+| Password Hashing      | `bcrypt`              | argon2             | Already in project      |
+| JWT Auth              | `jsonwebtoken`        | jose               | Already in project      |
+| Date/Time             | `dayjs`               | date-fns, moment   | Already in project      |
+| Environment Variables | `dotenv`              | -                  | Already in project      |
+| Database ORM          | `prisma`              | -                  | Already in project      |
+| **Data Generation**   | **`@faker-js/faker`** | **casual, chance** | **For testing/seeding** |
+| HTTP Client           | `axios`               | fetch              | Check if installed      |
+| File Upload           | `multer`              | express-fileupload | Already in project      |
+| Logging               | Check project         | winston, pino      | Use what's configured   |
+| Testing               | `jest`                | vitest, mocha      | Already in project      |
 
 ### 5.3 Rules
 
@@ -182,6 +188,7 @@ Note: The project enforces controller-side validation using Zod helpers that thr
 ### 5.4 Example: The Right Way (Seed Data Generation)
 
 ❌ **Wrong**: Manually create hundreds of hardcoded seed records
+
 ```javascript
 const CLIENTS = [
   { name: "Client 1", email: "client1@...", phone: "0100..." },
@@ -191,10 +198,13 @@ const CLIENTS = [
 ```
 
 ✅ **Right**: Use faker library with stable accounts preserved
+
 ```javascript
 import { faker } from "@faker-js/faker";
 
-const STABLE_ACCOUNTS = [/* preserved accounts */];
+const STABLE_ACCOUNTS = [
+  /* preserved accounts */
+];
 function generateFakeClients(count) {
   return Array.from({ length: count }, () => ({
     name: faker.person.fullName(),
@@ -309,6 +319,8 @@ When adding or modifying relations, keep `@@index` and `@@map` conventions consi
 - Always use `successResponse`
 - Never use raw `res.json`
 - Keep response structure consistent: `{ status, error, message, data }`
+
+- For profile-like endpoints, prefer reusable OpenAPI schemas in `openapi.yaml` instead of duplicating inline profile trees. Keep the documented schema aligned with the shared mapper output.
 
 Responses follow `snake_case` keys in OpenAPI examples (see `openapi.yaml`). Keep response payloads consistent with documented schemas.
 

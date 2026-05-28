@@ -8,6 +8,7 @@ import {
   applyHandler,
   cancelAppointmentHandler,
   cancelSubscriptionHandler,
+  changeSubscriptionPlanHandler,
   createServiceHandler,
   createStaffHandler,
   deleteServiceHandler,
@@ -16,7 +17,6 @@ import {
   getBookingPaymentDetailsHandler,
   getBranchAdminProfileHandler,
   getBranchDashboardStatsHandler,
-  getBranchPublicProfileHandler,
   getMyServiceCategoriesHandler,
   getMyServicesHandler,
   getMyStaffByIdHandler,
@@ -33,7 +33,7 @@ import {
   updateServiceHandler,
   updateStaffHandler,
   verifyEmailHandler,
-  verifyPhoneHandler,
+  verifyPhoneHandler
 } from "./branch_admin.controller.js";
 
 const branchAdminRouter = Router();
@@ -69,6 +69,13 @@ branchAdminRouter.post(
   authenticate,
   authorize(Role.branch_admin),
   renewSubscriptionHandler,
+);
+
+branchAdminRouter.put(
+  "/subscription/:id",
+  authenticate,
+  authorize(Role.branch_admin),
+  changeSubscriptionPlanHandler,
 );
 
 branchAdminRouter.post(
@@ -242,12 +249,5 @@ branchAdminRouter.get(
   getBookingPaymentDetailsHandler,
 );
 
-// Public branch profile with reviews (clients and branch_admin can view)
-branchAdminRouter.get(
-  "/:id/profile",
-  authenticate,
-  authorize(Role.client, Role.branch_admin, Role.super_admin),
-  getBranchPublicProfileHandler,
-);
 
 export default branchAdminRouter;

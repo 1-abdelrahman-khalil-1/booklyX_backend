@@ -1,11 +1,10 @@
 import {
   BranchStatus,
   PaymentStatus,
-  Role,
-  ServiceApprovalStatus,
-  UserStatus,
+  ServiceApprovalStatus
 } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
+import { mapAdminUserProfile } from "../../lib/mappers/profile.mapper.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import { toRangeWhere } from "../../utils/period.js";
@@ -473,7 +472,17 @@ export async function getUserProfile(userId) {
           age: true,
           staffRole: true,
           commissionPercentage: true,
-          professionalProfile: true,
+          professionalProfile: {
+            select: {
+              id: true,
+              bio: true,
+              yearsOfExperience: true,
+              licenseNumber: true,
+              specialization: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
           averageRating: true,
           reviewCount: true,
         },
@@ -483,6 +492,6 @@ export async function getUserProfile(userId) {
 
   if (!user) throw new AppError(tr.USER_NOT_FOUND, 404);
 
-  return { user };
+  return mapAdminUserProfile(user);
 }
 

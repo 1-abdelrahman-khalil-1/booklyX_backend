@@ -1,12 +1,5 @@
 import prisma from "../../lib/prisma.js";
 
-function toNumericPrice(price) {
-  if (price && typeof price === "object" && typeof price.toNumber === "function") {
-    return price.toNumber();
-  }
-
-  return Number(price);
-}
 
 export async function listPlans() {
   const plans = await prisma.plan.findMany({
@@ -23,8 +16,5 @@ export async function listPlans() {
     },
   });
 
-  return plans.map((plan) => ({
-    ...plan,
-    price: toNumericPrice(plan.price),
-  }));
+  return plans;
 }

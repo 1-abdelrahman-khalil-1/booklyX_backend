@@ -1,4 +1,5 @@
 import { getLanguage, t, tr } from "../../lib/i18n/index.js";
+import { createIdParamSchema, zIdParamSchema } from "../../lib/validation/primitives.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
@@ -16,10 +17,8 @@ import {
   rejectService,
 } from "./admin.service.js";
 import {
-  idParamSchema,
   listBranchesQuerySchema,
   listServicesQuerySchema,
-  paymentIdParamSchema,
   periodQuerySchema,
   rejectReasonSchema,
   validateAdminInput
@@ -43,7 +42,7 @@ export const listBranchesHandler = asyncHandler(async (req, res) => {
 
 export const getBranchDetailsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateAdminInput(idParamSchema, req.params);
+  const { id } = validateAdminInput(zIdParamSchema, req.params);
   const result = await getBranchDetails(id);
   successResponse(
     res,
@@ -57,7 +56,7 @@ export const getBranchDetailsHandler = asyncHandler(async (req, res) => {
 
 export const approveBranchHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateAdminInput(idParamSchema, req.params);
+  const { id } = validateAdminInput(zIdParamSchema, req.params);
   const result = await approveBranch(id);
   successResponse(res, 200, t(result.message, lang));
 });
@@ -66,7 +65,7 @@ export const approveBranchHandler = asyncHandler(async (req, res) => {
 
 export const rejectBranchHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateAdminInput(idParamSchema, req.params);
+  const { id } = validateAdminInput(zIdParamSchema, req.params);
   const { reason } = validateAdminInput(rejectReasonSchema, req.body);
   const result = await rejectBranch(id, reason);
   successResponse(res, 200, t(result.message, lang));
@@ -81,21 +80,21 @@ export const listServicesHandler = asyncHandler(async (req, res) => {
 
 export const getServiceDetailsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateAdminInput(idParamSchema, req.params);
+  const { id } = validateAdminInput(zIdParamSchema, req.params);
   const result = await getServiceDetails(id);
   successResponse(res, 200, t(tr.SERVICES_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 
 export const approveServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateAdminInput(idParamSchema, req.params);
+  const { id } = validateAdminInput(zIdParamSchema, req.params);
   const result = await approveService(id);
   successResponse(res, 200, t(result.message, lang), result.service);
 });
 
 export const rejectServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateAdminInput(idParamSchema, req.params);
+  const { id } = validateAdminInput(zIdParamSchema, req.params);
   const { reason } = validateAdminInput(rejectReasonSchema, req.body);
   const result = await rejectService(id, reason);
   successResponse(res, 200, t(result.message, lang), result.service);
@@ -103,7 +102,7 @@ export const rejectServiceHandler = asyncHandler(async (req, res) => {
 
 export const getUserProfileHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateAdminInput(idParamSchema, req.params);
+  const { id } = validateAdminInput(zIdParamSchema, req.params);
   const result = await getUserProfile(id);
   successResponse(res, 200, t(tr.PROFILE_RETRIEVED_SUCCESSFULLY, lang), result);
 });
@@ -134,7 +133,7 @@ export const listBranchPaymentsHandler = asyncHandler(async (req, res) => {
 
 export const getBranchPaymentDetailsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { paymentId } = validateAdminInput(paymentIdParamSchema, req.params);
+  const { paymentId } = validateAdminInput(createIdParamSchema("paymentId"), req.params);
   const result = await getBranchPaymentDetails(paymentId);
   successResponse(
     res,

@@ -1,4 +1,5 @@
 import { getLanguage, t, tr } from "../../lib/i18n/index.js";
+import { zIdParamSchema } from "../../lib/validation/primitives.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
@@ -10,7 +11,6 @@ import {
 } from "./offers.service.js";
 import {
   createOfferSchema,
-  offerIdSchema,
   updateOfferSchema,
   validateOffersInput,
 } from "./offers.validation.js";
@@ -24,7 +24,7 @@ export const createOfferHandler = asyncHandler(async (req, res) => {
 
 export const updateOfferHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateOffersInput(offerIdSchema, req.params);
+  const { id } = validateOffersInput(zIdParamSchema, req.params);
   const data = validateOffersInput(updateOfferSchema, req.body);
   const result = await updateOffer(id, data, req.user.sub);
   successResponse(res, 200, t(tr.OFFER_UPDATED, lang), result);
@@ -32,14 +32,14 @@ export const updateOfferHandler = asyncHandler(async (req, res) => {
 
 export const toggleOfferHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateOffersInput(offerIdSchema, req.params);
+  const { id } = validateOffersInput(zIdParamSchema, req.params);
   const result = await toggleOffer(id, req.user.sub);
   successResponse(res, 200, t(tr.OFFER_TOGGLED, lang), result);
 });
 
 export const deleteOfferHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateOffersInput(offerIdSchema, req.params);
+  const { id } = validateOffersInput(zIdParamSchema, req.params);
   const result = await deleteOffer(id, req.user.sub);
   successResponse(res, 200, t(tr.OFFER_DELETED, lang), result);
 });

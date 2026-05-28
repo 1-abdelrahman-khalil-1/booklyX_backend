@@ -1,61 +1,60 @@
 import { getLanguage, t, tr } from "../../lib/i18n/index.js";
+import { zIdParamSchema } from "../../lib/validation/primitives.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { successResponse } from "../../utils/response.js";
 import {
-    activateSubscription,
-    addServiceCategory,
-    cancelAppointment,
-    cancelSubscription,
-    createService,
-    createStaff,
-    deleteService,
-    deleteStaff,
-    getAppointmentDetails,
-    getBookingPaymentDetails,
-    getBranchAdminProfile,
-    getBranchDashboardStats,
-    getBranchPublicProfile,
-    getMyServiceCategories,
-    getMyServices,
-    getMyStaff,
-    getMyStaffById,
-    getStaffEarnings,
-    listAppointments,
-    listBookingPayments,
-    renewSubscription,
-    resendBranchCode,
-    submitBranch,
-    updateBookingSettings,
-    updateBranchAdminProfile,
-    updateBranchAvailability,
-    updateNotificationSettings,
-    updateService,
-    updateStaff,
-    verifyBranchEmail,
-    verifyBranchPhone,
+  activateSubscription,
+  addServiceCategory,
+  cancelAppointment,
+  cancelSubscription,
+  changeSubscriptionPlan,
+  createService,
+  createStaff,
+  deleteService,
+  deleteStaff,
+  getAppointmentDetails,
+  getBookingPaymentDetails,
+  getBranchAdminProfile,
+  getBranchDashboardStats,
+  getBranchPublicProfile,
+  getMyServiceCategories,
+  getMyServices,
+  getMyStaff,
+  getMyStaffById,
+  getStaffEarnings,
+  listAppointments,
+  listBookingPayments,
+  renewSubscription,
+  resendBranchCode,
+  submitBranch,
+  updateBookingSettings,
+  updateBranchAdminProfile,
+  updateBranchAvailability,
+  updateNotificationSettings,
+  updateService,
+  updateStaff,
+  verifyBranchEmail,
+  verifyBranchPhone,
 } from "./branch_admin.service.js";
 import {
-    addServiceCategorySchema,
-    applySchema,
-    appointmentIdSchema,
-    bookingPaymentsQuerySchema,
-    branchAppointmentsQuerySchema,
-    createServiceSchema,
-    createStaffSchema,
-    myServicesQuerySchema,
-    paymentIdSchema,
-    periodQuerySchema,
-    resendCodeSchema,
-    staffIdSchema,
-    updateBookingSettingsSchema,
-    updateBranchAdminProfileSchema,
-    updateBranchAvailabilitySchema,
-    updateNotificationSettingsSchema,
-    updateServiceSchema,
-    updateStaffSchema,
-    validateBranchAdminInput,
-    verifyEmailSchema,
-    verifyPhoneSchema,
+  addServiceCategorySchema,
+  applySchema,
+  bookingPaymentsQuerySchema,
+  branchAppointmentsQuerySchema,
+  createServiceSchema,
+  createStaffSchema,
+  myServicesQuerySchema,
+  periodQuerySchema,
+  resendCodeSchema,
+  updateBookingSettingsSchema,
+  updateBranchAdminProfileSchema,
+  updateBranchAvailabilitySchema,
+  updateNotificationSettingsSchema,
+  updateServiceSchema,
+  updateStaffSchema,
+  validateBranchAdminInput,
+  verifyEmailSchema,
+  verifyPhoneSchema,
 } from "./branch_admin.validation.js";
 
 function firstUploadedFile(req, fieldName) {
@@ -63,52 +62,37 @@ function firstUploadedFile(req, fieldName) {
   return Array.isArray(fileList) ? fileList[0] : undefined;
 }
 
-/**
- * Get authenticated download URL for sensitive documents.
- * These require login to access.
- */
-function getDocumentDownloadUrl(req, file) {
-  if (!file) return undefined;
-  return file.path ?? `${req.protocol}://${req.get("host")}/files/download/${file.filename}`;
-}
-
-/**
- * Get public URL for service images.
- * Service images can be accessed without authentication.
- */
-function getPublicImageUrl(req, file) {
-  if (!file) return undefined;
-  return file.path ?? `${req.protocol}://${req.get("host")}/files/public/${file.filename}`;
+function getUploadedFileUrl(file) {
+  // We rely on Cloudinary for uploads; multer storage sets `file.path` to the secure URL.
+  return file?.path ?? undefined;
 }
 
 function buildBranchPayload(req) {
   return {
     ...req.body,
-    logoUrl:
-      getDocumentDownloadUrl(req, firstUploadedFile(req, "logo")) ?? req.body.logoUrl,
+    logoUrl: getUploadedFileUrl(firstUploadedFile(req, "logo")) ?? req.body.logoUrl,
     taxCertificateUrl:
-      getDocumentDownloadUrl(req, firstUploadedFile(req, "taxCertificate")) ?? req.body.taxCertificateUrl,
+      getUploadedFileUrl(firstUploadedFile(req, "taxCertificate")) ?? req.body.taxCertificateUrl,
     commercialRegisterUrl:
-      getDocumentDownloadUrl(req, firstUploadedFile(req, "commercialRegister")) ?? req.body.commercialRegisterUrl,
+      getUploadedFileUrl(firstUploadedFile(req, "commercialRegister")) ?? req.body.commercialRegisterUrl,
     nationalIdUrl:
-      getDocumentDownloadUrl(req, firstUploadedFile(req, "nationalId")) ?? req.body.nationalIdUrl,
+      getUploadedFileUrl(firstUploadedFile(req, "nationalId")) ?? req.body.nationalIdUrl,
     facilityLicenseUrl:
-      getDocumentDownloadUrl(req, firstUploadedFile(req, "facilityLicense")) ?? req.body.facilityLicenseUrl,
+      getUploadedFileUrl(firstUploadedFile(req, "facilityLicense")) ?? req.body.facilityLicenseUrl,
   };
 }
 
 function buildServicePayload(req) {
   return {
     ...req.body,
-    imageUrl:
-      getPublicImageUrl(req, firstUploadedFile(req, "image")) ?? req.body.imageUrl,
+    imageUrl: getUploadedFileUrl(firstUploadedFile(req, "image")) ?? req.body.imageUrl,
   };
 }
 
 function buildProfilePayload(req) {
   return {
     ...req.body,
-    logoUrl: getPublicImageUrl(req, firstUploadedFile(req, "logo")) ?? req.body.logoUrl,
+    logoUrl: getUploadedFileUrl(firstUploadedFile(req, "logo")) ?? req.body.logoUrl,
   };
 }
 
@@ -124,27 +108,26 @@ export const applyHandler = asyncHandler(async (req, res) => {
 export const activateSubscriptionHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const result = await activateSubscription(req.user.sub);
-  successResponse(res, 200, t(result.message, lang), {
-    payment: result.payment,
-    currentSubscription: result.currentSubscription,
-  });
+  successResponse(res, 200, t(result.message, lang), result);
 });
 
 export const renewSubscriptionHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const result = await renewSubscription(req.user.sub);
-  successResponse(res, 200, t(result.message, lang), {
-    payment: result.payment,
-    currentSubscription: result.currentSubscription,
-  });
+  successResponse(res, 200, t(result.message, lang), result);
+});
+
+export const changeSubscriptionPlanHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
+  const result = await changeSubscriptionPlan(req.user.sub, id);
+  successResponse(res, 200, t(result.message, lang), result);
 });
 
 export const cancelSubscriptionHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const result = await cancelSubscription(req.user.sub);
-  successResponse(res, 200, t(result.message, lang), {
-    currentSubscription: result.currentSubscription,
-  });
+  successResponse(res, 200, t(result.message, lang), result );
 });
 
 // ─── Verify Email Handler ─
@@ -202,15 +185,15 @@ export const updateStaffHandler = asyncHandler(async (req, res) => {
 
 export const getMyStaffByIdHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateBranchAdminInput(staffIdSchema, req.params);
+  const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
   const result = await getMyStaffById(id, req.user.sub);
   successResponse(res, 200, t(tr.STAFF_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 
 export const deleteStaffHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateBranchAdminInput(staffIdSchema, req.params);
-  const result = await deleteStaff({ id }, req.user.sub);
+  const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
+  const result = await deleteStaff(id, req.user.sub);
   successResponse(res, 200, t(result.message, lang));
 });
 
@@ -254,8 +237,8 @@ export const updateServiceHandler = asyncHandler(async (req, res) => {
 
 export const deleteServiceHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateBranchAdminInput(staffIdSchema, req.params);
-  const result = await deleteService({ id }, req.user.sub);
+  const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
+  const result = await deleteService(id, req.user.sub);
   successResponse(res, 200, t(result.message, lang));
 });
 
@@ -312,14 +295,14 @@ export const listAppointmentsHandler = asyncHandler(async (req, res) => {
 
 export const getAppointmentDetailsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateBranchAdminInput(appointmentIdSchema, req.params);
+  const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
   const result = await getAppointmentDetails(req.user.sub, id);
   successResponse(res, 200, t(tr.APPOINTMENT_DETAILS_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 
 export const cancelAppointmentHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateBranchAdminInput(appointmentIdSchema, req.params);
+  const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
   const result = await cancelAppointment(req.user.sub, id);
   successResponse(res, 200, t(tr.APPOINTMENT_CANCELED, lang), result);
 });
@@ -333,7 +316,7 @@ export const listBookingPaymentsHandler = asyncHandler(async (req, res) => {
 
 export const getBookingPaymentDetailsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateBranchAdminInput(paymentIdSchema, req.params);
+  const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
   const result = await getBookingPaymentDetails(req.user.sub, id);
   successResponse(res, 200, t(tr.BOOKING_PAYMENT_DETAILS_RETRIEVED_SUCCESSFULLY, lang), result);
 });
