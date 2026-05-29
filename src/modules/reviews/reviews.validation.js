@@ -14,6 +14,7 @@ export class ReviewsValidationError extends AppError {
 export const listReviewsQuerySchema = z.object({
   serviceId: zId.optional(),
   staffId: zId.optional(),
+  branchId: zId.optional(),
   page: z.coerce.number().int().min(1, tr.INVALID_ID).optional().default(1),
   limit: z.coerce.number().int().min(1, tr.INVALID_ID).max(100, tr.INVALID_ID).optional().default(20),
 });

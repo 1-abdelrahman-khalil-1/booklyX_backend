@@ -35,6 +35,7 @@ When uncertain, asking is REQUIRED — not optional.
 - Strict request flow: Route -> Controller -> Service -> Prisma (use the centralized `src/lib/prisma.js`).
 - Key mental model:
   - `auth`: identity, session, verification lifecycle
+  - `client`: home dashboard, map discovery, booking wizard, payments, appointments history, favourites
   - `branch_admin`: branch onboarding, verification, subscription and management
   - `admin` / `super_admin`: moderation, approvals, global actions
   - `staff`: staff profiles, schedules, earnings
@@ -52,7 +53,7 @@ When uncertain, asking is REQUIRED — not optional.
 ### 1.2 Prisma Enums and Models
 
 - Prefer Prisma enums (defined in `prisma/schema.prisma`) for persisted domain values (roles, statuses, platform, etc.). Use `src/utils/enums.js` only for non-persisted, app-level enumerations.
-- Notable persistent enums: `Role` (client, staff, branch_admin, super_admin), `BranchStatus`, `ServiceApprovalStatus`, `AppointmentStatus`, `Plan` relation on `BranchAdmin`, and `OfferDiscountType`.
+- Notable persistent enums: `Role` (client, staff, branch_admin, super_admin), `BranchStatus`, `ServiceApprovalStatus`, `AppointmentStatus`, `PaymentStatus` (especially `REFUNDED` for distinct tracking), `Plan` relation on `BranchAdmin`, and `OfferDiscountType`.
 
 ### 1.1. Prisma Enum vs. Custom Enum
 
@@ -331,6 +332,26 @@ Responses follow `snake_case` keys in OpenAPI examples (see `openapi.yaml`). Kee
 - Define routes in `[module].routes.js`
 - Register all modules in `src/routes/index.js`
 - Do NOT touch `server.js`
+
+### 13.1 RESTful Routing Principles (Mandatory)
+
+When defining endpoints, adhere to strict REST best practices:
+1. **Nouns, Not Verbs**: Never include verbs in endpoint paths. Use resources instead.
+   - ❌ *Incorrect*: `POST /branch-admin/create-staff`
+   - ✅ *Correct*: `POST /branch-admin/staff`
+2. **Avoid Redundancy**: If a route is already mounted under a parent path (like `/branch-admin`), do not repeat contextual info.
+   - ❌ *Incorrect*: `GET /branch-admin/staff/my-staff`
+   - ✅ *Correct*: `GET /branch-admin/staff` (it inherently implies "my staff" within the branch context)
+   - ❌ *Incorrect*: `GET /branch-admin/services/my-services`
+   - ✅ *Correct*: `GET /branch-admin/services`
+3. **HTTP Method Semantics**:
+   - Use `GET` to fetch resources.
+   - Use `POST` to create resources or trigger heavy operations/actions (like `login`, `refund`).
+   - Use `PUT` only for complete resource updates (replacements).
+   - Use `PATCH` for partial resource updates or state changes (like `approve`, `reject`, `toggle`).
+     - ❌ *Incorrect*: `POST /admin/branches/:id/approve`
+     - ✅ *Correct*: `PATCH /admin/branches/:id/approve`
+4. **Clean Parameter Passing**: Use resource IDs directly in the path where logical.
 
 Route-level patterns:
 
@@ -626,7 +647,7 @@ Files are **NEVER** stored in database as raw file objects. Follow this pattern:
 ## 19. OpenAPI Endpoint Pattern (Required)
 
 - Every endpoint in `openapi.yaml` MUST include:
-  - `tags`
+  - `tags` (for large modules, subdivide logically, e.g., `Client/Home`, `Client/Booking`, `Client/Discovery`)
   - `summary`
   - `description`
   - `operationId` (unique and stable)
@@ -709,3 +730,22 @@ Files are **NEVER** stored in database as raw file objects. Follow this pattern:
 - Do NOT skip steps
 - Do NOT change flow order
 - See `.github/ai_workflow.md` for full workflow details.
+
+---
+
+## 21. Business Rules & Appointments (BooklyX)
+
+- **Search & Discovery**:
+  - Distance search relies on numeric `lat` and `lng` coordinates and spatial distance calculations (`ST_Distance_Sphere`).
+  - Sorting must prioritize distance first, then rating.
+  - Only APPROVED branches with active subscriptions (`isSubscriptionActive = true`) appear in searches and discovery feeds.
+- **Booking Flow**:
+  - Appointments are initially created as `PENDING`.
+  - Appointments require a successful payment to become `CONFIRMED`.
+  - Failed payments leave the appointment as `PENDING`; they must not confirm it.
+  - Double booking and past bookings must be strictly prevented.
+- **Cancellations & Refunds**:
+  - Cancellations are restricted by the branch's `allowCancellationBeforeHours` window.
+  - Refunded payments transition to a discrete `REFUNDED` status. Never overload `FAILED` with refunded meaning.
+- **Reviews**:
+  - Reviews are only allowed for `COMPLETED` appointments, with a limit of one review per appointment.

@@ -6,12 +6,14 @@ import offersRoutes from "../modules/offers/offers.routes.js";
 import plansRoutes from "../modules/plans/plans.routes.js";
 import reviewRoutes from "../modules/reviews/reviews.routes.js";
 import staffRoutes from "../modules/staff/staff.routes.js";
+import clientRoutes from "../modules/client/client.routes.js";
 
 const router = Router();
 
 router.use("/auth", authRoutes);
 router.use("/branch-admin", branchAdminRoutes);
 router.use("/staff", staffRoutes);
+router.use("/client", clientRoutes);
 router.use("/admin", adminRoutes);
 router.use("/reviews", reviewRoutes);
 router.use("/offers", offersRoutes);

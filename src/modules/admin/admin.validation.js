@@ -29,3 +29,12 @@ export const rejectReasonSchema = z.object({
         }),
 });
 
+export const listPaymentsQuerySchema = z.object({
+  page: z.coerce.number().int().positive().optional().default(1),
+  limit: z.coerce.number().int().positive().optional().default(10),
+  status: z.enum(["PENDING", "PAID", "FAILED", "REFUNDED"]).optional(),
+  search: z.string().trim().optional(),
+  period: z.enum(["today", "this_month", "this_year"]).optional(),
+});
+
+

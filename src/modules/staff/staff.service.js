@@ -9,7 +9,7 @@ import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import { IncomeRange } from "../../utils/enums.js";
-export { getStaffProfile, getStaffPublicProfile } from "./staff.profile.js";
+export { getStaffProfile } from "./staff.profile.js";
 
 // ─── Custom Error Classes ───────────────────────────────────────────────
 class StaffNotFoundError extends AppError {
@@ -85,7 +85,9 @@ export async function getStaffSchedule(userId, dateStr) {
   const appointments = await prisma.appointment.findMany({
     where: {
       staffId,
-      status: AppointmentStatus.CONFIRMED || AppointmentStatus.IN_PROGRESS,
+      status: {
+        in: [AppointmentStatus.CONFIRMED, AppointmentStatus.IN_PROGRESS],
+      },
       scheduledAt: {
         gte: dayStart,
         lte: dayEnd,
@@ -239,11 +241,12 @@ export async function getAppointments(userId, statusFilter) {
 }
 
 export async function getAppointmentDetails(userId, appointmentId) {
-  await getStaffIdByUserId(userId);
+  const staffId = await getStaffIdByUserId(userId);
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     select: {
       id: true,
+      staffId: true,
       client: {
         select: {
           user: {
@@ -269,7 +272,16 @@ export async function getAppointmentDetails(userId, appointmentId) {
     },
   });
 
-  return appointment;
+  if (!appointment) {
+    throw new AppointmentNotFoundError();
+  }
+
+  if (appointment.staffId !== staffId) {
+    throw new AppointmentAccessError();
+  }
+
+  const { staffId: _, ...response } = appointment;
+  return response;
 }
 
 // ─── Service Execution ──────────────────────────────────────────────────
@@ -342,20 +354,23 @@ export async function completeAppointment(userId, appointmentId, data) {
     throw new InvalidAppointmentStatusError();
   }
 
-  const excution = await prisma.serviceExecution.create({
-    data: {
-      appointmentId,
-      notes: data.notes,
-      attachments: data.attachments,
-    },
-  });
-  const updated = await prisma.appointment.update({
-    where: { id: appointmentId },
-    data: { status: AppointmentStatus.COMPLETED },
-    select: {
-      id: true,
-      status: true,
-    },
+  const [excution, updated] = await prisma.$transaction(async (tx) => {
+    const exc = await tx.serviceExecution.create({
+      data: {
+        appointmentId,
+        notes: data.notes,
+        attachments: data.attachments,
+      },
+    });
+    const upd = await tx.appointment.update({
+      where: { id: appointmentId },
+      data: { status: AppointmentStatus.COMPLETED },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+    return [exc, upd];
   });
 
   if (staffRecord.staffRole === StaffRole.DOCTOR) {
@@ -764,7 +779,6 @@ export async function getAvailableSlots(userId, dateStr, serviceId) {
   const bookedAppointments = await prisma.appointment.findMany({
     where: {
       staffId,
-      serviceId,
       status: {
         in: [AppointmentStatus.CONFIRMED, AppointmentStatus.IN_PROGRESS],
       },

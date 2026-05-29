@@ -3,6 +3,25 @@
 Use this file as a daily quick-run checklist.
 For full details, see `.github/ai_workflow.md`.
 
+## 0) Inspect Existing Implementation First
+
+Before creating:
+
+- new module
+- new service
+- new endpoint
+- new Prisma model
+- new response shape
+
+Inspect the existing implementation first.
+
+Rules:
+
+- Reuse existing modules when possible.
+- Extend existing services before creating new ones.
+- Preserve existing API contracts.
+- Avoid parallel implementations of existing responsibilities.
+
 ## 1) Analyze First
 
 - Identify module, actor, and flow position.

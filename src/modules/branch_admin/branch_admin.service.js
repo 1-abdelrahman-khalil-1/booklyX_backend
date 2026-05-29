@@ -29,19 +29,7 @@ import {
   ensureServiceLimitNotExceeded,
   ensureStaffLimitNotExceeded,
 } from "../../utils/subscriptionGuards.js";
-import {
-  addServiceCategorySchema,
-  createServiceSchema,
-  createStaffSchema,
-  myServicesQuerySchema,
-  resendCodeSchema,
-  updateBranchAdminProfileSchema,
-  updateServiceSchema,
-  updateStaffSchema,
-  validateBranchAdminInput,
-  verifyEmailSchema,
-  verifyPhoneSchema,
-} from "./branch_admin.validation.js";
+
 
 const SALT_ROUNDS = 10;
 const FIXED_OTP_CODE = process.env.FIXED_OTP_CODE || "333333";
@@ -505,9 +493,7 @@ export async function submitBranch(data) {
 }
 
 export async function verifyBranchEmail(email, code) {
-  const data = validateBranchAdminInput(verifyEmailSchema, { email, code });
-
-  const branchSubmission = await findLatestBranchByEmail(data.email);
+  const branchSubmission = await findLatestBranchByEmail(email);
   if (!branchSubmission) throw new BranchNotFoundError();
 
   if (branchSubmission.emailVerified) return { message: tr.EMAIL_ALREADY_VERIFIED };
@@ -520,7 +506,7 @@ export async function verifyBranchEmail(email, code) {
   await consumeBranchOtp(
     branchSubmission.id,
     VerificationType.EMAIL,
-    data.code,
+    code,
   );
 
   const updatedRows = await prisma.branchAdmin.updateMany({
@@ -540,15 +526,13 @@ export async function verifyBranchEmail(email, code) {
     branchSubmission.id,
     VerificationType.PHONE,
   );
-  await sendPhoneVerificationCode(data.email, phoneCode);
+  await sendPhoneVerificationCode(email, phoneCode);
 
   return { message: tr.EMAIL_VERIFIED_SUCCESS };
 }
 
 export async function verifyBranchPhone(email, code) {
-  const data = validateBranchAdminInput(verifyPhoneSchema, { email, code });
-
-  const branchSubmission = await findLatestBranchByEmail(data.email);
+  const branchSubmission = await findLatestBranchByEmail(email);
   if (!branchSubmission) throw new BranchNotFoundError();
 
   if (branchSubmission.phoneVerified) return { message: tr.PHONE_ALREADY_VERIFIED };
@@ -564,7 +548,7 @@ export async function verifyBranchPhone(email, code) {
   await consumeBranchOtp(
     branchSubmission.id,
     VerificationType.PHONE,
-    data.code,
+    code,
   );
 
   const updatedRows = await prisma.branchAdmin.updateMany({
@@ -585,30 +569,28 @@ export async function verifyBranchPhone(email, code) {
 }
 
 export async function resendBranchCode(email, type) {
-  const data = validateBranchAdminInput(resendCodeSchema, { email, type });
-
-  const branchSubmission = await findLatestBranchByEmail(data.email);
+  const branchSubmission = await findLatestBranchByEmail(email);
   if (!branchSubmission) throw new BranchNotFoundError();
 
   if (branchSubmission.status !== BranchStatus.PENDING_VERIFICATION) {
     throw new BranchNotPendingApprovalError();
   }
 
-  if (data.type === VerificationType.EMAIL && branchSubmission.emailVerified) {
+  if (type === VerificationType.EMAIL && branchSubmission.emailVerified) {
     throw new BranchAdminValidationError(tr.EMAIL_ALREADY_VERIFIED);
   }
 
-  if (data.type === VerificationType.PHONE && !branchSubmission.emailVerified) {
+  if (type === VerificationType.PHONE && !branchSubmission.emailVerified) {
     throw new BranchAdminValidationError(tr.EMAIL_NOT_VERIFIED);
   }
 
-  if (data.type === VerificationType.PHONE && branchSubmission.phoneVerified) {
+  if (type === VerificationType.PHONE && branchSubmission.phoneVerified) {
     throw new BranchAdminValidationError(tr.PHONE_ALREADY_VERIFIED);
   }
 
-  const newCode = await createBranchOtp(branchSubmission.id, data.type);
+  const newCode = await createBranchOtp(branchSubmission.id, type);
 
-  if (data.type === VerificationType.EMAIL) {
+  if (type === VerificationType.EMAIL) {
     await sendEmailVerification(branchSubmission.email, newCode);
   } else {
     await sendPhoneVerificationCode(branchSubmission.email, newCode);
@@ -617,8 +599,7 @@ export async function resendBranchCode(email, type) {
   return { message: tr.VERIFICATION_CODE_SENT };
 }
 
-export async function createStaff(body, branchAdminUserId) {
-  const data = validateBranchAdminInput(createStaffSchema, body);
+export async function createStaff(data, branchAdminUserId) {
 
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
@@ -806,8 +787,7 @@ export async function getMyStaffById(staffId, branchAdminUserId) {
   return staff;
 }
 
-export async function updateStaff(body, branchAdminUserId) {
-  const data = validateBranchAdminInput(updateStaffSchema, body);
+export async function updateStaff(data, branchAdminUserId) {
 
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
@@ -832,12 +812,17 @@ export async function updateStaff(body, branchAdminUserId) {
       id: true,
       email: true,
       phone: true,
+      staff: {
+        select: { id: true },
+      },
     },
   });
 
-  if (!staff) {
+  if (!staff || !staff.staff) {
     throw new StaffNotFoundError();
   }
+
+  const staffId = staff.staff.id;
 
   if (data.email || data.phone) {
     const duplicateUser = await prisma.user.findFirst({
@@ -914,12 +899,12 @@ export async function updateStaff(body, branchAdminUserId) {
 
     if (data.serviceIds) {
       await tx.staffService.deleteMany({
-        where: { staffId: staff.id },
+        where: { staffId },
       });
 
       await tx.staffService.createMany({
         data: uniqueServiceIds.map((serviceId) => ({
-          staffId: staff.id,
+          staffId,
           serviceId,
         })),
       });
@@ -971,8 +956,7 @@ export async function deleteStaff(id, branchAdminUserId) {
   return { message: tr.STAFF_DELETED };
 }
 
-export async function addServiceCategory(body, branchAdminUserId) {
-  const data = validateBranchAdminInput(addServiceCategorySchema, body);
+export async function addServiceCategory(data, branchAdminUserId) {
 
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
@@ -985,8 +969,6 @@ export async function addServiceCategory(body, branchAdminUserId) {
   if (branchAdmin.status !== BranchStatus.APPROVED) {
     throw new BranchAdminValidationError(tr.BRANCH_IS_UNDER_REVIEW);
   }
-
-  await ensureServiceLimitNotExceeded(branchAdmin.id);
 
   const normalizedName = data.name.trim();
 
@@ -1022,8 +1004,7 @@ export async function getMyServiceCategories(branchAdminUserId) {
   });
 }
 
-export async function createService(body, branchAdminUserId) {
-  const data = validateBranchAdminInput(createServiceSchema, body);
+export async function createService(data, branchAdminUserId) {
 
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
@@ -1094,7 +1075,6 @@ export async function createService(body, branchAdminUserId) {
       description: data.description,
       price: data.price,
       durationMinutes: data.durationMinutes,
-      duration: data.durationMinutes,
       imageUrl: data.imageUrl,
       status: ServiceApprovalStatus.PENDING_APPROVAL,
     },
@@ -1107,7 +1087,7 @@ export async function createService(body, branchAdminUserId) {
 }
 
 export async function getMyServices(branchAdminUserId, query) {
-  const parsedQuery = validateBranchAdminInput(myServicesQuerySchema, query);
+  const parsedQuery = query;
 
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
@@ -1131,8 +1111,7 @@ export async function getMyServices(branchAdminUserId, query) {
   return services.map(mapServiceResponse);
 }
 
-export async function updateService(body, branchAdminUserId) {
-  const data = validateBranchAdminInput(updateServiceSchema, body);
+export async function updateService(data, branchAdminUserId) {
 
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
@@ -1150,7 +1129,7 @@ export async function updateService(body, branchAdminUserId) {
   });
 
   if (!service) {
-    throw new BranchNotFoundError();
+    throw new AppError(tr.SERVICE_NOT_FOUND, 404);
   }
 
   if (service.status !== ServiceApprovalStatus.PENDING_APPROVAL) {
@@ -1199,9 +1178,6 @@ export async function updateService(body, branchAdminUserId) {
       description: data.description ?? service.description,
       price: data.price ?? service.price,
       durationMinutes: data.durationMinutes ?? service.durationMinutes,
-      duration:
-        data.durationMinutes ??
-        service.durationMinutes,
       imageUrl: data.imageUrl ?? service.imageUrl,
       serviceCategoryId: categoryId,
     },
@@ -1213,8 +1189,7 @@ export async function updateService(body, branchAdminUserId) {
   return mapServiceResponse(updatedService);
 }
 
-export async function updateBranchAdminProfile(body, branchAdminUserId) {
-  const data = validateBranchAdminInput(updateBranchAdminProfileSchema, body);
+export async function updateBranchAdminProfile(data, branchAdminUserId) {
 
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
@@ -1628,6 +1603,7 @@ export async function cancelSubscription(branchAdminUserId) {
       id: true,
       status: true,
       isSubscriptionActive: true,
+      subscriptionStartedAt: true,
       plan: {
         select: {
           id: true,
@@ -1654,23 +1630,60 @@ export async function cancelSubscription(branchAdminUserId) {
     throw new SubscriptionCancellationError();
   }
 
-  const updatedBranch = await prisma.branchAdmin.update({
-    where: { id: branchAdmin.id },
-    data: {
-      isSubscriptionActive: false,
+  // Find the last paid subscription payment
+  const payment = await prisma.subscriptionPayment.findFirst({
+    where: {
+      branchId: branchAdmin.id,
+      status: PaymentStatus.PAID
     },
-    select: {
-      id: true,
-      isSubscriptionActive: true,
-      subscriptionStartedAt: true,
-    },
+    orderBy: { paidAt: 'desc' }
+  });
+
+  let refundAmount = 0;
+  if (payment && branchAdmin.subscriptionStartedAt) {
+    // 1 week = 7 * 24 * 60 * 60 * 1000 = 604800000 ms
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    const now = new Date();
+    const timeSinceStart = now.getTime() - branchAdmin.subscriptionStartedAt.getTime();
+    
+    if (timeSinceStart <= ONE_WEEK_MS) {
+      refundAmount = payment.amount; // 100%
+    } else {
+      refundAmount = payment.amount * 0.7; // 70%
+    }
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    if (payment) {
+      // Mark as refunded to trigger the activity log in super admin
+      await tx.subscriptionPayment.update({
+        where: { id: payment.id },
+        data: { status: PaymentStatus.REFUNDED } 
+      });
+    }
+
+    const updatedBranch = await tx.branchAdmin.update({
+      where: { id: branchAdmin.id },
+      data: {
+        isSubscriptionActive: false,
+        subscriptionStartedAt: null,
+      },
+      select: {
+        id: true,
+        isSubscriptionActive: true,
+        subscriptionStartedAt: true,
+      },
+    });
+
+    return updatedBranch;
   });
 
   return {
     message: tr.SUBSCRIPTION_CANCELED,
     plan: branchAdmin.plan,
-    isSubscriptionActive: updatedBranch.isSubscriptionActive,
-    subscriptionStartedAt: updatedBranch.subscriptionStartedAt,
+    isSubscriptionActive: result.isSubscriptionActive,
+    subscriptionStartedAt: result.subscriptionStartedAt,
+    refundAmount,
   };
 }
 
@@ -1687,12 +1700,13 @@ export async function getBranchDashboardStats(branchAdminUserId, period = "this_
   await ensureActiveSubscription(branchAdmin.id);
 
   const dateWhere = toRangeWhere(period, "scheduledAt");
+  const paymentDateWhere = toRangeWhere(period, "paidAt");
 
   const [
     totalBookings,
     completedBookings,
     canceledBookings,
-    completedAppointments,
+    paidPayments,
     clientsGroup,
     totalStaff,
     totalServices,
@@ -1717,18 +1731,14 @@ export async function getBranchDashboardStats(branchAdminUserId, period = "this_
         ...dateWhere,
       },
     }),
-    prisma.appointment.findMany({
+    prisma.bookingPayment.findMany({
       where: {
         branchId: branchAdmin.id,
-        status: AppointmentStatus.COMPLETED,
-        ...dateWhere,
+        status: PaymentStatus.PAID,
+        ...paymentDateWhere,
       },
       select: {
-        service: {
-          select: {
-            price: true,
-          },
-        },
+        amount: true,
       },
     }),
     prisma.appointment.groupBy({
@@ -1747,12 +1757,13 @@ export async function getBranchDashboardStats(branchAdminUserId, period = "this_
     prisma.service.count({
       where: {
         branchId: branchAdmin.id,
+        status: ServiceApprovalStatus.APPROVED,
       },
     }),
   ]);
 
-  const totalRevenue = completedAppointments.reduce(
-    (sum, appointment) => sum + (appointment.service?.price ?? 0),
+  const totalRevenue = paidPayments.reduce(
+    (sum, payment) => sum + payment.amount,
     0,
   );
 
@@ -2219,59 +2230,202 @@ export async function cancelAppointment(branchAdminUserId, appointmentId) {
   return updated;
 }
 
-export async function listBookingPayments(branchAdminUserId, query = {}) {
+export async function getRevenueChartData(branchAdminUserId, period = "this_month") {
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
     select: { id: true },
   });
+  if (!branchAdmin) throw new BranchNotFoundError();
+  await ensureActiveSubscription(branchAdmin.id);
 
-  if (!branchAdmin) {
-    throw new BranchNotFoundError();
-  }
-
-  const where = /** @type {any} */ ({
-    branchId: branchAdmin.id,
-    ...(query.status ? { status: query.status } : {}),
+  const dateWhere = toRangeWhere(period, "paidAt");
+  const payments = await prisma.bookingPayment.findMany({
+    where: {
+      branchId: branchAdmin.id,
+      status: PaymentStatus.PAID,
+      ...dateWhere,
+    },
+    select: {
+      amount: true,
+      paidAt: true,
+    },
+    orderBy: { paidAt: "asc" },
   });
 
-  if (query.date) {
-    const targetDate = dayjs(query.date).toDate();
-    where.paidAt = {
-      gte: dayjs(targetDate).startOf("day").toDate(),
-      lte: dayjs(targetDate).endOf("day").toDate(),
-    };
-  }
+  const chartData = {};
+  payments.forEach((payment) => {
+    if (!payment.paidAt) return;
+    let key;
+    if (period === "today") {
+      key = dayjs(payment.paidAt).format("HH:00");
+    } else if (period === "this_year") {
+      key = dayjs(payment.paidAt).format("YYYY-MM");
+    } else {
+      key = dayjs(payment.paidAt).format("YYYY-MM-DD");
+    }
+    chartData[key] = (chartData[key] || 0) + payment.amount;
+  });
+
+  return Object.entries(chartData).map(([label, value]) => ({
+    label,
+    revenue: Number(value.toFixed(2)),
+  }));
+}
+
+export async function getRecentBookings(branchAdminUserId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: { id: true },
+  });
+  if (!branchAdmin) throw new BranchNotFoundError();
+  await ensureActiveSubscription(branchAdmin.id);
+
+  const appointments = await prisma.appointment.findMany({
+    where: { branchId: branchAdmin.id },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    select: {
+      id: true,
+      scheduledAt: true,
+      status: true,
+      client: {
+        select: {
+          user: {
+            select: { name: true, phone: true },
+          },
+        },
+      },
+      staff: {
+        select: {
+          user: {
+            select: { name: true },
+          },
+        },
+      },
+      service: {
+        select: {
+          name: true,
+          price: true,
+          durationMinutes: true,
+        },
+      },
+      bookingPayment: {
+        select: {
+          status: true,
+        },
+      },
+    },
+  });
+
+  return appointments.map((apt) => ({
+    id: apt.id,
+    scheduledAt: apt.scheduledAt,
+    status: apt.status,
+    clientName: apt.client?.user?.name ?? null,
+    clientPhone: apt.client?.user?.phone ?? null,
+    staffName: apt.staff?.user?.name ?? null,
+    serviceName: apt.service?.name ?? null,
+    price: apt.service?.price ?? 0,
+    durationMinutes: apt.service?.durationMinutes ?? 0,
+    paymentStatus: apt.bookingPayment?.status ?? PaymentStatus.PENDING,
+  }));
+}
+
+export async function getTopServices(branchAdminUserId, period = "this_month") {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: { id: true },
+  });
+  if (!branchAdmin) throw new BranchNotFoundError();
+  await ensureActiveSubscription(branchAdmin.id);
+
+  const dateWhere = toRangeWhere(period, "scheduledAt");
+
+  const appointments = await prisma.appointment.findMany({
+    where: {
+      branchId: branchAdmin.id,
+      status: AppointmentStatus.COMPLETED,
+      ...dateWhere,
+    },
+    select: {
+      service: {
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          imageUrl: true,
+        },
+      },
+      bookingPayment: {
+        select: {
+          status: true,
+          amount: true,
+        },
+      },
+    },
+  });
+
+  const serviceStats = {};
+  appointments.forEach((apt) => {
+    if (!apt.service) return;
+    const sId = apt.service.id;
+    if (!serviceStats[sId]) {
+      serviceStats[sId] = {
+        id: sId,
+        name: apt.service.name,
+        price: apt.service.price,
+        imageUrl: apt.service.imageUrl,
+        bookingCount: 0,
+        revenue: 0,
+      };
+    }
+    serviceStats[sId].bookingCount += 1;
+    if (apt.bookingPayment?.status === PaymentStatus.PAID) {
+      serviceStats[sId].revenue += apt.bookingPayment.amount;
+    }
+  });
+
+  return Object.values(serviceStats)
+    .sort((a, b) => b.revenue - a.revenue || b.bookingCount - a.bookingCount)
+    .slice(0, 5)
+    .map((s) => ({
+      ...s,
+      revenue: Number(s.revenue.toFixed(2)),
+    }));
+}
+
+export async function getRecentTransactions(branchAdminUserId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: { id: true },
+  });
+  if (!branchAdmin) throw new BranchNotFoundError();
+  await ensureActiveSubscription(branchAdmin.id);
 
   const payments = await prisma.bookingPayment.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
+    where: {
+      branchId: branchAdmin.id,
+      status: { in: [PaymentStatus.PAID, PaymentStatus.REFUNDED] },
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 5,
     select: {
       id: true,
       amount: true,
       status: true,
-      paymentMethod: true,
       paidAt: true,
+      paymentMethod: true,
       appointment: {
         select: {
-          id: true,
-          scheduledAt: true,
-          status: true,
           client: {
             select: {
               user: {
-                select: {
-                  id: true,
-                  name: true,
-                  phone: true,
-                },
+                select: { name: true },
               },
             },
           },
           service: {
-            select: {
-              id: true,
-              name: true,
-            },
+            select: { name: true },
           },
         },
       },
@@ -2281,58 +2435,175 @@ export async function listBookingPayments(branchAdminUserId, query = {}) {
   return payments.map((payment) => ({
     id: payment.id,
     amount: payment.amount,
-    paymentStatus: payment.status,
-    paymentMethod: payment.paymentMethod,
+    status: payment.status,
     paidAt: payment.paidAt,
-    appointment: payment.appointment,
-    client: payment.appointment.client?.user ?? null,
+    paymentMethod: payment.paymentMethod,
+    clientName: payment.appointment?.client?.user?.name ?? null,
+    serviceName: payment.appointment?.service?.name ?? null,
   }));
 }
 
-export async function getBookingPaymentDetails(branchAdminUserId, paymentId) {
+export async function getBranchFinanceStats(branchAdminUserId) {
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
     select: { id: true },
   });
+  if (!branchAdmin) throw new BranchNotFoundError();
+  await ensureActiveSubscription(branchAdmin.id);
 
-  if (!branchAdmin) {
-    throw new BranchNotFoundError();
+  const startOfMonth = dayjs().startOf("month").toDate();
+  const endOfMonth = dayjs().endOf("month").toDate();
+
+  const [monthlyPayments, totalPayments, activeServices, completedBookings] = await Promise.all([
+    prisma.bookingPayment.findMany({
+      where: {
+        branchId: branchAdmin.id,
+        status: PaymentStatus.PAID,
+        paidAt: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
+      },
+      select: { amount: true },
+    }),
+    prisma.bookingPayment.count({
+      where: {
+        branchId: branchAdmin.id,
+        status: PaymentStatus.PAID,
+      },
+    }),
+    prisma.service.count({
+      where: {
+        branchId: branchAdmin.id,
+        status: ServiceApprovalStatus.APPROVED,
+      },
+    }),
+    prisma.appointment.count({
+      where: {
+        branchId: branchAdmin.id,
+        status: AppointmentStatus.COMPLETED,
+      },
+    }),
+  ]);
+
+  const monthlyRevenue = monthlyPayments.reduce((sum, p) => sum + p.amount, 0);
+
+  return {
+    monthlyRevenue: Number(monthlyRevenue.toFixed(2)),
+    totalPayments,
+    activeServices,
+    completedBookings,
+  };
+}
+
+export async function listFinancePayments(branchAdminUserId, query = {}) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: { id: true },
+  });
+  if (!branchAdmin) throw new BranchNotFoundError();
+  await ensureActiveSubscription(branchAdmin.id);
+
+  const page = query.page || 1;
+  const limit = query.limit || 10;
+  const skip = (page - 1) * limit;
+
+  /** @type {any} */
+  const where = {
+    branchId: branchAdmin.id,
+    ...(query.status ? { status: query.status } : {}),
+  };
+
+
+  if (query.date) {
+    const start = dayjs(query.date).startOf("day").toDate();
+    const end = dayjs(query.date).endOf("day").toDate();
+    where.paidAt = { gte: start, lte: end };
+  } else if (query.startDate || query.endDate) {
+    where.paidAt = {};
+    if (query.startDate) where.paidAt.gte = dayjs(query.startDate).toDate();
+    if (query.endDate) where.paidAt.lte = dayjs(query.endDate).toDate();
   }
 
-  const payment = await prisma.bookingPayment.findUnique({
-    where: { id: paymentId },
-    select: {
-      id: true,
-      branchId: true,
-      amount: true,
-      status: true,
-      paymentMethod: true,
-      paidAt: true,
-      appointment: {
-        select: {
-          id: true,
-          scheduledAt: true,
-          status: true,
-          client: {
-            select: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  phone: true,
+  const [payments, total] = await Promise.all([
+    prisma.bookingPayment.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+      select: {
+        id: true,
+        amount: true,
+        status: true,
+        paymentMethod: true,
+        paidAt: true,
+        appointment: {
+          select: {
+            id: true,
+            scheduledAt: true,
+            status: true,
+            client: {
+              select: {
+                user: {
+                  select: { name: true, phone: true },
                 },
               },
             },
-          },
-          service: {
-            select: {
-              id: true,
-              name: true,
+            service: {
+              select: { name: true },
             },
           },
         },
       },
+    }),
+    prisma.bookingPayment.count({ where }),
+  ]);
+
+  return {
+    payments: payments.map((p) => ({
+      id: p.id,
+      amount: p.amount,
+      status: p.status,
+      paymentMethod: p.paymentMethod,
+      paidAt: p.paidAt,
+      appointmentId: p.appointment?.id ?? null,
+      clientName: p.appointment?.client?.user?.name ?? null,
+      serviceName: p.appointment?.service?.name ?? null,
+    })),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
     },
+  };
+}
+
+export class PaymentNotPaidError extends AppError {
+  constructor() {
+    super(tr.INVALID_APPOINTMENT_STATUS, 400);
+    this.name = "PaymentNotPaidError";
+  }
+}
+
+export class PaymentAlreadyRefundedError extends AppError {
+  constructor() {
+    super(tr.INVALID_APPOINTMENT_STATUS, 400);
+    this.name = "PaymentAlreadyRefundedError";
+  }
+}
+
+export async function processBookingPaymentRefund(branchAdminUserId, paymentId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: { id: true },
+  });
+  if (!branchAdmin) throw new BranchNotFoundError();
+  await ensureActiveSubscription(branchAdmin.id);
+
+  const payment = await prisma.bookingPayment.findUnique({
+    where: { id: paymentId },
+    select: { id: true, branchId: true, status: true },
   });
 
   if (!payment) {
@@ -2343,13 +2614,87 @@ export async function getBookingPaymentDetails(branchAdminUserId, paymentId) {
     throw new BookingPaymentAccessError();
   }
 
-  return {
-    id: payment.id,
-    amount: payment.amount,
-    paymentStatus: payment.status,
-    paymentMethod: payment.paymentMethod,
-    paidAt: payment.paidAt,
-    appointment: payment.appointment,
-    client: payment.appointment.client?.user ?? null,
-  };
+  if (payment.status === PaymentStatus.REFUNDED) {
+    throw new PaymentAlreadyRefundedError();
+  }
+
+  if (payment.status !== PaymentStatus.PAID) {
+    throw new PaymentNotPaidError();
+  }
+
+  const updatedPayment = await prisma.bookingPayment.update({
+    where: { id: paymentId },
+    data: { status: PaymentStatus.REFUNDED },
+    select: {
+      id: true,
+      amount: true,
+      status: true,
+      paidAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return updatedPayment;
+}
+
+export async function exportFinanceReport(branchAdminUserId, query = {}) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+    select: { id: true },
+  });
+  if (!branchAdmin) throw new BranchNotFoundError();
+  await ensureActiveSubscription(branchAdmin.id);
+
+  /** @type {any} */
+  let dateWhere = {};
+  if (query.period) {
+    dateWhere = toRangeWhere(query.period, "paidAt");
+  } else if (query.startDate || query.endDate) {
+    dateWhere.paidAt = {};
+    if (query.startDate) dateWhere.paidAt.gte = dayjs(query.startDate).toDate();
+    if (query.endDate) dateWhere.paidAt.lte = dayjs(query.endDate).toDate();
+  }
+
+
+  const payments = await prisma.bookingPayment.findMany({
+    where: {
+      branchId: branchAdmin.id,
+      ...dateWhere,
+    },
+    orderBy: { paidAt: "asc" },
+    select: {
+      id: true,
+      amount: true,
+      status: true,
+      paymentMethod: true,
+      paidAt: true,
+      appointment: {
+        select: {
+          scheduledAt: true,
+          client: {
+            select: {
+              user: {
+                select: { name: true, phone: true },
+              },
+            },
+          },
+          service: {
+            select: { name: true },
+          },
+        },
+      },
+    },
+  });
+
+  let csv = "Payment ID,Amount,Status,Payment Method,Paid At,Client Name,Client Phone,Service,Appointment Time\n";
+  payments.forEach((p) => {
+    const paidAtStr = p.paidAt ? p.paidAt.toISOString() : "";
+    const scheduledStr = p.appointment?.scheduledAt ? p.appointment.scheduledAt.toISOString() : "";
+    const clientName = p.appointment?.client?.user?.name ?? "";
+    const clientPhone = p.appointment?.client?.user?.phone ?? "";
+    const serviceName = p.appointment?.service?.name ?? "";
+    csv += `"${p.id}","${p.amount}","${p.status}","${p.paymentMethod}","${paidAtStr}","${clientName.replace(/"/g, '""')}","${clientPhone}","${serviceName.replace(/"/g, '""')}","${scheduledStr}"\n`;
+  });
+
+  return csv;
 }

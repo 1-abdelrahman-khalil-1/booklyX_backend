@@ -13,17 +13,23 @@ import {
   createStaffHandler,
   deleteServiceHandler,
   deleteStaffHandler,
+  exportFinanceReportHandler,
   getAppointmentDetailsHandler,
-  getBookingPaymentDetailsHandler,
   getBranchAdminProfileHandler,
   getBranchDashboardStatsHandler,
+  getBranchFinanceStatsHandler,
   getMyServiceCategoriesHandler,
   getMyServicesHandler,
   getMyStaffByIdHandler,
   getMyStaffHandler,
+  getRecentBookingsHandler,
+  getRecentTransactionsHandler,
+  getRevenueChartDataHandler,
   getStaffEarningsHandler,
+  getTopServicesHandler,
   listAppointmentsHandler,
-  listBookingPaymentsHandler,
+  listFinancePaymentsHandler,
+  processBookingPaymentRefundHandler,
   renewSubscriptionHandler,
   resendCodeHandler,
   updateBookingSettingsHandler,
@@ -130,14 +136,14 @@ branchAdminRouter.put(
 );
 
 branchAdminRouter.post(
-  "/create-staff",
+  "/staff",
   authenticate,
   authorize(Role.branch_admin),
   createStaffHandler,
 );
 
 branchAdminRouter.get(
-  "/staff/my-staff",
+  "/staff",
   authenticate,
   authorize(Role.branch_admin),
   getMyStaffHandler,
@@ -179,7 +185,7 @@ branchAdminRouter.get(
 );
 
 branchAdminRouter.get(
-  "/services/my-services",
+  "/services",
   authenticate,
   authorize(Role.branch_admin),
   getMyServicesHandler,
@@ -235,19 +241,62 @@ branchAdminRouter.patch(
   cancelAppointmentHandler,
 );
 
+// --- Analytics Overview Module ---
 branchAdminRouter.get(
-  "/booking-payments",
+  "/analytics/revenue-chart",
   authenticate,
   authorize(Role.branch_admin),
-  listBookingPaymentsHandler,
+  getRevenueChartDataHandler,
 );
 
 branchAdminRouter.get(
-  "/booking-payments/:id",
+  "/analytics/recent-bookings",
   authenticate,
   authorize(Role.branch_admin),
-  getBookingPaymentDetailsHandler,
+  getRecentBookingsHandler,
 );
 
+branchAdminRouter.get(
+  "/analytics/top-services",
+  authenticate,
+  authorize(Role.branch_admin),
+  getTopServicesHandler,
+);
+
+branchAdminRouter.get(
+  "/analytics/recent-transactions",
+  authenticate,
+  authorize(Role.branch_admin),
+  getRecentTransactionsHandler,
+);
+
+// --- Finance Module ---
+branchAdminRouter.get(
+  "/finance/stats",
+  authenticate,
+  authorize(Role.branch_admin),
+  getBranchFinanceStatsHandler,
+);
+
+branchAdminRouter.get(
+  "/finance/payments",
+  authenticate,
+  authorize(Role.branch_admin),
+  listFinancePaymentsHandler,
+);
+
+branchAdminRouter.post(
+  "/finance/payments/:id/refund",
+  authenticate,
+  authorize(Role.branch_admin),
+  processBookingPaymentRefundHandler,
+);
+
+branchAdminRouter.get(
+  "/finance/export-report",
+  authenticate,
+  authorize(Role.branch_admin),
+  exportFinanceReportHandler,
+);
 
 export default branchAdminRouter;

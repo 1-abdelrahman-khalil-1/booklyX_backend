@@ -8,7 +8,7 @@ const reviewsRouter = Router();
 reviewsRouter.get(
 	"/my",
 	authenticate,
-	authorize(Role.branch_admin, Role.staff, Role.super_admin),
+	authorize(Role.branch_admin, Role.staff, Role.super_admin, Role.client),
 	listMyReviewsHandler,
 );
 
@@ -22,7 +22,7 @@ reviewsRouter.post(
 reviewsRouter.get(
 	"/",
 	authenticate,
-	authorize(Role.branch_admin, Role.staff, Role.super_admin),
+	authorize(Role.branch_admin, Role.staff, Role.super_admin, Role.client),
 	listReviewsHandler,
 );
 

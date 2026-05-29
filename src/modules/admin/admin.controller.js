@@ -8,21 +8,24 @@ import {
   getBranchDetails,
   getBranchPaymentDetails,
   getPlatformAnalytics,
+  getRecentActivities,
   getServiceDetails,
-  getUserProfile,
   listBranchPayments,
   listBranches,
   listServices,
+  refundBranchPayment,
   rejectBranch,
-  rejectService,
+  rejectService
 } from "./admin.service.js";
 import {
   listBranchesQuerySchema,
+  listPaymentsQuerySchema,
   listServicesQuerySchema,
   periodQuerySchema,
   rejectReasonSchema,
   validateAdminInput
 } from "./admin.validation.js";
+
 
 // ─── List Branches Handler ─────────────────────────────────────────────────
 
@@ -100,13 +103,6 @@ export const rejectServiceHandler = asyncHandler(async (req, res) => {
   successResponse(res, 200, t(result.message, lang), result.service);
 });
 
-export const getUserProfileHandler = asyncHandler(async (req, res) => {
-  const lang = getLanguage(req);
-  const { id } = validateAdminInput(zIdParamSchema, req.params);
-  const result = await getUserProfile(id);
-  successResponse(res, 200, t(tr.PROFILE_RETRIEVED_SUCCESSFULLY, lang), result);
-});
-
 export const getPlatformAnalyticsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { period } = validateAdminInput(periodQuerySchema, req.query);
@@ -121,8 +117,8 @@ export const getPlatformAnalyticsHandler = asyncHandler(async (req, res) => {
 
 export const listBranchPaymentsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { period } = validateAdminInput(periodQuerySchema, req.query);
-  const result = await listBranchPayments(period);
+  const validatedQuery = validateAdminInput(listPaymentsQuerySchema, req.query);
+  const result = await listBranchPayments(validatedQuery);
   successResponse(
     res,
     200,
@@ -142,4 +138,28 @@ export const getBranchPaymentDetailsHandler = asyncHandler(async (req, res) => {
     result,
   );
 });
+
+export const refundBranchPaymentHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { paymentId } = validateAdminInput(createIdParamSchema("paymentId"), req.params);
+  const result = await refundBranchPayment(paymentId);
+  successResponse(
+    res,
+    200,
+    t(tr.PAYMENT_REFUNDED_SUCCESSFULLY, lang),
+    result,
+  );
+});
+
+export const getRecentActivitiesHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const result = await getRecentActivities();
+  successResponse(
+    res,
+    200,
+    t(tr.RECENT_ACTIVITIES_RETRIEVED_SUCCESSFULLY, lang),
+    result,
+  );
+});
+
 

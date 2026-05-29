@@ -1,316 +1,575 @@
-# Production-Grade Backend Code Review Workflow
+---
+name: review-backend
+description: "Production-grade backend code review aligned with project workflow"
+argument-hint: "feature or whole project"
+agent: "agent"
+---
+
+# Backend Code Review (Workflow-Aware)
 
 ## Overview
 
-When this workflow is triggered, perform a **senior-level production backend code review**.
+Perform a **production-grade backend review** مع فهم كامل للـ system من خلال:
 
-Assume:
-
-- The system will go live
-- It must scale
-- It must be secure
-
----
-
-## 1. Identify Files to Review
-
-- If a feature is specified:
-  - Review files inside:  
-    `src/modules/<feature>/`
-
-- If "whole project":
-  - Review all files inside `src/` (excluding `node_modules`)
-
-### Incremental Review (IMPORTANT)
-
-- Check if `.agent/review_state.md` exists
-- If exists:
-  - Review ONLY new or modified files
-- Otherwise:
-  - Review everything
+- قراءة:
+  ```
+  .github/ai_workflow.md
+  ```
+- الهدف: تعرف المشروع المفروض يعمل ايه قبل ما تحكم على الكود
 
 ---
 
-## 2. Review Each File (Deep Analysis)
+## Tools Available
 
-### 2.1 Business Logic Correctness
-
-- Validate logic correctness
-- Check:
-  - Wrong conditions
-  - Missing validations
-  - Incorrect flows
-
----
-
-### 2.2 Edge Case Handling
-
-- Empty input
-- Null / undefined
-- Invalid formats
-- Pagination limits
-- Concurrency issues
+```
+- Use code_interpreter to read files and run commands
+- Use python to run bash-equivalent commands (e.g. find, git diff)
+- NEVER assume file content — always read first using the tool
+- If a tool call fails, state the reason explicitly and continue with available info
+```
 
 ---
 
-### 2.3 Architecture & Separation of Concerns
+## 1. Load Project Context First
 
-- Controller:
-  - No business logic
-- Service:
-  - Contains all logic
-- Validation:
-  - Isolated in validation file
+### MUST READ
 
-❌ Red Flags:
+```python
+with open(".github/ai_workflow.md", "r") as f:
+    print(f.read())
+```
 
-- Logic inside controller
-- DB calls outside service
+### Fallback (إذا الملف مش موجود)
+
+```md
+If `.github/ai_workflow.md` not found:
+- State clearly: "⚠️ No workflow file found — review based on folder structure only"
+- Infer architecture from folder/module names
+- Do NOT halt — continue review with structural assumptions
+```
+
+### الهدف
+
+* فهم:
+
+  * Business requirements
+  * System behavior
+  * Expected architecture
+* بعد كده قارن الكود بالـ workflow مش بشكل عشوائي
 
 ---
 
-### 2.4 SOLID Principles
+### 1.5 Package Versions Check (STRICT)
 
-- Single Responsibility
-- Proper abstractions
-- No tight coupling
+```python
+with open("package.json", "r") as f:
+    import json
+    pkg = json.load(f)
+    print(json.dumps(pkg.get("dependencies", {}), indent=2))
+```
+
+* الهدف: معرفة إصدارات المكتبات المستخدمة (زي Zod, Prisma, Express).
+* التأكد من إنك بتراجع بناءً على قواعد الإصدار الصحيح للمكتبة (مثلاً Zod 4 ممكن تختلف عن Zod 3 في الـ error parameters).
+* دايماً اعمل Check للـ `package.json` قبل ما تحكم إن فيه Syntax Error في استخدام مكتبة معينة.
 
 ---
 
-### 2.5 Database & Prisma Usage
+## 2. Review Priority Order
+
+**الـ agent لازم يراجع بالترتيب ده — مش كل الحاجات بنفس الوزن:**
+
+```
+1. Security (auth, injection, exposure)
+2. Data Integrity (transactions, validation, hardcoded values)
+3. Business Logic Correctness (workflow alignment)
+4. Performance (N+1, blocking, pagination)
+5. Code Quality (naming, duplication, readability)
+```
+
+> ⚠️ لو فيه Critical security issue → اذكره فورًا قبل ما تكمل الـ review
+
+---
+
+## 3. Identify Files to Review
+
+### Scope
+
+* Feature:
+
+  ```
+  src/modules/<feature>/
+  ```
+
+* Whole project:
+
+  ```
+  src/
+  ```
+
+---
+
+### File Discovery
+
+```python
+import subprocess
+result = subprocess.run(
+    ["find", "src", "-type", "f", "(", "-name", "*.js", "-o", "-name", "*.ts", ")"],
+    capture_output=True, text=True
+)
+print(sorted(result.stdout.splitlines()))
+```
+
+---
+
+### Incremental Review (STRICT)
+
+```python
+import subprocess
+result = subprocess.run(["git", "diff", "--name-only", "HEAD~1"], capture_output=True, text=True)
+print(result.stdout)
+```
+
+If no git history available:
+
+* fallback to full scan using `find`
+
+---
+
+### Large Project Handling
+
+```md
+If file count > 20:
+- Split review by module
+- Output progress: "Reviewing module X (N/Total)..."
+- Never batch all files in one pass
+```
+
+### Large File Handling
+
+```md
+If a single file exceeds 300 lines:
+- Review in chunks of 100 lines
+- State: "Reviewing lines X–Y of Z"
+- Never skip a chunk
+```
+
+---
+
+## 4. Deep Review Per File
+
+> ⚠️ STRICT RULE: Re-read each file using the tool immediately before writing any issues for it.
+> Do NOT rely on previously read content.
+
+### 4.1 Business Logic vs Workflow
+
+* هل الكود:
+
+  * ماشي حسب `ai_workflow.md`؟
+  * ولا فيه deviation؟
+
+---
+
+### 4.2 Edge Cases
+
+* null / undefined
+* invalid input
+* duplicates
+* race conditions
+
+---
+
+### 4.3 Architecture
+
+Expected:
+
+```
+controller → service → repository
+```
+
+❌ ممنوع:
+
+* controller فيه logic
+* service فيه HTTP
+
+---
+
+### 4.4 Database
+
+* Queries صح؟
+* فيه N+1؟
+* فيه indexes؟
+
+---
+
+### 4.5 Security
+
+* Validation موجود؟
+* Auth / Authorization؟
+* Injection؟
+
+---
+
+### 4.6 Abuse Protection
+
+```md
+- Rate limiting موجود على الـ public endpoints؟
+- Brute force protection على login / OTP؟
+- Sensitive endpoints محمية؟
+```
+
+> Missing rate limiting on auth endpoints → 🔴 Critical
+
+---
+
+### 4.7 Performance
+
+* Pagination؟
+* Heavy queries؟
+* Blocking code؟
+
+---
+
+### 4.8 Async Issues
+
+* Missing await
+* unhandled promises
+* race conditions
+
+---
+
+### 4.9 Error Handling
+
+* centralized error handler؟
+* custom errors؟
+
+---
+
+### 4.10 Scalability
+
+* system يتحمل load؟
+* فيه retry / queues؟
+
+---
+
+### 4.11 Testability & Test Coverage
+
+```md
+- Unit tests موجودة للـ services؟
+- Critical paths (auth, payment, booking) covered؟
+- Logic isolated عن I/O؟
+- Missing tests على critical paths → 🟠 Major
+```
+
+---
+
+### 4.12 Code Quality & Smell Detection
+
+```md
+- naming واضح؟
+- duplication موجود؟
+- readability كويسة؟
+
+Flag automatically if:
+- function > 50 lines
+- file > 300 lines
+- nested logic > 3 levels deep
+- duplicated logic across files
+```
+
+---
+
+### 4.13 API Contracts
+
+```md
+- Response shape consistent في كل الـ endpoints؟
+- HTTP status codes صح؟
+- Error format موحد؟
+- DTOs أو schema validation موجودة؟
+- No raw req.body usage in service layer
+- Validation قبل business logic مش بعديه
+```
+
+> Missing schema validation → 🟠 Major
+
+---
+
+### 4.14 Logging & Monitoring (STRICT)
+
+```md
+MUST exist:
+- All errors MUST be logged
+- Structured logging (JSON preferred)
+- Each log MUST include:
+  - request_id
+  - user_id (if exists)
+  - action name
+
+NEVER log:
+- passwords
+- tokens / secrets
+- raw credit card or sensitive PII
+```
+
+> Logging sensitive data → 🔴 Critical
+> Missing error logging → 🟠 Major
+
+---
+
+### 4.15 Transactions (STRICT)
+
+```md
+Transactions REQUIRED when:
+- Multiple writes in one operation
+- Financial or critical data changes
+- Dependent operations (fail one → rollback all)
 
 Check for:
+- rollback on failure
+- partial failure handling
 
-- ❌ N+1 queries
-- ❌ Overfetching (missing `select`)
-- ❌ Missing transactions
-- ❌ Multiple queries instead of optimized one
-
-✔ Ensure:
-
-- Efficient queries
-- Proper relations handling
-- Correct indexing assumptions
+Missing transaction on multi-write → 🔴 Critical
+```
 
 ---
 
-### 2.6 Performance Bottlenecks
+### 4.16 Config & Environment
 
-- Repeated DB calls
-- Unnecessary queries
-- Blocking code (sync loops / heavy CPU)
-- Missing pagination
+```md
+- Secrets مش hardcoded في الكود؟ (API keys, passwords, tokens)
+- تستخدم env variables؟
+- فيه config validation عند startup؟
+- فيه .env.example أو config schema؟
+```
 
----
-
-### 2.7 Memory & Resource Management
-
-- Unclosed DB connections
-- Unhandled async operations
-- Event listeners not cleaned
+> Hardcoded secret → 🔴 Critical
 
 ---
 
-### 2.8 Security Vulnerabilities (CRITICAL)
+### 4.17 Hardcoded Values Check (STRICT)
 
-Check for:
+```md
+Scan every file for the following patterns:
 
-- ❌ No validation on input
-- ❌ Trusting `req.body`
-- ❌ Exposing internal errors
-- ❌ Missing auth checks
-- ❌ Hardcoded secrets
-- ❌ Hardcoded user-facing messages/errors (must use translation keys)
+1. Magic numbers:
+   BAD:  if (role === 2)
+   GOOD: if (role === Role.ADMIN)
 
-✔ Ensure:
+   BAD:  const limit = 10
+   GOOD: const limit = config.pagination.defaultLimit
 
-- Proper validation (Zod)
-- Sanitization
-- Authorization checks
-- Localized responses using translation keys (`tr.KEY`) and translator helpers
+2. Hardcoded strings (should be enums or constants):
+   BAD:  status === "active"
+   GOOD: status === Status.ACTIVE
 
----
+3. Hardcoded i18n messages (ANY message returned to client):
+   BAD:  res.json({ message: "User not found" })
+   GOOD: res.json({ message: t("errors.userNotFound") })
 
-### 2.9 Error Handling
+   BAD:  throw new Error("Invalid token")
+   GOOD: throw new AppError(t("errors.invalidToken"), 401)
 
-- Controllers:
-  - Must NOT use try/catch
-- Services:
-  - Must throw domain-specific errors extending `AppError`
+4. Hardcoded URLs or endpoints:
+   BAD:  fetch("http://localhost:3000/api/users")
+   GOOD: fetch(`${config.services.userService}/api/users`)
 
-Check:
+5. Hardcoded timeouts or limits:
+   BAD:  setTimeout(fn, 5000)
+   GOOD: setTimeout(fn, config.timeouts.default)
+```
 
-- Consistent error format
-- Proper status codes
-- No hardcoded user-facing error text (must use translated keys)
-
----
-
-### 2.10 API Design Consistency
-
-- Response format consistent
-- Uses `successResponse`
-- No raw `res.json`
-- No hardcoded user-facing response text; use translation keys
+> Hardcoded i18n string → 🟠 Major
+> Hardcoded secret or URL → 🔴 Critical
+> Hardcoded magic number without constant → 🟡 Minor
 
 ---
 
-### 2.11 Async & Concurrency
+### 4.18 OpenAPI Specification Check (STRICT)
 
-- Missing `await`
-- Unhandled promises
-- Race conditions
-- Parallel operations that should be sequential (or vice versa)
+```md
+- Are all newly implemented or reviewed endpoints documented in `openapi.yaml`?
+- Do the Request Parameters (query, body, path) and Response Payloads in `openapi.yaml` accurately match the actual implementation in controllers/validation schemas?
+- **CRITICAL**: EVERY endpoint MUST have explicit `example` or `examples` defined for ALL its parameters (path, query, header) and request/response body schemas. Check this meticulously for the endpoints under review.
+- **SUCCESS RESPONSES**: Pay special attention to `200` and `201` responses. They MUST include a full, realistic `example` (or `examples` with mocked data) showing the exact JSON structure that will be returned, exactly as the backend returns it. NEVER use generic or hallucinated dummy values like `{"exampleKey": "exampleValue"}`.
+- Are endpoints logically grouped into their corresponding `tags`?
+```
 
----
-
-### 2.12 Scalability Risks
-
-- No pagination
-- Large responses
-- Tight coupling between modules
-- No caching strategy (if needed)
+> Missing endpoint in OpenAPI docs → 🟠 Major
+> Request/Response mismatch between Code and OpenAPI → 🟠 Major
+> Missing examples in OpenAPI docs (parameters or schemas) → 🔴 Critical
 
 ---
 
-### 2.13 Code Quality & Maintainability
+## 5. Issues Table
 
-- Naming consistency
-- No dead code
-- No unused imports
-- No duplication
-- Simple readable logic
+**Output the issues table ONLY for this section. No extra commentary or summaries between rows.**
 
----
-
-### 2.14 Code Smell Detection
-
-- Duplicate services
-- Over-abstraction
-- Huge functions
-- Mixed responsibilities
+| Severity | Issue No. | File | Issue | Workflow Ref | Current Code | Suggested Edit |
+| -------- | --------- | ---- | ----- | ------------ | ------------ | -------------- |
 
 ---
 
-### 2.15 Package Usage (IMPORTANT)
+### Severity Levels
 
-Check if developer:
-
-- Reinvented logic بدل استخدام package
-
-❌ Bad:
-
-- Manual validation بدل Zod
-- Manual hashing بدل bcrypt
-
-✔ Ensure:
-
-- Uses:
-  - Zod
-  - Prisma
-  - bcrypt
-  - jsonwebtoken
+| Icon | Level      | معناها                                       |
+| ---- | ---------- | -------------------------------------------- |
+| 🔴   | Critical   | security hole, data corruption, system crash |
+| 🟠   | Major      | wrong business logic, missing auth, N+1      |
+| 🟡   | Minor      | code smell, missing validation               |
+| 🔵   | Suggestion | refactor, readability                        |
 
 ---
 
-## 3. Classify Issues
+### Rules
 
-For each issue:
-
-| Field    | Description                       |
-| -------- | --------------------------------- |
-| Severity | 🔴 Critical / 🟠 Major / 🟡 Minor |
-| File     | Path + line                       |
-| Problem  | What’s wrong                      |
-| Impact   | Real effect                       |
-| Fix      | Exact fix (code)                  |
+* Severity → من الجدول فوق
+* Issue No → incremental
+* File → path + line
+* Issue → واضح ومحدد
+* Workflow Ref → reference من `ai_workflow.md` أو inferred requirement
+* Current Code → snippet
+* Suggested Edit → كود جاهز
 
 ---
 
-### Severity Rules
+### Example
 
-- 🔴 Critical:
-  - Security issues
-  - Data corruption
-  - Crash
-
-- 🟠 Major:
-  - Performance problems
-  - Logic bugs
-  - Bad architecture
-
-- 🟡 Minor:
-  - Style / readability
+```md
+| 🔴 Critical | 1 | src/modules/user/service/user.service.ts:45 | Missing email validation | User must provide valid email before account creation | `const user = await repo.create(data)` | `if (!isValidEmail(data.email)) throw new AppError(t("errors.invalidEmail"), 400)` |
+| 🟠 Major    | 2 | src/modules/auth/controller/auth.controller.ts:12 | Hardcoded i18n message | All client-facing messages must use i18n keys | `res.json({ message: "User not found" })` | `res.json({ message: t("errors.userNotFound") })` |
+```
 
 ---
 
-## 4. Generate Report
+## 6. Generate Report
 
-Include:
+**Output each section header and its content only. Do not add transitional commentary between sections.**
+
+In addition to printing in chat, the agent MUST write the full report sections
+(Summary, Issues Table, Files Status, Final Output, Top 3 Issues, Code Health Score)
+into a markdown file inside the project workspace:
+
+```md
+.github/backend_review_latest.md
+```
+
+- Overwrite the previous contents of this file on each run.
+- The file must be valid Markdown and include all sections exactly once.
 
 ### Summary
 
-- Files reviewed
-- Issues count
+* Files reviewed
+* Total issues per severity
+
+---
 
 ### Issues Table
 
-Grouped by severity
+(بالشكل الجديد)
+
+---
 
 ### Files Status
 
-- ✅ Clean
-- ⚠️ Has Issues
+| File    | Status        |
+| ------- | ------------- |
+| src/... | ✅ Clean       |
+| src/... | ⚠️ Has Issues |
 
 ---
 
-## 5. Update Review State
+## 7. Update Review State
 
-Update:
-
-```
-
+```bash
 .github/review_state.md
-
 ```
+
+### Rule
+
+* Append only — لا تعمل overwrite
 
 ```md
-# Review State
+## Review — {date}
 
-## Last Review Date
-
-{date}
-
-## Reviewed Files
-
-| Issue No. | File | Type | Severity | Status | Last Reviewed | Current (As-Is) | Suggested Fix |
-
+| File | Status | Issues Count | Last Reviewed |
+|------|--------|-------------|--------------|
+| src/... | ✅ Clean | 0 | {date} |
+| src/... | ⚠️ Has Issues | 3 | {date} |
 ```
 
 ---
 
-## 6. Final Summary Output
+## 8. Final Output
 
-Provide:
-
-- Files reviewed count
-- Issues by severity
-- Top 3 critical issues
-- Code health (1-10)
-
----
-
-## Review Principles
-
-- No generic كلام
-- Be specific (file + line)
-- Think production
-- Prioritize critical issues
-- Focus on real impact
+```md
+- Files reviewed: X
+- 🔴 Critical: X
+- 🟠 Major: X
+- 🟡 Minor: X
+- 🔵 Suggestions: X
+```
 
 ---
 
-## FINAL RULE
+### Top 3 Issues
 
-- Follow `.github/copilot-instructions.md` to understand development flow before reviewing
-- Follow `.github/ai_workflow.md` to align review with feature execution cycle
+اذكر أعلى 3 مشاكل + fix
+
+---
+
+### Code Health Score
+
+```md
+Start = 10
+-2 per 🔴
+-1 per 🟠
+-0.3 per 🟡
+-0.1 per 🔵
+Min = 1
+
+Final: X/10
+```
+
+---
+
+## 9. Anti-Hallucination Rules (STRICT)
+
+* If you are not 100% sure an issue exists in the code → DO NOT include it
+* Re-read the file using the tool before writing any issue for it
+* Every issue MUST be backed by an exact code snippet from the file
+* If unsure → write: "Needs Verification" and skip
+* NEVER use vague statements like "could be improved" without a specific reason and code reference
+* NEVER invent issues that are not present in the actual file content
+
+---
+
+## 10. Fix Mode
+
+If user says `fix [issue number]` or `fix all`:
+
+* Confirm scope first:
+  ```
+  "Will fix issues: X, Y, Z — confirm?"
+  ```
+* Apply only after confirmation
+* Fix must preserve existing behavior unless issue is Critical
+* Add regression-safe edits only
+* After fix: update `review_state.md` accordingly
+* **Never auto-fix Critical issues without explicit approval**
+
+---
+
+## Critical Rules
+
+* اقرأ `ai_workflow.md` الأول — لو مش موجود، وضّح واستمر
+* استخدم `code_interpreter` لقراءة كل ملف قبل الحكم عليه — لا تفترض المحتوى
+* استخدم incremental review لو متاح (`git diff`) — fallback لـ `find`
+* لو الـ scope > 20 ملف: قسّم على modules وأظهر progress
+* لو الملف > 300 سطر: راجعه على chunks مش كله مرة واحدة
+* اتبع الـ review priority order — security الأول دايمًا
+* كل issue لازم: severity · workflow reference · code snippet · fix واضح
+* افحص كل hardcoded value (strings, numbers, messages, URLs, secrets) بالـ patterns في 4.17
+* الـ code health score يتحسب بالمعادلة مش تقدير شخصي
+* update `review_state.md` بـ **append** مش overwrite
+* لا تعمل fix تلقائي — confirm الأول، وـ Critical تحتاج approval صريح
+* Output the issues table and report sections ONLY — no extra commentary between sections
+* ركز على: correctness · security · scalability

@@ -207,6 +207,26 @@ const en = {
   STAFF_END_TIME_AFTER_START_TIME: "End time must be after start time.",
   STAFF_INCOME_RANGE_REQUIRED: "Income range is required.",
   APPOINTMENT_ACCESS_DENIED: "APPOINTMENT_ACCESS_DENIED",
+  PAYMENT_REFUNDED_SUCCESSFULLY: "Payment refunded successfully.",
+  INVALID_PAYMENT_STATUS_FOR_REFUND: "Only paid payments can be refunded.",
+  PAYMENT_ALREADY_REFUNDED: "This payment has already been refunded.",
+  RECENT_ACTIVITIES_RETRIEVED_SUCCESSFULLY: "Recent activities retrieved successfully.",
+
+  // Client Module
+  DASHBOARD_RETRIEVED_SUCCESSFULLY: "Home dashboard data retrieved successfully.",
+  SEARCH_COMPLETED_SUCCESSFULLY: "Map search completed successfully.",
+  BRANCH_SERVICES_RETRIEVED: "Branch services retrieved successfully.",
+  STAFF_AVAILABILITY_RETRIEVED: "Staff availability retrieved successfully.",
+  APPOINTMENT_RESERVED_SUCCESSFULLY: "Appointment reserved successfully. Please complete the payment to confirm.",
+  PAYMENT_CONFIRMED_SUCCESSFULLY: "Payment processed and booking confirmed successfully.",
+  FAVOURITES_RETRIEVED_SUCCESSFULLY: "Favourites retrieved successfully.",
+  FAVOURITE_ADDED_SUCCESSFULLY: "Added to favourites successfully.",
+  FAVOURITE_REMOVED_SUCCESSFULLY: "Removed from favourites successfully.",
+  DOUBLE_BOOKING_ERROR: "This slot is already booked. Please choose another time or staff.",
+  PAST_BOOKING_ERROR: "Cannot book an appointment in the past.",
+  FAVOURITE_ALREADY_EXISTS: "This item is already in your favourites.",
+  FAVOURITE_NOT_FOUND: "This item was not found in your favourites.",
+  SERVICE_NOT_BOOKABLE: "This service is not available for booking.",
 };
 
 export default en;

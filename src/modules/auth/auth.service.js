@@ -176,8 +176,11 @@ async function createVerificationCode(userId, type) {
   return code;
 }
 
-async function getNextLoginSequence() {
-  const counter = await prisma.systemCounter.upsert({
+/**
+ * @param {any} tx
+ */
+async function getNextLoginSequence(tx = prisma) {
+  const counter = await tx.systemCounter.upsert({
     where: { key: LOGIN_COUNTER_KEY },
     create: { key: LOGIN_COUNTER_KEY, value: 1 },
     update: { value: { increment: 1 } },
@@ -187,8 +190,14 @@ async function getNextLoginSequence() {
   return counter.value;
 }
 
-async function consumeVerificationCode(userId, type, code) {
-  const record = await prisma.verificationCode.findFirst({
+/**
+ * @param {number} userId
+ * @param {string} type
+ * @param {string} code
+ * @param {any} [tx]
+ */
+async function consumeVerificationCode(userId, type, code, tx = prisma) {
+  const record = await tx.verificationCode.findFirst({
     where: { userId, type, used: false },
     orderBy: { createdAt: "desc" },
   });
@@ -200,14 +209,14 @@ async function consumeVerificationCode(userId, type, code) {
   const isValid = await bcrypt.compare(code, record.codeHash);
 
   if (!isValid) {
-    await prisma.verificationCode.update({
+    await tx.verificationCode.update({
       where: { id: record.id },
       data: { attempts: { increment: 1 } },
     });
     throw new InvalidTokenError();
   }
 
-  await prisma.verificationCode.update({
+  await tx.verificationCode.update({
     where: { id: record.id },
     data: { used: true },
   });
@@ -215,7 +224,14 @@ async function consumeVerificationCode(userId, type, code) {
 
 // ─── JWT Helper ──────────
 
-async function issueAuthTokens(userId, role, platform, loginSequence) {
+/**
+ * @param {number} userId
+ * @param {string} role
+ * @param {string} platform
+ * @param {number} loginSequence
+ * @param {any} [tx]
+ */
+async function issueAuthTokens(userId, role, platform, loginSequence, tx = prisma) {
   const jwtSecret = process.env.JWT_SECRET;
 
   if (!jwtSecret) throw new Error("JWT_SECRET is not set.");
@@ -234,7 +250,7 @@ async function issueAuthTokens(userId, role, platform, loginSequence) {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
-  await prisma.refreshToken.create({
+  await tx.refreshToken.create({
     data: { userId, tokenHash, expiresAt, loginSequence },
   });
   return { token: prefixedAccessToken, refreshToken: refreshTokenString };
@@ -476,23 +492,27 @@ export async function verifyPhone(email, code, platform) {
     throw new PlatformAccessDeniedError();
   }
 
-  await consumeVerificationCode(user.id, VerificationType.PHONE, code);
+  const tokens = await prisma.$transaction(async (tx) => {
+    await consumeVerificationCode(user.id, VerificationType.PHONE, code, tx);
 
-  const updatedUser = await prisma.user.update({
-    where: { id: user.id },
-    data: { phoneVerified: true },
+    const updatedUser = await tx.user.update({
+      where: { id: user.id },
+      data: { phoneVerified: true },
+    });
+
+    const loginSequence = await getNextLoginSequence(tx);
+    const generatedTokens = await issueAuthTokens(
+      updatedUser.id,
+      updatedUser.role,
+      platform,
+      loginSequence,
+      tx
+    );
+
+    return { ...generatedTokens, user: toSafeUser(updatedUser) };
   });
 
-  // Issue the auth token now that both verifications are complete
-  const loginSequence = await getNextLoginSequence();
-  const tokens = await issueAuthTokens(
-    updatedUser.id,
-    updatedUser.role,
-    platform,
-    loginSequence,
-  );
-
-  return { ...tokens, user: toSafeUser(updatedUser) };
+  return tokens;
 }
 
 // ─── Password Reset (3-step OTP flow) ────────────────────────────────────────
@@ -639,25 +659,30 @@ export async function refresh(refreshToken, platform) {
     throw new TokenExpiredError();
   }
 
-  // Rotate: delete the old token and issue a fresh pair
-  await prisma.refreshToken.delete({ where: { id: record.id } });
+  const tokens = await prisma.$transaction(async (tx) => {
+    // Rotate: delete the old token and issue a fresh pair
+    await tx.refreshToken.delete({ where: { id: record.id } });
 
-  const user = await prisma.user.findUnique({ where: { id: record.userId } });
-  if (!user || user.status !== UserStatus.ACTIVE) {
-    throw new InactiveUserError();
-  }
+    const user = await tx.user.findUnique({ where: { id: record.userId } });
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      throw new InactiveUserError();
+    }
 
-  if (!isPlatformAllowedForRole(user.role, platform)) {
-    throw new PlatformAccessDeniedError();
-  }
+    if (!isPlatformAllowedForRole(user.role, platform)) {
+      throw new PlatformAccessDeniedError();
+    }
 
-  const tokens = await issueAuthTokens(
-    user.id,
-    user.role,
-    platform,
-    record.loginSequence,
-  );
-  return { ...tokens, role: user.role };
+    const generatedTokens = await issueAuthTokens(
+      user.id,
+      user.role,
+      platform,
+      record.loginSequence,
+      tx
+    );
+    return { ...generatedTokens, role: user.role };
+  });
+  
+  return tokens;
 }
 
 export async function logout(refreshToken) {

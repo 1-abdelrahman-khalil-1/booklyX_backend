@@ -4,7 +4,6 @@ import {
   ServiceApprovalStatus
 } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
-import { mapAdminUserProfile } from "../../lib/mappers/profile.mapper.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import { toRangeWhere } from "../../utils/period.js";
@@ -50,6 +49,21 @@ export class PaymentNotFoundError extends AppError {
     this.name = "PaymentNotFoundError";
   }
 }
+
+export class InvalidPaymentStatusForRefundError extends AppError {
+  constructor() {
+    super(tr.INVALID_PAYMENT_STATUS_FOR_REFUND, 400);
+    this.name = "InvalidPaymentStatusForRefundError";
+  }
+}
+
+export class PaymentAlreadyRefundedError extends AppError {
+  constructor() {
+    super(tr.PAYMENT_ALREADY_REFUNDED, 409);
+    this.name = "PaymentAlreadyRefundedError";
+  }
+}
+
 
 export async function listBranches(status) {
   return prisma.branchAdmin.findMany({
@@ -337,35 +351,65 @@ export async function getPlatformAnalytics(period = "this_month") {
   };
 }
 
-export async function listBranchPayments(period = "this_month") {
-  const dateWhere = toRangeWhere(period, "paidAt");
+/**
+ * @param {Object} [params]
+ * @param {number} [params.page]
+ * @param {number} [params.limit]
+ * @param {any} [params.status]
+ * @param {string} [params.search]
+ * @param {string} [params.period]
+ */
+export async function listBranchPayments({ page = 1, limit = 10, status, search, period } = {}) {
+  const dateWhere = period ? toRangeWhere(period, "paidAt") : {};
+  const skip = (page - 1) * limit;
 
-  const payments = await prisma.subscriptionPayment.findMany({
-    where: {
-      ...dateWhere,
-    },
-    select: {
-      id: true,
-      amount: true,
-      status: true,
-      paidAt: true,
-      branch: {
-        select: {
-          id: true,
-          businessName: true,
+  /** @type {any} */
+  const where = {
+    ...dateWhere,
+  };
+
+
+  if (status) {
+    where.status = status;
+  }
+
+  if (search) {
+    where.branch = {
+      businessName: {
+        contains: search,
+      },
+    };
+  }
+
+  const [payments, totalCount] = await Promise.all([
+    prisma.subscriptionPayment.findMany({
+      where,
+      select: {
+        id: true,
+        amount: true,
+        status: true,
+        paidAt: true,
+        branch: {
+          select: {
+            id: true,
+            businessName: true,
+          },
+        },
+        plan: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
       },
-      plan: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
-    orderBy: { paidAt: "desc" },
-  });
+      orderBy: { paidAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.subscriptionPayment.count({ where }),
+  ]);
 
-  return payments.map((payment) => ({
+  const mappedPayments = payments.map((payment) => ({
     paymentId: payment.id,
     branchId: payment.branch.id,
     businessName: payment.branch.businessName,
@@ -374,7 +418,17 @@ export async function listBranchPayments(period = "this_month") {
     paymentStatus: payment.status,
     paidAt: payment.paidAt,
   }));
+
+  return {
+    payments: mappedPayments,
+    meta: {
+      totalRecords: totalCount,
+      currentPage: page,
+      totalPages: Math.ceil(totalCount / limit),
+    },
+  };
 }
+
 
 export async function getBranchPaymentDetails(paymentId) {
   const payment = await prisma.subscriptionPayment.findUnique({
@@ -430,68 +484,198 @@ export async function getBranchPaymentDetails(paymentId) {
   };
 }
 
-export async function getUserProfile(userId) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
+
+export async function refundBranchPayment(paymentId) {
+  const payment = await prisma.subscriptionPayment.findUnique({
+    where: { id: paymentId },
     select: {
       id: true,
-      name: true,
-      email: true,
-      phone: true,
-      role: true,
+      amount: true,
       status: true,
-      emailVerified: true,
-      phoneVerified: true,
-      createdAt: true,
-      updatedAt: true,
-      branchAdmin: {
-        select: {
-          id: true,
-          businessName: true,
-          status: true,
-          isSubscriptionActive: true,
-          subscriptionStartedAt: true,
-          plan: {
-            select: {
-              id: true,
-              name: true,
-              price: true,
-              maxStaff: true,
-              maxServices: true,
-              loyaltyEnabled: true,
-              offersEnabled: true,
-            },
-          },
-        },
-      },
-      staff: {
-        select: {
-          id: true,
-          branchId: true,
-          profileImageUrl: true,
-          age: true,
-          staffRole: true,
-          commissionPercentage: true,
-          professionalProfile: {
-            select: {
-              id: true,
-              bio: true,
-              yearsOfExperience: true,
-              licenseNumber: true,
-              specialization: true,
-              createdAt: true,
-              updatedAt: true,
-            },
-          },
-          averageRating: true,
-          reviewCount: true,
-        },
-      },
+      branchId: true,
     },
   });
 
-  if (!user) throw new AppError(tr.USER_NOT_FOUND, 404);
+  if (!payment) {
+    throw new PaymentNotFoundError();
+  }
 
-  return mapAdminUserProfile(user);
+  if (payment.status === PaymentStatus.REFUNDED) {
+    throw new PaymentAlreadyRefundedError();
+  }
+
+  if (payment.status !== PaymentStatus.PAID) {
+    throw new InvalidPaymentStatusForRefundError();
+  }
+
+  // Execute mock gateway call (isolated & reusable)
+  const mockGatewayRefundId = `ref_${Math.random().toString(36).substring(2, 11)}`;
+
+  // Run database update in a transaction
+  await prisma.$transaction(async (tx) => {
+    // 1. Update Payment status to REFUNDED
+    await tx.subscriptionPayment.update({
+      where: { id: paymentId },
+      data: {
+        status: PaymentStatus.REFUNDED,
+      },
+    });
+
+    // 2. Immediately deactivate branch subscription visibility
+    await tx.branchAdmin.update({
+      where: { id: payment.branchId },
+      data: {
+        isSubscriptionActive: false,
+      },
+    });
+  });
+
+  return {
+    paymentId: payment.id,
+    amount: payment.amount,
+    status: PaymentStatus.REFUNDED,
+    refundId: mockGatewayRefundId,
+  };
 }
+
+export async function getRecentActivities() {
+  const [branches, services, payments] = await Promise.all([
+    prisma.branchAdmin.findMany({
+      take: 10,
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        businessName: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    }),
+    prisma.service.findMany({
+      take: 10,
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        approvedAt: true,
+        updatedAt: true,
+        branch: {
+          select: {
+            businessName: true,
+          },
+        },
+      },
+    }),
+    prisma.subscriptionPayment.findMany({
+      take: 10,
+      where: {
+        status: {
+          in: [PaymentStatus.PAID, PaymentStatus.REFUNDED],
+        },
+      },
+      orderBy: { paidAt: "desc" },
+      select: {
+        id: true,
+        amount: true,
+        status: true,
+        paidAt: true,
+        branch: {
+          select: {
+            businessName: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  const activities = [];
+
+  // 1. Process branches
+  branches.forEach((b) => {
+    // If it's newly created, log new branch application
+    activities.push({
+      id: `branch_apply_${b.id}`,
+      type: "new_branch_application",
+      messageKey: "ACTIVITY_NEW_BRANCH_APPLICATION",
+      entityName: b.businessName,
+      timestamp: b.createdAt,
+    });
+
+    if (b.status === BranchStatus.APPROVED) {
+      activities.push({
+        id: `branch_approve_${b.id}`,
+        type: "branch_approved",
+        messageKey: "ACTIVITY_BRANCH_APPROVED",
+        entityName: b.businessName,
+        timestamp: b.updatedAt,
+      });
+    } else if (b.status === BranchStatus.REJECTED) {
+      activities.push({
+        id: `branch_reject_${b.id}`,
+        type: "branch_rejected",
+        messageKey: "ACTIVITY_BRANCH_REJECTED",
+        entityName: b.businessName,
+        timestamp: b.updatedAt,
+      });
+    }
+  });
+
+  // 2. Process services
+  services.forEach((s) => {
+    if (s.status === ServiceApprovalStatus.APPROVED) {
+      activities.push({
+        id: `service_approve_${s.id}`,
+        type: "service_approved",
+        messageKey: "ACTIVITY_SERVICE_APPROVED",
+        entityName: s.name,
+        timestamp: s.approvedAt || s.updatedAt,
+      });
+    } else if (s.status === ServiceApprovalStatus.REJECTED) {
+      activities.push({
+        id: `service_reject_${s.id}`,
+        type: "service_rejected",
+        messageKey: "ACTIVITY_SERVICE_REJECTED",
+        entityName: s.name,
+        timestamp: s.updatedAt,
+      });
+    } else {
+      activities.push({
+        id: `service_pending_${s.id}`,
+        type: "service_pending",
+        messageKey: "ACTIVITY_SERVICE_PENDING",
+        entityName: s.name,
+        timestamp: s.updatedAt,
+      });
+    }
+  });
+
+  // 3. Process payments
+  payments.forEach((p) => {
+    if (p.status === PaymentStatus.REFUNDED) {
+      activities.push({
+        id: `subscription_canceled_${p.id}`,
+        type: "subscription_canceled",
+        messageKey: "ACTIVITY_SUBSCRIPTION_CANCELED_REFUNDED",
+        entityName: p.branch.businessName,
+        timestamp: p.paidAt,
+      });
+    } else if (p.status === PaymentStatus.PAID) {
+      activities.push({
+        id: `subscription_renewed_${p.id}`,
+        type: "subscription_renewed",
+        messageKey: "ACTIVITY_SUBSCRIPTION_RENEWED",
+        entityName: p.branch.businessName,
+        timestamp: p.paidAt,
+      });
+    }
+  });
+
+  // Sort chronologically newest first and take top 10
+  return activities
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 10);
+}
+
+
 

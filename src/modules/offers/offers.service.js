@@ -429,51 +429,19 @@ export async function calculateBestOfferForService(serviceId, now = new Date()) 
   };
 }
 
-export async function incrementOfferUsedCount(offerId, now = new Date()) {
-  const offer = await prisma.offer.findUnique({
+/**
+ * Increment the usedCount for an offer inside a caller-supplied transaction.
+ *
+ * Offer eligibility is locked at reservation time once the pricing snapshot is
+ * persisted on BookingPayment. This function therefore performs an unconditional
+ * increment — no revalidation is done here.
+ *
+ * @param {number} offerId - ID of the offer to increment.
+ * @param {any} tx - Prisma transaction client from the enclosing $transaction block.
+ */
+export async function incrementOfferUsedCount(offerId, tx) {
+  await tx.offer.update({
     where: { id: offerId },
-    select: {
-      id: true,
-      isActive: true,
-      startDate: true,
-      endDate: true,
-      usageLimit: true,
-      usedCount: true,
-    },
-  });
-
-  if (
-    !offer
-    || !offer.isActive
-    || offer.startDate > now
-    || offer.endDate < now
-    || (offer.usageLimit !== null && offer.usedCount >= offer.usageLimit)
-  ) {
-    throw new OfferNotAvailableError();
-  }
-
-  const updated = await prisma.offer.updateMany({
-    where: {
-      id: offerId,
-      usedCount: offer.usedCount,
-    },
-    data: {
-      usedCount: {
-        increment: 1,
-      },
-    },
-  });
-
-  if (updated.count === 0) {
-    throw new OfferNotAvailableError();
-  }
-
-  return prisma.offer.findUnique({
-    where: { id: offerId },
-    select: {
-      id: true,
-      usedCount: true,
-      usageLimit: true,
-    },
+    data: { usedCount: { increment: 1 } },
   });
 }

@@ -92,6 +92,7 @@ enum PaymentStatus {
   PENDING
   PAID
   FAILED
+  REFUNDED
 }
 
 enum PaymentMethod {
@@ -130,9 +131,11 @@ model Client {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
-  reviews      Review[]
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments     Appointment[]
+  reviews          Review[]
+  favoriteBranches FavoriteBranch[]
+  favoriteStaffs   FavoriteStaff[]
 
   @@index([userId])
 }
@@ -159,6 +162,7 @@ model Staff {
   reviews              Review[]
   averageRating        Float                     @default(0)
   reviewCount          Int                       @default(0)
+  favoritedByClients   FavoriteStaff[]
 
   @@index([userId])
   @@index([branchId])
@@ -230,6 +234,7 @@ model BranchAdmin {
   plan                          Plan                     @relation(fields: [planId], references: [id])
   averageRating                 Float                    @default(0)
   reviewCount                   Int                      @default(0)
+  favoritedByClients            FavoriteBranch[]
 
   @@index([planId])
   @@index([status])
@@ -422,8 +427,9 @@ model Offer {
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
-  branch   BranchAdmin    @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  services OfferService[]
+  branch          BranchAdmin      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  services        OfferService[]
+  bookingPayments BookingPayment[]
 
   @@index([branchId])
   @@index([branchId, isActive])
@@ -500,22 +506,27 @@ model Appointment {
 }
 
 model BookingPayment {
-  id            Int           @id @default(autoincrement())
-  branchId      Int
-  appointmentId Int           @unique
-  amount        Int           @db.UnsignedInt
-  status        PaymentStatus @default(PENDING)
-  paymentMethod PaymentMethod @default(CARD)
-  paidAt        DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id             Int           @id @default(autoincrement())
+  branchId       Int
+  appointmentId  Int           @unique
+  amount         Int           @db.UnsignedInt
+  originalAmount Int           @default(0) @db.UnsignedInt
+  discountAmount Int           @default(0) @db.UnsignedInt
+  appliedOfferId Int?
+  status         PaymentStatus @default(PENDING)
+  paymentMethod  PaymentMethod @default(CARD)
+  paidAt         DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   branch      BranchAdmin @relation(fields: [branchId], references: [id], onDelete: Cascade)
   appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  appliedOffer Offer?     @relation(fields: [appliedOfferId], references: [id])
 
   @@index([branchId])
   @@index([status])
   @@index([paidAt])
+  @@index([appliedOfferId])
 }
 
 model StaffAvailability {
@@ -556,4 +567,30 @@ model SubscriptionPayment {
   @@index([planId])
   @@index([status])
   @@index([paidAt])
+}
+
+model FavoriteBranch {
+  clientId  Int
+  branchId  Int
+  createdAt DateTime @default(now())
+
+  client Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  branch BranchAdmin @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@id([clientId, branchId])
+  @@index([clientId])
+  @@index([branchId])
+}
+
+model FavoriteStaff {
+  clientId  Int
+  staffId   Int
+  createdAt DateTime @default(now())
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  staff  Staff  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@id([clientId, staffId])
+  @@index([clientId])
+  @@index([staffId])
 }

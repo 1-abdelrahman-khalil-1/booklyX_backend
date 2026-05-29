@@ -286,6 +286,24 @@ export const bookingPaymentsQuerySchema = z.object({
   }).optional(),
 });
 
+export const financePaymentsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).default(10),
+  status: z.enum(Object.values(PaymentStatus), {
+    error: tr.INVALID_ENUM_VALUE,
+  }).optional(),
+  date: z.coerce.date().optional(),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
+});
+
+export const exportReportQuerySchema = z.object({
+  period: z.enum(["today", "this_month", "this_year"]).optional(),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
+  format: z.enum(["csv"]).default("csv"),
+});
+
 export const rejectBranchSchema = z.object({
   id: zId,
   reason: z.string({ error: tr.REJECTION_REASON_REQUIRED }),

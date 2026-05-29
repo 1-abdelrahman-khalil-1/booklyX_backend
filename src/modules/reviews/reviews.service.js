@@ -3,10 +3,7 @@ import { tr } from "../../lib/i18n/index.js";
 import prisma from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import {
-    listReviewsQuerySchema,
     ReviewsValidationError,
-    validateCreateReviewInput,
-    validateReviewsInput,
 } from "./reviews.validation.js";
 
 export { ReviewsValidationError };
@@ -54,11 +51,10 @@ function buildReviewsSelect() {
   };
 }
 
-export async function listReviews(query, authUser) {
-  const data = validateReviewsInput(listReviewsQuerySchema, query);
-
+export async function listReviews(data, authUser) {
   const skip = (data.page - 1) * data.limit;
   const scopedWhere = {
+    [Role.client]: {},
     [Role.staff]: {
       staff: {
         userId: authUser.sub,
@@ -82,6 +78,7 @@ export async function listReviews(query, authUser) {
     ...scopedWhere[authUser.role],
     ...(data.serviceId ? { serviceId: data.serviceId } : {}),
     ...(data.staffId ? { staffId: data.staffId } : {}),
+    ...(data.branchId ? { branchId: data.branchId } : {}),
   };
 
   const [reviews, total] = await prisma.$transaction([
@@ -110,8 +107,7 @@ export async function listReviews(query, authUser) {
   };
 }
 
-export async function listMyReviews(query, authUser) {
-  const data = validateReviewsInput(listReviewsQuerySchema, query);
+export async function listMyReviews(data, authUser) {
   const skip = (data.page - 1) * data.limit;
 
   const where = {
@@ -168,28 +164,26 @@ async function updateBranchAggregate(tx, branchId, rating, increment = 1) {
   await tx.branchAdmin.update({ where: { id: branchId }, data: { averageRating: newAvg, reviewCount: newCount } });
 }
 
-export async function createReview(body, authUser) {
+export async function createReview(data, authUser) {
   if (authUser.role !== Role.client) {
     throw new ReviewsForbiddenError();
   }
 
-  const data = validateCreateReviewInput(body);
-
   // Find client by user id
   const client = await prisma.client.findUnique({ where: { userId: authUser.sub }, select: { id: true } });
   if (!client) {
-    throw new ReviewCreationError(tr.CLIENT_NOT_FOUND || "Client not found");
+    throw new ReviewCreationError(tr.CLIENT_NOT_FOUND);
   }
 
   // Validate appointment
   const appointment = await prisma.appointment.findUnique({ where: { id: data.appointmentId }, select: { id: true, clientId: true, staffId: true, branchId: true, serviceId: true, status: true } });
-  if (!appointment) throw new ReviewCreationError(tr.APPOINTMENT_NOT_FOUND || "Appointment not found");
-  if (appointment.clientId !== client.id) throw new ReviewCreationError(tr.APPOINTMENT_ACCESS_DENIED || "Appointment does not belong to client");
-  if (appointment.status !== AppointmentStatus.COMPLETED) throw new ReviewCreationError(tr.APPOINTMENT_NOT_COMPLETED || "Appointment not completed");
+  if (!appointment) throw new ReviewCreationError(tr.APPOINTMENT_NOT_FOUND);
+  if (appointment.clientId !== client.id) throw new ReviewCreationError(tr.APPOINTMENT_ACCESS_DENIED);
+  if (appointment.status !== AppointmentStatus.COMPLETED) throw new ReviewCreationError(tr.APPOINTMENT_NOT_COMPLETED);
 
   // Ensure no existing review for appointment
   const existing = await prisma.review.findUnique({ where: { appointmentId: data.appointmentId }, select: { id: true } });
-  if (existing) throw new ReviewCreationError(tr.REVIEW_ALREADY_EXISTS || "Review already exists for this appointment");
+  if (existing) throw new ReviewCreationError(tr.REVIEW_ALREADY_EXISTS);
 
   // Create review and update aggregates in transaction
   const created = await prisma.$transaction(async (tx) => {
@@ -216,22 +210,4 @@ export async function createReview(body, authUser) {
   });
 
   return { message: tr.REVIEW_CREATED_SUCCESSFULLY, review: created };
-}
-
-export async function deleteReview(reviewId, authUser) {
-  // Only branch_admin and admin maybe allowed - keep simple: only branch_admin or staff or super_admin can delete
-  if (![Role.branch_admin, Role.staff, Role.super_admin].includes(authUser.role)) {
-    throw new ReviewsForbiddenError();
-  }
-
-  const existing = await prisma.review.findUnique({ where: { id: reviewId }, select: { id: true, rating: true, staffId: true, branchId: true } });
-  if (!existing) throw new AppError(tr.REVIEW_NOT_FOUND || "Review not found", 404);
-
-  await prisma.$transaction(async (tx) => {
-    await tx.review.delete({ where: { id: reviewId } });
-    await updateStaffAggregate(tx, existing.staffId, existing.rating, -1);
-    await updateBranchAggregate(tx, existing.branchId, existing.rating, -1);
-  });
-
-  return { message: tr.REVIEW_DELETED_SUCCESSFULLY };
 }

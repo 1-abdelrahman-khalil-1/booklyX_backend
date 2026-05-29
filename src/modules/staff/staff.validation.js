@@ -81,9 +81,21 @@ export const appointmentActionSchema = z.object({
 
 export const appointmentsQuerySchema = z.object({
   status: z
-    .enum(["pending", "open", "closed"], {
-      error: tr.INVALID_STATUS_FILTER,
-    })
+    .enum(
+      [
+        "pending",
+        "open",
+        "closed",
+        "PENDING",
+        "CONFIRMED",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "CANCELED",
+      ],
+      {
+        error: tr.INVALID_STATUS_FILTER,
+      }
+    )
     .optional(),
 });
 

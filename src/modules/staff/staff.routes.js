@@ -12,7 +12,6 @@ import {
   getIncomeStatsHandler,
   getProfileHandler,
   getScheduleHandler,
-  getStaffPublicProfileHandler,
   listAvailabilityHandler,
   listServicesHandler,
   startAppointmentHandler,
@@ -27,14 +26,6 @@ staffRouter.get(
   authenticate,
   authorize(Role.staff),
   getProfileHandler,
-);
-
-// Public staff profile by staff id (clients and branch admins)
-staffRouter.get(
-  "/:id/profile",
-  authenticate,
-  authorize(Role.client, Role.branch_admin, Role.super_admin),
-  getStaffPublicProfileHandler,
 );
 
 // ─── Schedule ──────

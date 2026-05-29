@@ -20,6 +20,22 @@ async function refreshStaffRating(staffId) {
   });
 }
 
+async function refreshBranchRating(branchId) {
+  const aggregate = await prisma.review.aggregate({
+    where: { branchId, isVisible: true },
+    _avg: { rating: true },
+    _count: { rating: true },
+  });
+
+  await prisma.branchAdmin.update({
+    where: { id: branchId },
+    data: {
+      averageRating: Number((aggregate._avg.rating ?? 0).toFixed(2)),
+      reviewCount: aggregate._count.rating,
+    },
+  });
+}
+
 export async function seedReviews(reviewTargets) {
   for (const [index, target] of reviewTargets.entries()) {
     const rating = (index % 5) + 1;
@@ -70,5 +86,13 @@ export async function seedReviews(reviewTargets) {
 
   for (const staffId of uniqueStaff) {
     await refreshStaffRating(staffId);
+  }
+
+  const uniqueBranches = Array.from(
+    new Set(reviewTargets.map((target) => target.branchId)),
+  );
+
+  for (const branchId of uniqueBranches) {
+    await refreshBranchRating(branchId);
   }
 }

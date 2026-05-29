@@ -44,6 +44,7 @@ beforeEach(() => {
   prisma.serviceExecution = {
     create: jest.fn(),
   };
+  prisma.$transaction = jest.fn((cb) => cb(prisma));
 });
 
 describe("Staff Service", () => {
@@ -409,6 +410,60 @@ describe("Staff Service", () => {
           }),
         })
       );
+    });
+  });
+
+  // ─── Appointment Details Tests ───
+  describe("getAppointmentDetails", () => {
+    it("should retrieve appointment details successfully if owned by the staff", async () => {
+      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
+      prisma.appointment.findUnique.mockResolvedValueOnce({
+        id: 1,
+        staffId: 5,
+        status: "CONFIRMED",
+        client: {
+          user: {
+            id: 10,
+            name: "Test Client",
+            phone: "123456789",
+          },
+        },
+        service: {
+          id: 20,
+          name: "Test Service",
+          description: "Desc",
+          price: 50,
+          durationMinutes: 30,
+        },
+        scheduledAt: new Date(),
+      });
+
+      const result = await staffService.getAppointmentDetails(1, 1);
+
+      expect(result).toHaveProperty("id", 1);
+      expect(result).not.toHaveProperty("staffId");
+      expect(prisma.appointment.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
+        select: expect.any(Object),
+      });
+    });
+
+    it("should throw error if appointment is not owned by the staff", async () => {
+      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
+      prisma.appointment.findUnique.mockResolvedValueOnce({
+        id: 1,
+        staffId: 99, // Owned by another staff
+        status: "CONFIRMED",
+      });
+
+      await expect(staffService.getAppointmentDetails(1, 1)).rejects.toThrow();
+    });
+
+    it("should throw error if appointment is not found", async () => {
+      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
+      prisma.appointment.findUnique.mockResolvedValueOnce(null);
+
+      await expect(staffService.getAppointmentDetails(1, 1)).rejects.toThrow();
     });
   });
 });

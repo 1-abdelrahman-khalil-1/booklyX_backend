@@ -132,27 +132,18 @@ describe("Offers Service", () => {
     expect(result.appliedOffer.id).toBe("b");
   });
 
-  it("should increment usage count for available offer", async () => {
-    const findUniqueSpy = jest.spyOn(prisma.offer, "findUnique");
-    const now = new Date("2026-04-15T00:00:00.000Z");
-    findUniqueSpy
-      .mockResolvedValueOnce({
-        id: "offer-id",
-        isActive: true,
-        startDate: new Date("2026-04-01T00:00:00.000Z"),
-        endDate: new Date("2026-04-30T23:59:59.000Z"),
-        usageLimit: 10,
-        usedCount: 1,
-      })
-      .mockResolvedValueOnce({
-        id: "offer-id",
-        usedCount: 2,
-        usageLimit: 10,
-      });
-    jest.spyOn(prisma.offer, "updateMany").mockResolvedValue({ count: 1 });
+  it("should increment usage count for an offer inside a transaction", async () => {
+    const mockTx = {
+      offer: {
+        update: jest.fn().mockResolvedValue({ id: "offer-id", usedCount: 2 }),
+      },
+    };
 
-    const result = await incrementOfferUsedCount("c9f8d678-6e2a-4a74-a305-57c2e07868bf", now);
+    await incrementOfferUsedCount("offer-id", mockTx);
 
-    expect(result.usedCount).toBe(2);
+    expect(mockTx.offer.update).toHaveBeenCalledWith({
+      where: { id: "offer-id" },
+      data: { usedCount: { increment: 1 } },
+    });
   });
 });

@@ -20,7 +20,7 @@ export const LOGIN_COUNTER_KEY = "login";
 export const DEFAULT_PLANS = [
   {
     name: "Starter",
-    price: "199.00",
+    price: 199,
     maxStaff: 3,
     maxServices: 10,
     loyaltyEnabled: false,
@@ -29,7 +29,7 @@ export const DEFAULT_PLANS = [
   },
   {
     name: "Pro",
-    price: "499.00",
+    price: 499,
     maxStaff: 15,
     maxServices: 50,
     loyaltyEnabled: true,
@@ -38,7 +38,7 @@ export const DEFAULT_PLANS = [
   },
   {
     name: "Enterprise",
-    price: "1499.00",
+    price: 1499,
     maxStaff: null,
     maxServices: null,
     loyaltyEnabled: true,

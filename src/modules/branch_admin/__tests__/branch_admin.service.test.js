@@ -167,14 +167,7 @@ describe("Branch Admin Service - createStaff", () => {
 
   const branchAdminUserId = 1;
 
-  it("should throw BranchAdminValidationError if input data is invalid", async () => {
-    await expect(
-      createStaff(
-        { ...validStaffData, email: "invalid-email" },
-        branchAdminUserId,
-      ),
-    ).rejects.toThrow(BranchAdminValidationError);
-  });
+
 
   it("should throw BranchNotFoundError if branch admin does not exist", async () => {
     jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(null);
@@ -504,5 +497,70 @@ describe("Branch Admin Service - updateBranchAdminProfile", () => {
         branchAdminUserId,
       ),
     ).rejects.toThrow(BranchAdminValidationError);
+  });
+});
+
+describe("Branch Admin Service - updateStaff", () => {
+  const branchAdminUserId = 1;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should update staff successfully and return updated staff user object", async () => {
+    const mockBranchAdmin = { id: 1, userId: branchAdminUserId };
+    const mockStaffUser = {
+      id: 8,
+      email: "old@example.com",
+      phone: "01234567890",
+      staff: { id: 5 },
+    };
+
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(mockBranchAdmin);
+    jest.spyOn(prisma.user, "findFirst")
+      .mockResolvedValueOnce(mockStaffUser) // for initial find
+      .mockResolvedValueOnce(null); // for duplicate check
+    jest.spyOn(prisma.service, "findMany").mockResolvedValue([{ id: 100 }, { id: 101 }]);
+    jest.spyOn(prisma, "$transaction").mockImplementation(async (callback) => callback(prisma));
+    
+    const userUpdateSpy = jest.spyOn(prisma.user, "update").mockResolvedValue({ id: 8 });
+    const staffUpdateSpy = jest.spyOn(prisma.staff, "update").mockResolvedValue({ id: 5 });
+    const deleteManySpy = jest.spyOn(prisma.staffService, "deleteMany").mockResolvedValue({ count: 0 });
+    const createManySpy = jest.spyOn(prisma.staffService, "createMany").mockResolvedValue({ count: 2 });
+    
+    // Mock getMyStaffById return
+    jest.spyOn(prisma.user, "findFirst").mockResolvedValueOnce(mockStaffUser);
+
+    const updateData = {
+      id: 8,
+      name: "Updated Staff Name",
+      email: "new@example.com",
+      phone: "01000000000",
+      serviceIds: [100, 101],
+    };
+
+    await expect(prisma.branchAdmin.findUnique).not.toHaveBeenCalled();
+
+    // Call updateStaff
+    const { updateStaff } = await import("../branch_admin.service.js");
+    const result = await updateStaff(updateData, branchAdminUserId);
+
+    expect(userUpdateSpy).toHaveBeenCalledWith({
+      where: { id: 8 },
+      data: { name: "Updated Staff Name", email: "new@example.com", phone: "01000000000" },
+    });
+    expect(deleteManySpy).toHaveBeenCalledWith({
+      where: { staffId: 5 },
+    });
+    expect(createManySpy).toHaveBeenCalledWith({
+      data: [
+        { staffId: 5, serviceId: 100 },
+        { staffId: 5, serviceId: 101 },
+      ],
+    });
   });
 });

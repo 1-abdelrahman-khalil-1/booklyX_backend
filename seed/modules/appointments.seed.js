@@ -28,6 +28,10 @@ async function resetSeededAppointmentsAndReviews(seedClientEmails) {
     },
   });
 
+  await prisma.bookingPayment.deleteMany({
+    where: { appointmentId: { in: appointmentIds } },
+  });
+
   await prisma.serviceExecution.deleteMany({
     where: { appointmentId: { in: appointmentIds } },
   });
@@ -90,6 +94,37 @@ export async function seedAppointments(seedClientEmails, seedStaffEmails) {
         branchId: seed.branchId,
         scheduledAt: seed.scheduledAt,
         status: seed.status,
+      },
+    });
+
+    // Seed corresponding BookingPayment record for every appointment
+    const staffService = staffServiceMap.get(seed.staffId);
+    const amount = staffService ? Math.round(staffService.service.price) : 150;
+
+    let paymentStatus = "PENDING";
+    let paidAt = null;
+
+    if (
+      seed.status === AppointmentStatus.COMPLETED ||
+      seed.status === AppointmentStatus.CONFIRMED ||
+      seed.status === AppointmentStatus.IN_PROGRESS
+    ) {
+      paymentStatus = "PAID";
+      paidAt = seed.scheduledAt;
+    } else if (seed.status === AppointmentStatus.CANCELED) {
+      paymentStatus = "REFUNDED";
+      paidAt = seed.scheduledAt;
+    }
+
+    await prisma.bookingPayment.create({
+      data: {
+        branchId: seed.branchId,
+        appointmentId: appointment.id,
+        amount,
+        originalAmount: amount,
+        discountAmount: 0,
+        status: paymentStatus,
+        paidAt,
       },
     });
 

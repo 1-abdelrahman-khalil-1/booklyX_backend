@@ -13,7 +13,6 @@ import {
   deleteService,
   deleteStaff,
   getAppointmentDetails,
-  getBookingPaymentDetails,
   getBranchAdminProfile,
   getBranchDashboardStats,
   getBranchPublicProfile,
@@ -23,7 +22,6 @@ import {
   getMyStaffById,
   getStaffEarnings,
   listAppointments,
-  listBookingPayments,
   renewSubscription,
   resendBranchCode,
   submitBranch,
@@ -35,6 +33,14 @@ import {
   updateStaff,
   verifyBranchEmail,
   verifyBranchPhone,
+  getRevenueChartData,
+  getRecentBookings,
+  getTopServices,
+  getRecentTransactions,
+  getBranchFinanceStats,
+  listFinancePayments,
+  processBookingPaymentRefund,
+  exportFinanceReport,
 } from "./branch_admin.service.js";
 import {
   addServiceCategorySchema,
@@ -55,6 +61,8 @@ import {
   validateBranchAdminInput,
   verifyEmailSchema,
   verifyPhoneSchema,
+  financePaymentsQuerySchema,
+  exportReportQuerySchema,
 } from "./branch_admin.validation.js";
 
 function firstUploadedFile(req, fieldName) {
@@ -307,20 +315,6 @@ export const cancelAppointmentHandler = asyncHandler(async (req, res) => {
   successResponse(res, 200, t(tr.APPOINTMENT_CANCELED, lang), result);
 });
 
-export const listBookingPaymentsHandler = asyncHandler(async (req, res) => {
-  const lang = getLanguage(req);
-  const query = validateBranchAdminInput(bookingPaymentsQuerySchema, req.query);
-  const result = await listBookingPayments(req.user.sub, query);
-  successResponse(res, 200, t(tr.BOOKING_PAYMENTS_RETRIEVED_SUCCESSFULLY, lang), result);
-});
-
-export const getBookingPaymentDetailsHandler = asyncHandler(async (req, res) => {
-  const lang = getLanguage(req);
-  const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
-  const result = await getBookingPaymentDetails(req.user.sub, id);
-  successResponse(res, 200, t(tr.BOOKING_PAYMENT_DETAILS_RETRIEVED_SUCCESSFULLY, lang), result);
-});
-
 export const getBranchDashboardStatsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { period } = validateBranchAdminInput(periodQuerySchema, req.query);
@@ -343,4 +337,94 @@ export const getStaffEarningsHandler = asyncHandler(async (req, res) => {
     t(tr.STAFF_EARNINGS_RETRIEVED_SUCCESSFULLY, lang),
     result,
   );
+});
+
+export const getRevenueChartDataHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { period } = validateBranchAdminInput(periodQuerySchema, req.query);
+  const result = await getRevenueChartData(req.user.sub, period);
+  successResponse(
+    res,
+    200,
+    t(tr.BRANCH_ANALYTICS_RETRIEVED_SUCCESSFULLY, lang),
+    result,
+  );
+});
+
+export const getRecentBookingsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const result = await getRecentBookings(req.user.sub);
+  successResponse(
+    res,
+    200,
+    t(tr.APPOINTMENTS_RETRIEVED_SUCCESSFULLY, lang),
+    result,
+  );
+});
+
+export const getTopServicesHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { period } = validateBranchAdminInput(periodQuerySchema, req.query);
+  const result = await getTopServices(req.user.sub, period);
+  successResponse(
+    res,
+    200,
+    t(tr.SERVICES_RETRIEVED_SUCCESSFULLY, lang),
+    result,
+  );
+});
+
+export const getRecentTransactionsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const result = await getRecentTransactions(req.user.sub);
+  successResponse(
+    res,
+    200,
+    t(tr.BOOKING_PAYMENTS_RETRIEVED_SUCCESSFULLY, lang),
+    result,
+  );
+});
+
+export const getBranchFinanceStatsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const result = await getBranchFinanceStats(req.user.sub);
+  successResponse(
+    res,
+    200,
+    t(tr.BRANCH_ANALYTICS_RETRIEVED_SUCCESSFULLY, lang),
+    result,
+  );
+});
+
+export const listFinancePaymentsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const query = validateBranchAdminInput(financePaymentsQuerySchema, req.query);
+  const result = await listFinancePayments(req.user.sub, query);
+  successResponse(
+    res,
+    200,
+    t(tr.BOOKING_PAYMENTS_RETRIEVED_SUCCESSFULLY, lang),
+    result,
+  );
+});
+
+export const processBookingPaymentRefundHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
+  const result = await processBookingPaymentRefund(req.user.sub, id);
+  successResponse(
+    res,
+    200,
+    t(tr.PAYMENT_DETAILS_RETRIEVED_SUCCESSFULLY, lang),
+    result,
+  );
+});
+
+export const exportFinanceReportHandler = asyncHandler(async (req, res) => {
+  const query = validateBranchAdminInput(exportReportQuerySchema, req.query);
+  const csv = await exportFinanceReport(req.user.sub, query);
+  
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", `attachment; filename=finance_report_${Date.now()}.csv`);
+  res.status(200).send(csv);
 });

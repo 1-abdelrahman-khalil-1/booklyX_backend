@@ -1,0 +1,1 @@
+"        \"400\":\n          $ref: \"#/components/responses/BadRequest\"\n\n  /auth/register:"

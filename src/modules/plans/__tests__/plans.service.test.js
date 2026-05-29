@@ -16,7 +16,7 @@ describe("Plans Service - listPlans", () => {
       {
         id: 1,
         name: "Starter",
-        price: "199.00",
+        price: 199,
         maxStaff: 3,
         maxServices: 10,
         loyaltyEnabled: false,
@@ -25,7 +25,7 @@ describe("Plans Service - listPlans", () => {
       {
         id: 2,
         name: "Pro",
-        price: "499.00",
+        price: 499,
         maxStaff: 15,
         maxServices: 50,
         loyaltyEnabled: true,

@@ -32,22 +32,11 @@ describe("Reviews Service - listReviews", () => {
     countSpy = jest.spyOn(prisma.review, "count");
   });
 
-  it("should throw ReviewsValidationError when query params are invalid", async () => {
-    await expect(
-      listReviews(
-        { serviceId: "-1" },
-        { sub: 1, role: Role.super_admin },
-      ),
-    ).rejects.toThrow(
-      ReviewsValidationError,
-    );
-  });
-
   it("should throw ReviewsForbiddenError for unsupported role", async () => {
     await expect(
       listReviews(
-        {},
-        { sub: 1, role: Role.client },
+        { page: 1, limit: 10 },
+        { sub: 1, role: "invalid_role" },
       ),
     ).rejects.toThrow(ReviewsForbiddenError);
   });
@@ -70,7 +59,7 @@ describe("Reviews Service - listReviews", () => {
     transactionSpy.mockImplementation((operations) => Promise.all(operations));
 
     const result = await listReviews(
-      { serviceId: "20", page: "1", limit: "10" },
+      { serviceId: 20, page: 1, limit: 10 },
       { sub: 999, role: Role.super_admin },
     );
 
@@ -104,7 +93,7 @@ describe("Reviews Service - listReviews", () => {
     transactionSpy.mockImplementation((operations) => Promise.all(operations));
 
     const result = await listMyReviews(
-      { page: "1", limit: "10" },
+      { page: 1, limit: 10 },
       { sub: 88, role: Role.staff },
     );
 

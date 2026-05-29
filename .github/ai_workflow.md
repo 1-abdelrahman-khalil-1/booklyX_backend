@@ -4,73 +4,162 @@
 
 Before implementation, the agent must understand the system context.
 
-- System type: multi-role booking backend (Fresha-like).
-- Core entities:
-  - `User` (`CLIENT`, `STAFF`, `BRANCH_ADMIN`, `SUPER_ADMIN`)
-  - `Business`
-  - `Service`
-  - `Appointment`
-  - `Payment`
-  - `StaffAvailability`
+* System type: multi-role booking platform (Fresha-like).
+* Core entities:
+
+  * User (`CLIENT`, `STAFF`, `BRANCH_ADMIN`, `SUPER_ADMIN`)
+  * Branch
+  * Service
+  * Appointment
+  * BookingPayment
+  * StaffAvailability
+  * Review
+  * Offer
 
 Platform expectations:
 
-- `CLIENT`: app and web
-- `STAFF`: app only
-- `BRANCH_ADMIN`: web only
-- `SUPER_ADMIN`: web only
+* CLIENT: mobile app
+* STAFF: mobile app
+* BRANCH_ADMIN: web dashboard
+* SUPER_ADMIN: web dashboard
 
-### 0.1 Team Structure: Single Backend Dev + AI Agent
+---
 
-**RACI legend:**
+## 0.1 Team Structure: Single Backend Dev + AI Agent
 
-- `R`: Responsible (does the work)
-- `A`: Accountable (final owner)
-- `C`: Consulted (gives input)
-- `I`: Informed (kept up to date)
+### RACI Legend
 
-**For BooklyX: You (Backend Dev) + AI Agent**
+* R = Responsible
+* A = Accountable
+* C = Consulted
+* I = Informed
 
-| Phase                                   | You (Backend Dev) | AI Agent |
-| --------------------------------------- | ----------------- | -------- |
-| Feature scope and API contract          | A/R               | C        |
-| Architecture and validation rules       | A                 | C        |
-| Implementation (routes/service/testing) | A                 | R        |
-| Code review (self + AI suggestions)     | A/R               | C        |
-| Security and i18n checks                | A                 | C        |
-| Deploy and QA feedback loop             | A/R               | I        |
+### BooklyX Ownership Model
 
-**AI Agent boundaries:**
+| Phase                          | Backend Dev | AI Agent |
+| ------------------------------ | ----------- | -------- |
+| Feature scope and API contract | A/R         | C        |
+| Architecture decisions         | A           | C        |
+| Validation and business rules  | A           | C        |
+| Implementation                 | A           | R        |
+| Refactoring proposals          | A           | C        |
+| Code review                    | A/R         | C        |
+| Security review                | A           | C        |
+| Deployment                     | A/R         | I        |
 
-- Drafts code, tests, docs following this workflow + copilot-instructions.md.
-- Handles repeated patterns and boilerplate reliably.
-- Proposes refactors and optimizations with rationale.
-- Must NEVER bypass RBAC/validation/i18n rules.
-- Must NEVER modify `src/server.js` without explicit authorization.
+### AI Agent Boundaries
 
-**You (Backend Dev):**
+Agent may:
 
-- Own final decisions on architecture and API design.
-- Review AI-generated code before merge.
-- Ensure business logic aligns with product vision.
-- Own all deployments and production decisions.
+* Generate code
+* Generate tests
+* Generate documentation
+* Suggest refactors
+* Reuse existing patterns
+
+Agent must never:
+
+* Bypass RBAC
+* Bypass validation
+* Bypass business rules
+* Change architecture without justification
+* Modify `src/server.js` unless explicitly requested
+
+### Backend Developer Responsibilities
+
+* Own architecture
+* Own API contracts
+* Review generated code
+* Validate business logic
+* Handle deployments
+* Approve schema changes
+
+---
+
+## 0.2 Existing Implementation Awareness (Mandatory)
+
+Before creating:
+
+* new module
+* new service
+* new endpoint
+* new Prisma model
+* new DTO shape
+
+Agent must inspect the existing implementation first.
+
+Rules:
+
+* Prefer extending existing modules.
+* Reuse existing services when functionality already belongs there.
+* Reuse existing validators and patterns.
+* Reuse existing response contracts.
+* Avoid creating parallel modules that duplicate responsibilities.
+* Avoid introducing new architecture patterns.
+* Preserve backward compatibility whenever possible.
+
+Never redesign stable architecture without explicit instruction.
 
 ---
 
 ## 1) Feature Analysis (First Step)
 
-For each task, identify all of the following first:
+Before implementation identify:
 
-- Module (`appointment`, `payment`, `service`, `auth`, ...)
-- Actor (`CLIENT`, `STAFF`, `BRANCH_ADMIN`, `SUPER_ADMIN`)
-- Position in flow (pre-payment, post-payment, approval step, etc.)
-- Dependencies (services, availability, payment, onboarding state)
+### Module
 
-Example for booking:
+Examples:
 
-- Module: `appointment`
-- Actor: `CLIENT`
-- Depends on: `service`, `staff`, `availability`, `payment`
+* auth
+* appointment
+* payment
+* service
+* review
+* offer
+* client
+* staff
+* admin
+
+### Actor
+
+* CLIENT
+* STAFF
+* BRANCH_ADMIN
+* SUPER_ADMIN
+
+### Flow Position
+
+Examples:
+
+* onboarding
+* approval workflow
+* booking workflow
+* checkout workflow
+* review workflow
+
+### Dependencies
+
+Examples:
+
+* service
+* appointment
+* payment
+* availability
+* reviews
+* offers
+
+Example:
+
+Booking
+
+* Module: appointment
+* Actor: CLIENT
+* Depends on:
+
+  * service
+  * staff
+  * availability
+  * payment
 
 ---
 
@@ -78,17 +167,40 @@ Example for booking:
 
 Validation rules:
 
-- Validate `body`, `params`, and `query` as needed.
-- Define schemas in `[module].validation.js`.
-- Use `safeParse` and map issues to `tr.KEY`.
+* Validate body
+* Validate params
+* Validate query
 
-Execution point:
+Schemas must live in:
 
-- Controller calls validation helpers from `[module].validation.js` before calling service.
+```text
+[module].validation.js
+```
+
+Controllers must:
+
+```text
+validate
+→ service
+→ response
+```
+
+Use:
+
+```text
+safeParse()
+```
+
+Validation errors must map to:
+
+```text
+tr.KEY
+```
 
 Forbidden:
 
-- Do not write validation logic inline in controller or service.
+* Inline validation in controllers
+* Inline validation in services
 
 ---
 
@@ -96,193 +208,381 @@ Forbidden:
 
 Before business logic:
 
-- Verify authenticated user identity.
-- Verify role and permission for endpoint/action.
+* Verify authentication
+* Verify role
+* Verify ownership when required
 
-Example:
+Examples:
 
-- `CLIENT` can book.
-- `STAFF` cannot create client bookings unless explicitly allowed by policy.
+CLIENT:
+
+* Can create appointments
+* Can create reviews for own completed appointments
+
+STAFF:
+
+* Can access assigned work only
+
+BRANCH_ADMIN:
+
+* Can manage own branch resources only
+
+SUPER_ADMIN:
+
+* Platform-wide access
 
 ---
 
 ## 4) Service Layer (Core Logic)
 
-All business logic and all DB access are implemented in service layer only.
+All business logic belongs here.
 
-### 4.1 Booking Logic
+All database access belongs here.
 
-Minimum checks:
+Controllers must not contain business logic.
+
+---
+
+## 4.1 Booking Logic
+
+Minimum validations:
 
 1. Service exists.
-2. Service is approved/active.
-3. Staff is valid (if provided).
-4. Staff availability matches requested slot.
-5. No double booking.
-6. Requested date/time is in the future.
+2. Service is approved.
+3. Parent branch is visible.
+4. Staff is valid (if provided).
+5. Requested slot is available.
+6. No double booking.
+7. Requested datetime is in the future.
 
-### 4.2 Payment Logic (Mock)
+---
+
+## 4.2 Payment Logic
 
 Current project policy:
 
-- No real gateway integration for now.
-- Simulated payment response only.
+* Fake payment only.
+* No real payment gateway integration.
 
-Mock rule:
+Implementation must follow the current payment simulation strategy used by the project.
 
-- `cardNumber === "4242"` -> success
-- Otherwise -> failed
+Do not hardcode alternative payment flows without explicit instruction.
 
-### 4.3 Payment Flow
+---
 
-1. Create appointment with `PENDING` status.
-2. Execute mock payment.
-3. If success:
-   - Update appointment to `CONFIRMED`.
-   - Create payment record as `PAID`.
-4. If failed:
-   - Keep appointment `PENDING` or set `FAILED` based on endpoint contract.
+## 4.3 Payment Flow
 
-### 4.4 Transactions (Critical)
+1. Create Appointment (PENDING)
+2. Create BookingPayment (PENDING)
+3. Execute fake payment
+4. Success:
 
-Use Prisma transaction for atomic steps (all-or-nothing) whenever multiple writes must succeed together:
+   * Payment → PAID
+   * Appointment → CONFIRMED
+5. Failure:
 
-- appointment create
-- payment create
-- status update
+   * Payment → FAILED
+   * Appointment remains PENDING
 
-### 4.5 Status Lifecycle
+---
 
-Primary lifecycle:
+## 4.4 Transactions (Critical)
 
-- `PENDING` -> `CONFIRMED` -> `IN_PROGRESS` -> `COMPLETED`
+Use Prisma transactions whenever multiple writes must succeed together.
 
-### 4.6 Business Rules Enforcement
+Examples:
 
-- No double booking.
-- No booking in the past.
-- Service must be approved.
-- Confirmation requires successful payment when payment is required by flow.
+* create appointment
+* create payment
+* update appointment status
 
-### 4.7 branch_admin Re-Apply Policy (Mandatory)
+Use:
 
-- Onboarding flow: `branch_admin submits application` -> `super_admin approves/rejects`.
-- If application is rejected, branch_admin is allowed to apply again.
-- For `BranchAdmin` applications, `email` and `phone` are NOT globally unique historical identifiers.
-- Do not enforce permanent uniqueness on rejected application records.
-- Enforce conflict checks in service layer based on active workflow status (for example: prevent duplicates for pending/in-review applications, but allow re-apply after rejection according to business rules).
+```text
+prisma.$transaction()
+```
 
-### 4.8 Response Shape Rule
+for atomic operations.
 
-- Preserve database-selected response shapes in services: do not reformat or map DB results into a different JSON shape inside services unless the API contract explicitly requires a transformation. Controllers may perform light shaping when strictly necessary and agreed upon.
+---
+
+## 4.5 Status Lifecycle
+
+Appointment lifecycle typically follows:
+
+```text
+PENDING
+→ CONFIRMED
+→ IN_PROGRESS
+→ COMPLETED
+```
+
+Additional terminal states may exist:
+
+```text
+CANCELLED
+```
+
+Agent must respect existing enum states and transitions.
+
+Do not simplify or merge statuses.
+
+---
+
+## 4.6 Business Rules Enforcement
+
+Mandatory rules:
+
+* No double booking.
+* No booking in the past.
+* Approved services only.
+* Visible branches only.
+* Payment required before confirmation.
+* One review per appointment.
+* Reviews only after completion.
+* Branch visibility requires:
+
+  * APPROVED
+  * active subscription
+* Service visibility requires:
+
+  * approved service
+  * visible branch
+
+---
+
+## 4.7 Branch Admin Re-Apply Policy
+
+Workflow:
+
+```text
+Apply
+→ Pending
+→ Approved / Rejected
+```
+
+Rejected applicants may apply again.
+
+Rules:
+
+* Email is not a permanent historical unique identifier.
+* Phone is not a permanent historical unique identifier.
+* Allow re-application after rejection.
+* Prevent duplicate active applications.
+
+Conflict checks must be implemented in service layer.
+
+---
+
+## 4.8 Response Shape Rule
+
+Preserve existing response contracts.
+
+Rules:
+
+* Do not reshape DB results unnecessarily.
+* Do not introduce new response formats without reason.
+* Maintain API compatibility.
+
+Controllers may perform light formatting only when required.
 
 ---
 
 ## 5) Controller Layer
 
-Controller responsibilities only:
+Controller responsibilities:
 
-1. Read request and language.
-2. Call validation helper.
-3. Call service.
-4. Return `successResponse` with translated message.
+1. Read request.
+2. Read language.
+3. Validate request.
+4. Call service.
+5. Return success response.
 
 Forbidden:
 
-- Business logic in controller.
-- Direct DB access in controller.
-- Hardcoded user-facing text.
+* Business logic
+* Direct Prisma access
+* Hardcoded text
+* Complex transformations
 
 ---
 
 ## 6) Routing Layer
 
-Per endpoint:
+Responsibilities:
 
-- Define route in `[module].routes.js`.
-- Attach required middleware in order (auth, RBAC, and request guards as needed by module).
+* Define endpoint
+* Attach middleware
+* Attach RBAC
 
-Notes:
+Rules:
 
-- Validation schemas remain in `[module].validation.js`.
-- Register module routes in `src/routes/index.js`.
-- Never modify `src/server.js` for module routing changes.
+* Register routes in:
+
+  ```text
+  src/routes/index.js
+  ```
+
+* Validation remains outside routes.
+
+* Never modify:
+
+  ```text
+  src/server.js
+  ```
+
+unless explicitly requested.
 
 ---
 
 ## 7) AI Self-Review (Mandatory)
 
-Before finalizing any implementation, verify:
+Before finishing implementation verify:
 
-- Validation exists and is wired correctly.
-- RBAC checks are present.
-- Transactions are used when needed.
-- No duplicate/unnecessary DB calls.
-- No business logic in controller.
-- No hardcoded user-facing text (must use translation keys).
-- If Prisma models changed, `prisma/seed.js` was updated in the same change and Prisma client was regenerated.
-- If a feature is introduced or changed using new seed data, `prisma/seed.js` was updated in the same change and the relevant `openapi.yaml` entries were updated too.
-- If the change requires database schema work, use `npx prisma migrate dev --name <descriptive-name>` and only use `npx prisma migrate reset` when drift exists and the development-data loss is explicitly acceptable.
+### Validation
+
+* Validation exists.
+* Validation is wired correctly.
+
+### Authorization
+
+* RBAC enforced.
+* Ownership checks enforced.
+
+### Architecture
+
+* Route → Controller → Service → Prisma respected.
+
+### Logic
+
+* No duplicate DB calls.
+* No unnecessary queries.
+* No business logic in controllers.
+
+### Internationalization
+
+* No hardcoded user-facing text.
+* Use:
+
+  ```text
+  tr.KEY
+  ```
+
+### Prisma
+
+If schema changes:
+
+* update migrations
+* regenerate Prisma client
+* update seed
+
+### Documentation
+
+If API changed:
+
+* update OpenAPI
+* update Apidog
+* update docs
 
 ---
 
 ## 8) Performance Check
 
-- Use Prisma `select` to avoid overfetching.
-- Avoid N+1 queries.
-- Avoid unnecessary round trips.
-- Prefer pagination in list endpoints.
+Rules:
+
+* Use Prisma select.
+* Avoid overfetching.
+* Avoid N+1 queries.
+* Avoid unnecessary round trips.
+* Use pagination for list endpoints.
+* Prefer cursor pagination for large datasets when applicable.
 
 ---
 
 ## 9) Testing Flow
 
-Minimum test cases for booking/payment related features:
+Minimum booking/payment tests:
 
-- Success booking path.
-- Double booking prevention.
-- Invalid/past time rejection.
-- Payment failure path.
-- Unauthorized/forbidden access.
+### Success Path
 
-Tests location and style:
+* successful booking
+* successful payment
 
-- Place tests under module `__tests__`.
-- Focus on service layer with mocked Prisma/external dependencies.
+### Failure Path
+
+* payment failure
+* unavailable slot
+* double booking
+* past booking
+
+### Authorization
+
+* unauthorized access
+* forbidden access
+
+Tests should focus on:
+
+```text
+service layer
+```
+
+using mocked dependencies.
+
+Location:
+
+```text
+src/modules/**/__tests__
+```
 
 ---
 
 ## 10) Global Rules (Must Follow)
 
-- Never modify `src/server.js` unless explicitly requested.
-- Never hardcode user-facing text; use `tr.KEY` and `t(...)`.
-- Never skip validation.
-- Never access DB outside service layer.
-- Never bypass RBAC.
-- Never assume business rules; verify from module flow and existing contracts.
-- Do not make `BranchAdmin.email` or `BranchAdmin.phone` permanently unique in a way that blocks re-application after rejection.
+Never:
+
+* modify server.js without permission
+* bypass RBAC
+* bypass validation
+* bypass business rules
+* access Prisma outside service layer
+* hardcode user-facing text
+* redesign architecture unnecessarily
+* assume requirements without verification
+
+Always:
+
+* inspect existing implementation first
+* preserve current architecture
+* preserve current API contracts
+* preserve current workflows
 
 ---
 
-## 11) Final Execution Flow (Quick Reference)
+## 11) Final Execution Flow
 
-1. Analyze feature context and dependencies.
-2. Validate input with Zod helpers.
-3. Enforce RBAC and access checks.
-4. Execute service logic (rules, payment, transaction).
-5. Return translated response.
-6. Run self-review checks.
-7. Apply performance safeguards.
+1. Analyze feature.
+2. Identify actor and dependencies.
+3. Validate request.
+4. Enforce RBAC.
+5. Execute business rules.
+6. Execute Prisma operations.
+7. Use transactions when required.
+8. Return translated response.
+9. Run self-review.
+10. Verify performance impact.
 
 ---
 
 ## 12) Done Criteria
 
-Task is not done until all apply:
+Task is not complete until:
 
-- Architecture flow respected: `Route -> Controller -> Service -> Prisma`.
-- Validation + RBAC + business rules are enforced.
-- Errors are domain-specific and localized.
-- No hardcoded user-facing text.
-- Tests added/updated where behavior changed.
-- If API surface changed: Follow `.github/prompts/update_docs.prompt.md` for full Postman + docs sync checklist.
+* Route → Controller → Service → Prisma respected.
+* Validation implemented.
+* RBAC enforced.
+* Business rules enforced.
+* Errors are localized.
+* No hardcoded user-facing text.
+* Tests updated when behavior changes.
+* Documentation updated when API changes.
+* Existing architecture and contracts remain compatible.

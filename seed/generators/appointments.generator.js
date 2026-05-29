@@ -3,18 +3,17 @@ import { appointmentDate } from "../helpers/dates.js";
 import { validateAppointmentSeed } from "../factories/appointment.factory.js";
 
 export function buildAppointmentSeeds(clients, staffMembers, getServiceForStaff) {
-  const appointmentClients = clients.slice(0, 5);
-  const appointmentStaff = staffMembers.slice(0, 5);
   const seeds = [];
 
-  for (let i = 0; i < appointmentClients.length; i++) {
-    const client = appointmentClients[i];
-    const staff = appointmentStaff[i % appointmentStaff.length];
+  for (let i = 0; i < staffMembers.length; i++) {
+    const staff = staffMembers[i];
     const staffService = getServiceForStaff(staff);
 
     if (!staffService) {
       continue;
     }
+
+    const client = clients[i % clients.length];
 
     for (let statusIndex = 0; statusIndex < APPOINTMENT_STATUS_PLAN.length; statusIndex++) {
       const status = APPOINTMENT_STATUS_PLAN[statusIndex];

@@ -198,6 +198,26 @@ const ar = {
   STAFF_END_TIME_AFTER_START_TIME: "يجب أن يكون وقت النهاية بعد وقت البداية.",
   STAFF_INCOME_RANGE_REQUIRED: "نطاق الدخل مطلوب.",
   APPOINTMENT_ACCESS_DENIED: "تم رفض الوصول إلى الموعد",
+  PAYMENT_REFUNDED_SUCCESSFULLY: "تم استرداد الدفعة بنجاح.",
+  INVALID_PAYMENT_STATUS_FOR_REFUND: "يمكن استرداد المدفوعات المقبولة فقط.",
+  PAYMENT_ALREADY_REFUNDED: "تم استرداد هذه الدفعة بالفعل.",
+  RECENT_ACTIVITIES_RETRIEVED_SUCCESSFULLY: "تم استرجاع الأنشطة الأخيرة بنجاح.",
+
+  // Client Module
+  DASHBOARD_RETRIEVED_SUCCESSFULLY: "تم استرجاع بيانات الصفحة الرئيسية بنجاح.",
+  SEARCH_COMPLETED_SUCCESSFULLY: "تم البحث على الخريطة بنجاح.",
+  BRANCH_SERVICES_RETRIEVED: "تم استرجاع خدمات الفرع بنجاح.",
+  STAFF_AVAILABILITY_RETRIEVED: "تم استرجاع الأوقات المتاحة للموظف بنجاح.",
+  APPOINTMENT_RESERVED_SUCCESSFULLY: "تم حجز الموعد بنجاح. يرجى إتمام عملية الدفع لتأكيد الحجز.",
+  PAYMENT_CONFIRMED_SUCCESSFULLY: "تمت عملية الدفع وتأكيد الحجز بنجاح.",
+  FAVOURITES_RETRIEVED_SUCCESSFULLY: "تم استرجاع المفضلة بنجاح.",
+  FAVOURITE_ADDED_SUCCESSFULLY: "تمت الإضافة إلى المفضلة بنجاح.",
+  FAVOURITE_REMOVED_SUCCESSFULLY: "تمت الإزالة من المفضلة بنجاح.",
+  DOUBLE_BOOKING_ERROR: "هذا الوقت محجوز بالفعل. يرجى اختيار وقت آخر أو موظف آخر.",
+  PAST_BOOKING_ERROR: "لا يمكن حجز موعد في الماضي.",
+  FAVOURITE_ALREADY_EXISTS: "هذا العنصر موجود بالفعل في المفضلة.",
+  FAVOURITE_NOT_FOUND: "هذا العنصر غير موجود في المفضلة.",
+  SERVICE_NOT_BOOKABLE: "هذه الخدمة غير متاحة للحجز حالياً.",
 };
 
 export default ar;
