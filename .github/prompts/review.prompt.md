@@ -399,6 +399,93 @@ Scan every file for the following patterns:
 
 ---
 
+### 4.19 File Upload Check (STRICT)
+
+```md
+For every endpoint under review, perform the following two-sided check:
+
+#### Side A — OpenAPI → Code (Upload declared but not implemented?)
+
+1. Read the endpoint's entry in `openapi.yaml`.
+2. Check if the requestBody uses `content: multipart/form-data` AND contains at least one property with `format: binary`.
+3. If YES → open the corresponding route file and verify ALL of the following:
+   a. A multer upload middleware (`imageOnlyUpload`, `documentsUpload`, or equivalent) is imported.
+   b. The middleware is attached to that exact route (e.g. `imageOnlyUpload.single(...)`, `.fields([...])`, `.array(...)`).
+   c. The controller reads the uploaded file from `req.file` or `req.files` and stores/uses the result (e.g. `req.file.path`, `req.files.logo[0].path`).
+
+If any of (a), (b), or (c) is missing → FLAG as 🔴 Critical and provide the fix.
+
+**Fix template when upload middleware is missing from a route:**
+```js
+// In the route file — import the upload middleware
+import { imageOnlyUpload } from "../../middleware/upload.js";
+// or: import { documentsUpload } from "../../middleware/upload.js";
+
+// Attach before the controller handler (single file):
+router.post("/endpoint", authenticate, imageOnlyUpload.single("fieldName"), handler);
+
+// Attach before the controller handler (multiple named fields):
+router.post("/endpoint", authenticate, documentsUpload.fields([
+  { name: "logo", maxCount: 1 },
+  { name: "document", maxCount: 1 },
+]), handler);
+```
+
+**Fix template when controller doesn't read the uploaded file:**
+```js
+// In the controller — read from req.file (single) or req.files (fields):
+const imageUrl = req.file?.path ?? body.imageUrl ?? null;         // single file
+const logoUrl  = req.files?.logo?.[0]?.path ?? body.logoUrl ?? null;  // named field
+```
+
+#### Side B — Code → OpenAPI (Upload implemented but not documented?)
+
+1. Read the route file for the endpoint under review.
+2. Check if a multer middleware (`imageOnlyUpload`, `documentsUpload`) is attached to the route.
+3. If YES → open `openapi.yaml` and verify:
+   a. The requestBody `content` type is `multipart/form-data` (NOT `application/json`).
+   b. Each uploaded field (e.g. `logo`, `image`, `taxCertificate`) appears in the schema with `type: string` and `format: binary`.
+   c. Any non-file fields sent alongside the upload (text, numbers, IDs) are also listed in the same multipart schema.
+
+If any of (a), (b), or (c) is missing or wrong → FLAG as 🟠 Major and provide the corrected YAML snippet.
+
+**Fix template for missing/wrong OpenAPI multipart documentation:**
+```yaml
+requestBody:
+  required: true
+  content:
+    multipart/form-data:
+      schema:
+        type: object
+        properties:
+          fieldName:           # text field
+            type: string
+            example: some value
+          logo:                # file field
+            type: string
+            format: binary
+          document:            # another file field
+            type: string
+            format: binary
+```
+
+#### Upload Middleware Reference (project-specific)
+
+| Middleware export     | Cloudinary folder       | Allowed types              | Use for                          |
+|-----------------------|-------------------------|----------------------------|----------------------------------|
+| `imageOnlyUpload`     | `booklyx/images`        | jpeg, png, gif, webp       | Profile photos, service images   |
+| `documentsUpload`     | `booklyx/documents`     | jpeg, png, gif, webp       | KYC docs, certificates, licenses |
+
+Both are exported from `src/middleware/upload.js`. Uploaded files land in `req.file.path` (`.single()`) or `req.files.<fieldName>[0].path` (`.fields()`).
+```
+
+> Upload declared in OpenAPI but multer middleware missing in route → 🔴 Critical
+> Upload declared in OpenAPI but controller doesn't read `req.file` / `req.files` → 🔴 Critical
+> Multer middleware present in route but OpenAPI missing `multipart/form-data` → 🟠 Major
+> File field missing `format: binary` in OpenAPI schema → 🟠 Major
+
+---
+
 ## 5. Issues Table
 
 **Output the issues table ONLY for this section. No extra commentary or summaries between rows.**
