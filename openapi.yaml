@@ -598,6 +598,11 @@ components:
           type: string
           nullable: true
           example: 20 percent discount this weekend
+        imageUrl:
+          type: string
+          format: uri
+          nullable: true
+          example: https://cdn.booklyx.com/offers/weekend-promo.png
         discountType:
           type: string
           enum: [PERCENTAGE, FIXED]
@@ -2097,138 +2102,127 @@ components:
     BranchAvailabilityResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Branch availability updated successfully.",
-            "data": {
-                "id": 1,
-                "dayOfWeek": 1,
-                "startTime": "09:00",
-                "endTime": "17:00",
-                "status": "AVAILABLE",
-                "createdAt": "2026-05-29T20:20:00.000Z",
-                "updatedAt": "2026-05-29T20:20:00.000Z"
-            }
+          "status": 200,
+          "error": false,
+          "message": "Branch availability updated successfully.",
+          "data":
+            {
+              "id": 1,
+              "dayOfWeek": 1,
+              "startTime": "09:00",
+              "endTime": "17:00",
+              "status": "AVAILABLE",
+              "createdAt": "2026-05-29T20:20:00.000Z",
+              "updatedAt": "2026-05-29T20:20:00.000Z",
+            },
         }
     BookingSettingsResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Booking settings processed successfully.",
-            "data": {
-                "id": 1,
-                "branchId": 1,
-                "slotIntervalMinutes": 30,
-                "leadTimeHours": 2,
-                "cancelationPolicyHours": 24,
-                "createdAt": "2026-05-29T20:20:00.000Z",
-                "updatedAt": "2026-05-29T20:20:00.000Z"
-            }
+          "status": 200,
+          "error": false,
+          "message": "Booking settings processed successfully.",
+          "data":
+            {
+              "id": 1,
+              "branchId": 1,
+              "slotIntervalMinutes": 30,
+              "leadTimeHours": 2,
+              "cancelationPolicyHours": 24,
+              "createdAt": "2026-05-29T20:20:00.000Z",
+              "updatedAt": "2026-05-29T20:20:00.000Z",
+            },
         }
     NotificationSettingsResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Notification settings processed successfully.",
-            "data": {
-                "id": 1,
-                "userId": 5,
-                "emailEnabled": true,
-                "smsEnabled": false,
-                "pushEnabled": true,
-                "createdAt": "2026-05-29T20:20:00.000Z",
-                "updatedAt": "2026-05-29T20:20:00.000Z"
-            }
+          "status": 200,
+          "error": false,
+          "message": "Notification settings processed successfully.",
+          "data":
+            {
+              "id": 1,
+              "userId": 5,
+              "emailEnabled": true,
+              "smsEnabled": false,
+              "pushEnabled": true,
+              "createdAt": "2026-05-29T20:20:00.000Z",
+              "updatedAt": "2026-05-29T20:20:00.000Z",
+            },
         }
     AdminServicesDetailsResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Service details fetched successfully.",
-            "data": {
-                "id": 1,
-                "branch_id": 1,
-                "service_category_id": 1,
-                "name": "Haircut",
-                "description": "Professional haircut with styling",
-                "price": 150,
-                "duration_minutes": 30,
-                "image_url": "https://cdn.booklyx.com/services/haircut.png",
-                "status": "APPROVED",
-                "rejection_reason": null,
-                "created_at": "2026-04-09T10:15:00.000Z",
-                "updated_at": "2026-04-09T10:15:00.000Z",
-                "category": {
-                    "id": 1,
-                    "name": "Hair Care",
-                    "branch_id": 1,
-                    "created_at": "2026-04-09T10:00:00.000Z",
-                    "updated_at": "2026-04-09T10:00:00.000Z"
-                }
-            }
+          "status": 200,
+          "error": false,
+          "message": "Service details fetched successfully.",
+          "data":
+            {
+              "id": 1,
+              "branch_id": 1,
+              "service_category_id": 1,
+              "name": "Haircut",
+              "description": "Professional haircut with styling",
+              "price": 150,
+              "duration_minutes": 30,
+              "image_url": "https://cdn.booklyx.com/services/haircut.png",
+              "status": "APPROVED",
+              "rejection_reason": null,
+              "created_at": "2026-04-09T10:15:00.000Z",
+              "updated_at": "2026-04-09T10:15:00.000Z",
+              "category":
+                {
+                  "id": 1,
+                  "name": "Hair Care",
+                  "branch_id": 1,
+                  "created_at": "2026-04-09T10:00:00.000Z",
+                  "updated_at": "2026-04-09T10:00:00.000Z",
+                },
+            },
         }
     AdminAnalyticsPlatformResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Platform stats retrieved successfully.",
-            "data": {
-                "totalActiveBusinesses": 24,
-                "totalSubscriptionRevenue": 14500.5
-            }
+          "status": 200,
+          "error": false,
+          "message": "Platform stats retrieved successfully.",
+          "data":
+            {
+              "totalActiveBusinesses": 24,
+              "totalSubscriptionRevenue": 14500.5,
+            },
         }
     AdminAnalyticsRecentActivitiesResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Recent platform activities retrieved successfully.",
-            "data": [
-                {
-                    "id": "act_001",
-                    "type": "BRANCH_APPLICATION",
-                    "message": "New branch application from 'Glow Wellness Spa'",
-                    "timestamp": "2026-05-29T10:15:30.000Z"
-                },
-                {
-                    "id": "act_002",
-                    "type": "SUBSCRIPTION_RENEWAL",
-                    "message": "Branch 'Hassan Beauty Salon' renewed 'Pro' plan",
-                    "timestamp": "2026-05-29T08:30:00.000Z"
-                }
-            ]
+          "status": 200,
+          "error": false,
+          "message": "Recent platform activities retrieved successfully.",
+          "data":
+            [
+              {
+                "id": "act_001",
+                "type": "BRANCH_APPLICATION",
+                "message": "New branch application from 'Glow Wellness Spa'",
+                "timestamp": "2026-05-29T10:15:30.000Z",
+              },
+              {
+                "id": "act_002",
+                "type": "SUBSCRIPTION_RENEWAL",
+                "message": "Branch 'Hassan Beauty Salon' renewed 'Pro' plan",
+                "timestamp": "2026-05-29T08:30:00.000Z",
+              },
+            ],
         }
     AdminPaymentsListResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Payments list retrieved successfully.",
-            "data": [
-                {
-                    "id": 1,
-                    "amount": 250,
-                    "currency": "EGP",
-                    "status": "COMPLETED",
-                    "provider": "STRIPE",
-                    "paymentMethod": "CARD",
-                    "transactionId": "ch_3Mv8Y2LkdIwHu7ix1a9s",
-                    "bookingId": 12,
-                    "createdAt": "2026-04-20T14:30:00.000Z"
-                }
-            ]
-        }
-    AdminPaymentDetailsResponse:
-      value:
-        {
-            "status": 200,
-            "error": false,
-            "message": "Payment details retrieved successfully.",
-            "data": {
+          "status": 200,
+          "error": false,
+          "message": "Payments list retrieved successfully.",
+          "data":
+            [
+              {
                 "id": 1,
                 "amount": 250,
                 "currency": "EGP",
@@ -2237,419 +2231,433 @@ components:
                 "paymentMethod": "CARD",
                 "transactionId": "ch_3Mv8Y2LkdIwHu7ix1a9s",
                 "bookingId": 12,
-                "createdAt": "2026-04-20T14:30:00.000Z"
-            }
+                "createdAt": "2026-04-20T14:30:00.000Z",
+              },
+            ],
+        }
+    AdminPaymentDetailsResponse:
+      value:
+        {
+          "status": 200,
+          "error": false,
+          "message": "Payment details retrieved successfully.",
+          "data":
+            {
+              "id": 1,
+              "amount": 250,
+              "currency": "EGP",
+              "status": "COMPLETED",
+              "provider": "STRIPE",
+              "paymentMethod": "CARD",
+              "transactionId": "ch_3Mv8Y2LkdIwHu7ix1a9s",
+              "bookingId": 12,
+              "createdAt": "2026-04-20T14:30:00.000Z",
+            },
         }
     AdminPaymentRefundResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Refund processed successfully.",
-            "data": {
-                "refundId": "re_3Mv8Y2LkdIwHu7ix1a9s"
-            }
+          "status": 200,
+          "error": false,
+          "message": "Refund processed successfully.",
+          "data": { "refundId": "re_3Mv8Y2LkdIwHu7ix1a9s" },
         }
     BranchSubscriptionActivateResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Subscription activated successfully.",
-            "data": {
-                "id": 12,
-                "branchId": 1,
-                "planId": 2,
-                "status": "ACTIVE",
-                "startDate": "2026-05-29T20:20:00.000Z",
-                "endDate": "2026-06-29T20:20:00.000Z"
-            }
+          "status": 200,
+          "error": false,
+          "message": "Subscription activated successfully.",
+          "data":
+            {
+              "id": 12,
+              "branchId": 1,
+              "planId": 2,
+              "status": "ACTIVE",
+              "startDate": "2026-05-29T20:20:00.000Z",
+              "endDate": "2026-06-29T20:20:00.000Z",
+            },
         }
     BranchSubscriptionRenewResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Subscription renewed successfully.",
-            "data": {
-                "id": 12,
-                "branchId": 1,
-                "planId": 2,
-                "status": "ACTIVE",
-                "startDate": "2026-06-29T20:20:00.000Z",
-                "endDate": "2026-07-29T20:20:00.000Z"
-            }
+          "status": 200,
+          "error": false,
+          "message": "Subscription renewed successfully.",
+          "data":
+            {
+              "id": 12,
+              "branchId": 1,
+              "planId": 2,
+              "status": "ACTIVE",
+              "startDate": "2026-06-29T20:20:00.000Z",
+              "endDate": "2026-07-29T20:20:00.000Z",
+            },
         }
     BranchSubscriptionDetailsResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Subscription details retrieved successfully.",
-            "data": {
-                "id": 12,
-                "branchId": 1,
-                "planId": 2,
-                "status": "ACTIVE",
-                "startDate": "2026-05-29T20:20:00.000Z",
-                "endDate": "2026-06-29T20:20:00.000Z",
-                "plan": {
-                    "id": 2,
-                    "name": "Professional",
-                    "price": "399.00",
-                    "max_staff": 10,
-                    "max_services": 50,
-                    "loyalty_enabled": true,
-                    "offers_enabled": true
-                }
-            }
+          "status": 200,
+          "error": false,
+          "message": "Subscription details retrieved successfully.",
+          "data":
+            {
+              "id": 12,
+              "branchId": 1,
+              "planId": 2,
+              "status": "ACTIVE",
+              "startDate": "2026-05-29T20:20:00.000Z",
+              "endDate": "2026-06-29T20:20:00.000Z",
+              "plan":
+                {
+                  "id": 2,
+                  "name": "Professional",
+                  "price": "399.00",
+                  "max_staff": 10,
+                  "max_services": 50,
+                  "loyalty_enabled": true,
+                  "offers_enabled": true,
+                },
+            },
         }
     BranchSubscriptionCancelResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Subscription cancelled successfully.",
-            "data": {
-                "id": 12,
-                "branchId": 1,
-                "planId": 2,
-                "status": "CANCELLED",
-                "startDate": "2026-05-29T20:20:00.000Z",
-                "endDate": "2026-06-29T20:20:00.000Z"
-            }
+          "status": 200,
+          "error": false,
+          "message": "Subscription cancelled successfully.",
+          "data":
+            {
+              "id": 12,
+              "branchId": 1,
+              "planId": 2,
+              "status": "CANCELLED",
+              "startDate": "2026-05-29T20:20:00.000Z",
+              "endDate": "2026-06-29T20:20:00.000Z",
+            },
         }
     BranchAppointmentDetailsResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Appointment retrieved successfully.",
-            "data": {
-                "id": 15,
-                "scheduledAt": "2026-06-01T14:30:00.000Z",
-                "durationMinutes": 45,
-                "notes": "Prefer quiet service",
-                "status": "CONFIRMED",
-                "price": 250,
-                "branchId": 1,
-                "client": {
-                    "id": 3,
-                    "name": "Abdo Khalil",
-                    "phone": "01000000001",
-                    "email": "abdo.khalil@booklyx.com"
+          "status": 200,
+          "error": false,
+          "message": "Appointment retrieved successfully.",
+          "data":
+            {
+              "id": 15,
+              "scheduledAt": "2026-06-01T14:30:00.000Z",
+              "durationMinutes": 45,
+              "notes": "Prefer quiet service",
+              "status": "CONFIRMED",
+              "price": 250,
+              "branchId": 1,
+              "client":
+                {
+                  "id": 3,
+                  "name": "Abdo Khalil",
+                  "phone": "01000000001",
+                  "email": "abdo.khalil@booklyx.com",
                 },
-                "service": {
-                    "id": 2,
-                    "name": "Swedish Massage",
-                    "price": 250,
-                    "durationMinutes": 45
+              "service":
+                {
+                  "id": 2,
+                  "name": "Swedish Massage",
+                  "price": 250,
+                  "durationMinutes": 45,
                 },
-                "staff": {
-                    "id": 7,
-                    "name": "Mazen Tamer"
-                }
-            }
+              "staff": { "id": 7, "name": "Mazen Tamer" },
+            },
         }
     BranchAppointmentCancelResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Appointment cancelled successfully.",
-            "data": {
-                "id": 15,
-                "status": "CANCELLED"
-            }
+          "status": 200,
+          "error": false,
+          "message": "Appointment cancelled successfully.",
+          "data": { "id": 15, "status": "CANCELLED" },
         }
     BranchDashboardAnalyticsResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Dashboard analytics retrieved successfully.",
-            "data": {
-                "totalRevenue": 15230.5,
-                "totalBookings": 84,
-                "activeServices": 12,
-                "activeStaff": 5
-            }
+          "status": 200,
+          "error": false,
+          "message": "Dashboard analytics retrieved successfully.",
+          "data":
+            {
+              "totalRevenue": 15230.5,
+              "totalBookings": 84,
+              "activeServices": 12,
+              "activeStaff": 5,
+            },
         }
     BranchStaffEarningsAnalyticsResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Staff earnings analytics retrieved successfully.",
-            "data": [
-                {
-                    "staffId": 7,
-                    "staffName": "Mazen Tamer",
-                    "totalEarnings": 4500,
-                    "commissionEarned": 675
-                },
-                {
-                    "staffId": 8,
-                    "staffName": "Amr Khaled",
-                    "totalEarnings": 3200,
-                    "commissionEarned": 480
-                }
-            ]
+          "status": 200,
+          "error": false,
+          "message": "Staff earnings analytics retrieved successfully.",
+          "data":
+            [
+              {
+                "staffId": 7,
+                "staffName": "Mazen Tamer",
+                "totalEarnings": 4500,
+                "commissionEarned": 675,
+              },
+              {
+                "staffId": 8,
+                "staffName": "Amr Khaled",
+                "totalEarnings": 3200,
+                "commissionEarned": 480,
+              },
+            ],
         }
     BranchRevenueChartAnalyticsResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Revenue chart data retrieved successfully.",
-            "data": [
-                {
-                    "date": "2026-05-25",
-                    "revenue": 1200
-                },
-                {
-                    "date": "2026-05-26",
-                    "revenue": 1500
-                },
-                {
-                    "date": "2026-05-27",
-                    "revenue": 800
-                },
-                {
-                    "date": "2026-05-28",
-                    "revenue": 2100
-                },
-                {
-                    "date": "2026-05-29",
-                    "revenue": 1750
-                }
-            ]
+          "status": 200,
+          "error": false,
+          "message": "Revenue chart data retrieved successfully.",
+          "data":
+            [
+              { "date": "2026-05-25", "revenue": 1200 },
+              { "date": "2026-05-26", "revenue": 1500 },
+              { "date": "2026-05-27", "revenue": 800 },
+              { "date": "2026-05-28", "revenue": 2100 },
+              { "date": "2026-05-29", "revenue": 1750 },
+            ],
         }
     BranchRecentBookingsAnalyticsResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Recent bookings retrieved successfully.",
-            "data": [
-                {
-                    "id": 15,
-                    "clientName": "Abdo Khalil",
-                    "serviceName": "Swedish Massage",
-                    "scheduledAt": "2026-05-29T14:30:00.000Z",
-                    "price": 250,
-                    "status": "CONFIRMED"
-                }
-            ]
+          "status": 200,
+          "error": false,
+          "message": "Recent bookings retrieved successfully.",
+          "data":
+            [
+              {
+                "id": 15,
+                "clientName": "Abdo Khalil",
+                "serviceName": "Swedish Massage",
+                "scheduledAt": "2026-05-29T14:30:00.000Z",
+                "price": 250,
+                "status": "CONFIRMED",
+              },
+            ],
         }
     BranchTopServicesAnalyticsResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Top services retrieved successfully.",
-            "data": [
-                {
-                    "serviceId": 1,
-                    "name": "Haircut",
-                    "bookingCount": 42,
-                    "revenue": 6300
-                },
-                {
-                    "serviceId": 2,
-                    "name": "Swedish Massage",
-                    "bookingCount": 28,
-                    "revenue": 7000
-                }
-            ]
+          "status": 200,
+          "error": false,
+          "message": "Top services retrieved successfully.",
+          "data":
+            [
+              {
+                "serviceId": 1,
+                "name": "Haircut",
+                "bookingCount": 42,
+                "revenue": 6300,
+              },
+              {
+                "serviceId": 2,
+                "name": "Swedish Massage",
+                "bookingCount": 28,
+                "revenue": 7000,
+              },
+            ],
         }
     BranchRecentTransactionsAnalyticsResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Recent transactions retrieved successfully.",
-            "data": [
-                {
-                    "id": 101,
-                    "amount": 250,
-                    "status": "COMPLETED",
-                    "clientName": "Abdo Khalil",
-                    "paymentMethod": "CARD",
-                    "createdAt": "2026-05-29T14:30:00.000Z"
-                }
-            ]
+          "status": 200,
+          "error": false,
+          "message": "Recent transactions retrieved successfully.",
+          "data":
+            [
+              {
+                "id": 101,
+                "amount": 250,
+                "status": "COMPLETED",
+                "clientName": "Abdo Khalil",
+                "paymentMethod": "CARD",
+                "createdAt": "2026-05-29T14:30:00.000Z",
+              },
+            ],
         }
     BranchFinanceStatsResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Finance stats retrieved successfully.",
-            "data": {
-                "grossRevenue": 15230.5,
-                "netRevenue": 14468.97,
-                "platformFees": 761.53,
-                "refunds": 500
-            }
+          "status": 200,
+          "error": false,
+          "message": "Finance stats retrieved successfully.",
+          "data":
+            {
+              "grossRevenue": 15230.5,
+              "netRevenue": 14468.97,
+              "platformFees": 761.53,
+              "refunds": 500,
+            },
         }
     BranchFinancePaymentsResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Branch payments retrieved successfully.",
-            "data": [
-                {
-                    "id": 1,
-                    "amount": 250,
-                    "currency": "EGP",
-                    "status": "COMPLETED",
-                    "paymentMethod": "CARD",
-                    "bookingId": 12,
-                    "createdAt": "2026-05-29T14:30:00.000Z"
-                }
-            ]
+          "status": 200,
+          "error": false,
+          "message": "Branch payments retrieved successfully.",
+          "data":
+            [
+              {
+                "id": 1,
+                "amount": 250,
+                "currency": "EGP",
+                "status": "COMPLETED",
+                "paymentMethod": "CARD",
+                "bookingId": 12,
+                "createdAt": "2026-05-29T14:30:00.000Z",
+              },
+            ],
         }
     BranchFinanceExportReportResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Report generated successfully.",
-            "data": {
-                "reportUrl": "https://cdn.booklyx.com/reports/report-2026-05-29.csv"
-            }
+          "status": 200,
+          "error": false,
+          "message": "Report generated successfully.",
+          "data":
+            {
+              "reportUrl": "https://cdn.booklyx.com/reports/report-2026-05-29.csv",
+            },
         }
     BranchServiceDetailsResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Service retrieved successfully.",
-            "data": {
-                "id": 1,
-                "branch_id": 1,
-                "service_category_id": 1,
-                "name": "Haircut",
-                "description": "Professional haircut with styling",
-                "price": 150,
-                "duration_minutes": 30,
-                "image_url": "https://cdn.booklyx.com/services/haircut.png",
-                "status": "APPROVED",
-                "rejection_reason": null,
-                "created_at": "2026-04-09T10:15:00.000Z",
-                "updated_at": "2026-04-09T10:15:00.000Z"
-            }
+          "status": 200,
+          "error": false,
+          "message": "Service retrieved successfully.",
+          "data":
+            {
+              "id": 1,
+              "branch_id": 1,
+              "service_category_id": 1,
+              "name": "Haircut",
+              "description": "Professional haircut with styling",
+              "price": 150,
+              "duration_minutes": 30,
+              "image_url": "https://cdn.booklyx.com/services/haircut.png",
+              "status": "APPROVED",
+              "rejection_reason": null,
+              "created_at": "2026-04-09T10:15:00.000Z",
+              "updated_at": "2026-04-09T10:15:00.000Z",
+            },
         }
     BranchPublicProfileResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Branch public profile retrieved successfully.",
-            "data": {
-                "branch": {
-                    "id": 1,
-                    "businessName": "Hassan Beauty Salon",
-                    "category": "SPA",
-                    "description": "Premium beauty and skincare services.",
-                    "logoUrl": "https://cdn.booklyx.com/branch/logo.png",
-                    "city": "Cairo",
-                    "district": "Nasr City",
-                    "address": "12 Makram Ebeid Street",
-                    "status": "APPROVED",
-                    "selectedPlan": {
-                        "id": 2,
-                        "name": "Professional",
-                        "price": 399,
-                        "maxStaff": 10,
-                        "maxServices": 50,
-                        "loyaltyEnabled": true,
-                        "offersEnabled": true
-                    },
-                    "currentSubscription": {
-                        "plan": {
-                            "id": 2,
-                            "name": "Professional",
-                            "price": 399,
-                            "maxStaff": 10,
-                            "maxServices": 50,
-                            "loyaltyEnabled": true,
-                            "offersEnabled": true
-                        },
-                        "isSubscriptionActive": true,
-                        "subscriptionStartedAt": "2026-05-01T10:00:00Z"
-                    },
-                    "average_rating": 4.8,
-                    "total_reviews": 24,
-                    "bookingSettings": {
-                        "allowCancellationBeforeHours": 24
-                    },
-                    "notificationSettings": {
-                        "bookingNotificationsEnabled": true,
-                        "marketingNotificationsEnabled": false
-                    },
-                    "branchAvailability": [
-                        {
-                            "id": 1,
-                            "dayOfWeek": 1,
-                            "startTime": "09:00",
-                            "endTime": "17:00",
-                            "status": "OPEN"
-                        }
-                    ]
-                },
-                "reviews": [
+          "status": 200,
+          "error": false,
+          "message": "Branch public profile retrieved successfully.",
+          "data":
+            {
+              "branch":
+                {
+                  "id": 1,
+                  "businessName": "Hassan Beauty Salon",
+                  "category": "SPA",
+                  "description": "Premium beauty and skincare services.",
+                  "logoUrl": "https://cdn.booklyx.com/branch/logo.png",
+                  "city": "Cairo",
+                  "district": "Nasr City",
+                  "address": "12 Makram Ebeid Street",
+                  "status": "APPROVED",
+                  "selectedPlan":
                     {
-                        "id": 15,
-                        "rating": 5,
-                        "comment": "Amazing experience!",
-                        "createdAt": "2026-05-29T14:30:00.000Z",
-                        "reviewer": {
-                            "name": "Abdo Khalil",
-                            "phone": "01000000001"
+                      "id": 2,
+                      "name": "Professional",
+                      "price": 399,
+                      "maxStaff": 10,
+                      "maxServices": 50,
+                      "loyaltyEnabled": true,
+                      "offersEnabled": true,
+                    },
+                  "currentSubscription":
+                    {
+                      "plan":
+                        {
+                          "id": 2,
+                          "name": "Professional",
+                          "price": 399,
+                          "maxStaff": 10,
+                          "maxServices": 50,
+                          "loyaltyEnabled": true,
+                          "offersEnabled": true,
                         },
-                        "service": {
-                            "id": 2,
-                            "name": "Swedish Massage"
-                        },
-                        "staff": {
-                            "id": 7,
-                            "name": "Mazen Tamer"
-                        },
-                        "appointmentId": 12
-                    }
-                ]
-            }
+                      "isSubscriptionActive": true,
+                      "subscriptionStartedAt": "2026-05-01T10:00:00Z",
+                    },
+                  "average_rating": 4.8,
+                  "total_reviews": 24,
+                  "bookingSettings": { "allowCancellationBeforeHours": 24 },
+                  "notificationSettings":
+                    {
+                      "bookingNotificationsEnabled": true,
+                      "marketingNotificationsEnabled": false,
+                    },
+                  "branchAvailability":
+                    [
+                      {
+                        "id": 1,
+                        "dayOfWeek": 1,
+                        "startTime": "09:00",
+                        "endTime": "17:00",
+                        "status": "OPEN",
+                      },
+                    ],
+                },
+              "reviews":
+                [
+                  {
+                    "id": 15,
+                    "rating": 5,
+                    "comment": "Amazing experience!",
+                    "createdAt": "2026-05-29T14:30:00.000Z",
+                    "reviewer":
+                      { "name": "Abdo Khalil", "phone": "01000000001" },
+                    "service": { "id": 2, "name": "Swedish Massage" },
+                    "staff": { "id": 7, "name": "Mazen Tamer" },
+                    "appointmentId": 12,
+                  },
+                ],
+            },
         }
     SuperAdminBranchDetailsResponse:
       value:
         {
-            "status": 200,
-            "error": false,
-            "message": "Branch details fetched successfully.",
-            "data": {
-                "id": 1,
-                "userId": 5,
-                "ownerName": "Mahmoud Ibrahim",
-                "businessName": "Hassan Beauty Salon",
-                "email": "mahmoud.ibrahim@booklyx.com",
-                "category": "SPA",
-                "description": "Premium beauty and skincare services.",
-                "commercialRegisterNumber": "CR-2026-001",
-                "taxId": "TAX-2026-001",
-                "city": "Cairo",
-                "district": "Nasr City",
-                "address": "12 Makram Ebeid Street",
-                "latitude": 30.0626,
-                "longitude": 31.3368,
-                "status": "PENDING_APPROVAL",
-                "emailVerified": true,
-                "phoneVerified": true,
-                "createdAt": "2026-04-09T09:45:00.000Z",
-                "updatedAt": "2026-04-09T10:20:00.000Z"
-            }
+          "status": 200,
+          "error": false,
+          "message": "Branch details fetched successfully.",
+          "data":
+            {
+              "id": 1,
+              "userId": 5,
+              "ownerName": "Mahmoud Ibrahim",
+              "businessName": "Hassan Beauty Salon",
+              "email": "mahmoud.ibrahim@booklyx.com",
+              "category": "SPA",
+              "description": "Premium beauty and skincare services.",
+              "commercialRegisterNumber": "CR-2026-001",
+              "taxId": "TAX-2026-001",
+              "city": "Cairo",
+              "district": "Nasr City",
+              "address": "12 Makram Ebeid Street",
+              "latitude": 30.0626,
+              "longitude": 31.3368,
+              "status": "PENDING_APPROVAL",
+              "emailVerified": true,
+              "phoneVerified": true,
+              "createdAt": "2026-04-09T09:45:00.000Z",
+              "updatedAt": "2026-04-09T10:20:00.000Z",
+            },
         }
 
     RegisterClientRequest:
@@ -3895,7 +3903,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
-  '/client/branches/{id}/profile':
+  "/client/branches/{id}/profile":
     get:
       tags: [Client/Discovery]
       summary: Fetch public branch profile
@@ -3942,7 +3950,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  '/client/branches/{id}/services':
+  "/client/branches/{id}/services":
     get:
       tags: [Client/Discovery]
       summary: List branch services
@@ -3986,7 +3994,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  '/client/services/{id}/staff':
+  "/client/services/{id}/staff":
     get:
       tags: [Client/Discovery]
       summary: List staff by service
@@ -4029,7 +4037,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  '/client/staff/{id}/profile':
+  "/client/staff/{id}/profile":
     get:
       tags: [Client/Discovery]
       summary: Get staff public profile
@@ -4073,7 +4081,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  '/client/staff/{id}/availability/days':
+  "/client/staff/{id}/availability/days":
     get:
       tags: [Client/Discovery]
       summary: Calculate available days for staff
@@ -4124,7 +4132,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  '/client/staff/{id}/availability/slots':
+  "/client/staff/{id}/availability/slots":
     get:
       tags: [Client/Discovery]
       summary: Calculate available time slots for staff on Date
@@ -4248,7 +4256,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
-  '/client/appointments/{id}/confirm-payment':
+  "/client/appointments/{id}/confirm-payment":
     post:
       tags: [Client/Booking]
       summary: Process Fake Payment and Confirm Booking
@@ -4342,7 +4350,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
-  '/client/appointments/{id}':
+  "/client/appointments/{id}":
     get:
       tags: [Client/Booking]
       summary: Fetch Booking Details
@@ -4392,7 +4400,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  '/client/appointments/{id}/cancel':
+  "/client/appointments/{id}/cancel":
     post:
       tags: [Client/Booking]
       summary: Cancel Appointment
@@ -4438,7 +4446,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  '/client/favourites/branches/{id}':
+  "/client/favourites/branches/{id}":
     post:
       tags: [Client/Favourites]
       summary: Add Favorite Branch
@@ -4516,7 +4524,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  '/client/favourites/staff/{id}':
+  "/client/favourites/staff/{id}":
     post:
       tags: [Client/Favourites]
       summary: Add Favorite Staff
@@ -6751,7 +6759,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
-  '/branch-admin/finance/payments/{id}/refund':
+  "/branch-admin/finance/payments/{id}/refund":
     post:
       tags: [Branch_admin/Finance]
       summary: Refund booking payment
@@ -7793,7 +7801,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  /offers:
+  /branch-admin/offers:
     post:
       tags: [Branch_admin/Offers]
       summary: Create offer
@@ -7807,7 +7815,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               required:
@@ -7822,29 +7830,42 @@ paths:
               properties:
                 title:
                   type: string
+                  example: Weekend Offer
                 description:
                   type: string
                   nullable: true
+                  example: 20 percent discount this weekend
+                image:
+                  type: string
+                  format: binary
+                  nullable: true
+                  description: "Image file upload (e.g. PNG/JPG)"
                 discountType:
                   type: string
                   enum: [PERCENTAGE, FIXED]
+                  example: PERCENTAGE
                 discountValue:
                   type: number
+                  example: 20
                 startDate:
                   type: string
                   format: date-time
+                  example: "2026-04-24T00:00:00.000Z"
                 endDate:
                   type: string
                   format: date-time
+                  example: "2026-04-26T23:59:59.000Z"
                 usageLimit:
                   type: integer
                   minimum: 1
                   nullable: true
+                  example: 100
                 serviceIds:
                   type: array
                   items:
                     type: integer
                     minimum: 1
+                  example: [1, 2]
             examples:
               default:
                 value:
@@ -7954,7 +7975,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
-  /offers/{id}:
+  /branch-admin/offers/{id}:
     put:
       tags: [Branch_admin/Offers]
       summary: Update offer by id
@@ -7974,37 +7995,51 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               properties:
                 title:
                   type: string
+                  example: Updated Weekend Offer
                 description:
                   type: string
                   nullable: true
+                  example: 25 percent discount this weekend
+                image:
+                  type: string
+                  format: binary
+                  nullable: true
+                  description: "New image file upload"
                 discountType:
                   type: string
                   enum: [PERCENTAGE, FIXED]
+                  example: PERCENTAGE
                 discountValue:
                   type: number
+                  example: 25
                 startDate:
                   type: string
                   format: date-time
+                  example: "2026-04-24T00:00:00.000Z"
                 endDate:
                   type: string
                   format: date-time
+                  example: "2026-04-26T23:59:59.000Z"
                 usageLimit:
                   type: integer
                   minimum: 1
                   nullable: true
+                  example: 150
                 isActive:
                   type: boolean
+                  example: true
                 serviceIds:
                   type: array
                   items:
                     type: integer
                     minimum: 1
+                  example: [1, 2, 3]
             examples:
               default:
                 value:
@@ -8095,7 +8130,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  /offers/{id}/toggle:
+  /branch-admin/offers/{id}/toggle:
     patch:
       tags: [Branch_admin/Offers]
       summary: Toggle offer active state

@@ -1,128 +1,18 @@
 import { Router } from "express";
-import { Role } from "../../generated/prisma/client.js";
-import { authenticate, authorize } from "../../middleware/authenticate.js";
-import {
-  addServiceHandler,
-  completeAppointmentHandler,
-  createAvailabilityHandler,
-  deleteAvailabilityHandler,
-  getAppointmentsDetailsHandler,
-  getAppointmentsHandler,
-  getAvailableSlotsHandler,
-  getIncomeStatsHandler,
-  getProfileHandler,
-  getScheduleHandler,
-  listAvailabilityHandler,
-  listServicesHandler,
-  startAppointmentHandler,
-  updateAvailabilityHandler,
-} from "./staff.controller.js";
+import profileRouter from "./profile/profile.routes.js";
+import scheduleRouter from "./schedule/schedule.routes.js";
+import appointmentsRouter from "./appointments/appointments.routes.js";
+import incomeRouter from "./income/income.routes.js";
+import servicesRouter from "./services/services.routes.js";
+import availabilityRouter from "./availability/availability.routes.js";
 
 const staffRouter = Router();
 
-// ─── Profile ───────
-staffRouter.get(
-  "/profile",
-  authenticate,
-  authorize(Role.staff),
-  getProfileHandler,
-);
-
-// ─── Schedule ──────
-staffRouter.get(
-  "/schedule",
-  authenticate,
-  authorize(Role.staff),
-  getScheduleHandler,
-);
-
-// ─── Appointments ──────
-staffRouter.get(
-  "/appointments",
-  authenticate,
-  authorize(Role.staff),
-  getAppointmentsHandler,
-);
-
-staffRouter.get(
-  "/appointments/:id",
-  authenticate,
-  authorize(Role.staff),
-  getAppointmentsDetailsHandler,
-);
-
-staffRouter.patch(
-  "/appointments/:appointmentId/start",
-  authenticate,
-  authorize(Role.staff),
-  startAppointmentHandler,
-);
-
-staffRouter.patch(
-  "/appointments/:appointmentId/complete",
-  authenticate,
-  authorize(Role.staff),
-  completeAppointmentHandler,
-);
-
-// ─── Income ───────
-staffRouter.get(
-  "/income",
-  authenticate,
-  authorize(Role.staff),
-  getIncomeStatsHandler,
-);
-
-// ─── Services ──────
-staffRouter.get(
-  "/services",
-  authenticate,
-  authorize(Role.staff),
-  listServicesHandler,
-);
-
-staffRouter.post(
-  "/services",
-  authenticate,
-  authorize(Role.staff),
-  addServiceHandler,
-);
-
-// ─── Availability ─
-staffRouter.get(
-  "/availability",
-  authenticate,
-  authorize(Role.staff),
-  listAvailabilityHandler,
-);
-
-staffRouter.post(
-  "/availability",
-  authenticate,
-  authorize(Role.staff),
-  createAvailabilityHandler,
-);
-
-staffRouter.put(
-  "/availability/:availabilityId",
-  authenticate,
-  authorize(Role.staff),
-  updateAvailabilityHandler,
-);
-
-staffRouter.delete(
-  "/availability/:availabilityId",
-  authenticate,
-  authorize(Role.staff),
-  deleteAvailabilityHandler,
-);
-
-// ─── Available Slots ──────────────────────────────────────────────────
-staffRouter.get(
-  "/available-slots",
-  authenticate,
-  authorize(Role.staff),
-  getAvailableSlotsHandler,
-);
+staffRouter.use("/", profileRouter);
+staffRouter.use("/", scheduleRouter);
+staffRouter.use("/", appointmentsRouter);
+staffRouter.use("/", incomeRouter);
+staffRouter.use("/", servicesRouter);
+staffRouter.use("/", availabilityRouter);
 
 export default staffRouter;

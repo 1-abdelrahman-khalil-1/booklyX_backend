@@ -3,7 +3,7 @@ import { BusinessCategory } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
 import { createValidationInputValidator } from "../../lib/validation/helpers.js";
 import { zId, zIsoDate } from "../../lib/validation/primitives.js";
-import { ClientValidationError } from "./client.service.js";
+import { ClientValidationError } from "./errors.js";
 
 // Validation Errors
 export { ClientValidationError };
@@ -26,7 +26,7 @@ export const discoverySearchSchema = z.object({
 export const homeDashboardQuerySchema = z.object({
   lat: z.coerce.number().min(-90).max(90).optional(),
   lng: z.coerce.number().min(-180).max(180).optional(),
-  radius: z.coerce.number().min(1).max(50).optional().default(5),
+  radius: z.coerce.number().min(1).max(50).optional().default(20),
 });
 
 // 2. Staff Availability Slots Validation

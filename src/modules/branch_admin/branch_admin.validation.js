@@ -1,22 +1,22 @@
 import { z } from "zod";
 import {
-  AppointmentStatus,
-  AvailabilityStatus,
-  BusinessCategory,
-  PaymentStatus,
-  ServiceApprovalStatus,
-  StaffRole,
-  VerificationType,
+    AppointmentStatus,
+    AvailabilityStatus,
+    BusinessCategory,
+    PaymentStatus,
+    ServiceApprovalStatus,
+    StaffRole,
+    VerificationType,
 } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
 import {
-  createValidationInputValidator,
-  requireAtLeastOneField,
-  validatePasswordChange,
-  validateTimeRange,
+    createValidationInputValidator,
+    requireAtLeastOneField,
+    validatePasswordChange,
+    validateTimeRange,
 } from "../../lib/validation/helpers.js";
 import { zEmail, zId, zImageUrl, zIsoDate, zPassword, zPhone } from "../../lib/validation/primitives.js";
-import { BranchAdminValidationError } from "./branch_admin.service.js";
+import { BranchAdminValidationError } from "./errors.js";
 
 export const applySchema = z.object({
   planId: zId,

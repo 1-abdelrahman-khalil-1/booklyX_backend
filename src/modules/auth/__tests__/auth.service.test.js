@@ -1,10 +1,10 @@
 import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    jest,
 } from "@jest/globals";
 import { Role, UserStatus } from "../../../generated/prisma/client.js";
 jest.unstable_mockModule("../../../lib/prisma.js", () => ({
@@ -47,10 +47,11 @@ const {
   EmailNotVerifiedError,
   InactiveUserError,
   InvalidCredentialsError,
-  login,
   PhoneNotVerifiedError,
   UserNotFound,
-} = await import("../auth.service.js");
+} = await import("../errors.js");
+
+const { login } = await import("../session/session.service.js");
 
 // Mock process.env
 const originalEnv = process.env;

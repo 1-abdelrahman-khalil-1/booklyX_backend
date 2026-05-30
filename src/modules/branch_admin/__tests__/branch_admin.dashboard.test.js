@@ -1,31 +1,25 @@
 import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    jest
 } from "@jest/globals";
 import {
-  AppointmentStatus,
-  BranchStatus,
-  PaymentStatus,
-  ServiceApprovalStatus,
+    AppointmentStatus,
+    BranchStatus,
+    PaymentStatus
 } from "../../../generated/prisma/client.js";
 import prisma from "../../../lib/prisma.js";
 import {
-  getBranchDashboardStats,
-  getRevenueChartData,
-  getRecentBookings,
-  getTopServices,
-  getRecentTransactions,
-  getBranchFinanceStats,
-  listFinancePayments,
-  processBookingPaymentRefund,
-  exportFinanceReport,
-  PaymentAlreadyRefundedError,
-  PaymentNotPaidError,
-} from "../branch_admin.service.js";
+    getBranchDashboardStats,
+    getRecentBookings,
+    getRevenueChartData,
+    getTopServices
+} from "../analytics/analytics.service.js";
+import { PaymentAlreadyRefundedError, PaymentNotPaidError } from "../errors.js";
+import { getBranchFinanceStats, processBookingPaymentRefund } from "../finance/finance.service.js";
 
 describe("Branch Admin Service - Dashboard & Finance", () => {
   const branchAdminUserId = 1;

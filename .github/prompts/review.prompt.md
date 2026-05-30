@@ -178,18 +178,28 @@ If a single file exceeds 300 lines:
 
 ---
 
-### 4.3 Architecture
+### 4.3 Architecture & Directory Structure (Modular Feature-Based Layout)
 
 Expected:
+1. **Directory Layout**: Each module (e.g. `client`, `staff`, `auth`, `branch_admin`) must follow a strict modular structure. Monolithic files at the root of a module (like `client.controller.js`, `client.service.js`) are strictly forbidden.
+   Each folder inside a module must represent a single cohesive feature (domain) and contain its own:
+   - `<feature>.routes.js`
+   - `<feature>.controller.js`
+   - `<feature>.service.js`
+   - `<feature>.validation.js` (optional/required if validating input)
+   
+2. **Main Router**: The module's main router file (`src/modules/<module>/<module>.routes.js`) must ONLY import the feature sub-routers and mount them using `.use()`. No controller handlers should be imported or mounted directly in the main router file.
 
-```
-controller → service → repository
-```
+3. **Layer Separation**:
+   - `routes` -> handles HTTP request mapping, auth middleware, and multer file upload integration.
+   - `controller` -> handles input validation schema parsing, calling service functions, translating response keys using `t()`, and formatting/returning JSON responses using standard helpers.
+   - `service` -> handles all business logic, database queries (Prisma), transactional processes, and integrations. Must be completely independent of HTTP context (no `req`, `res`, or Express-specific objects).
 
 ❌ ممنوع:
+- Global/root module barrel files like `<module>.controller.js` or `<module>.service.js`.
+- Controller files containing direct business logic or raw database queries.
+- Service files handling Express request/response payloads or direct HTTP calls.
 
-* controller فيه logic
-* service فيه HTTP
 
 ---
 
@@ -446,8 +456,9 @@ const logoUrl  = req.files?.logo?.[0]?.path ?? body.logoUrl ?? null;  // named f
    a. The requestBody `content` type is `multipart/form-data` (NOT `application/json`).
    b. Each uploaded field (e.g. `logo`, `image`, `taxCertificate`) appears in the schema with `type: string` and `format: binary`.
    c. Any non-file fields sent alongside the upload (text, numbers, IDs) are also listed in the same multipart schema.
+   d. EVERY property inside the multipart schema (both file and non-file fields) MUST have an explicit `example` or `description` providing a sample value.
 
-If any of (a), (b), or (c) is missing or wrong → FLAG as 🟠 Major and provide the corrected YAML snippet.
+If any of (a), (b), (c), or (d) is missing or wrong → FLAG as 🟠 Major and provide the corrected YAML snippet.
 
 **Fix template for missing/wrong OpenAPI multipart documentation:**
 ```yaml
@@ -464,9 +475,11 @@ requestBody:
           logo:                # file field
             type: string
             format: binary
+            description: "Image file upload for logo"
           document:            # another file field
             type: string
             format: binary
+            description: "PDF/Image for document"
 ```
 
 #### Upload Middleware Reference (project-specific)

@@ -41,6 +41,51 @@ async function resetSeededAppointmentsAndReviews(seedClientEmails) {
   });
 }
 
+/**
+ * Find the first currently valid offer for a service (if any).
+ * Mirrors the eligibility rules in getValidOffersForService.
+ */
+async function findActiveOfferForService(serviceId) {
+  const now = new Date();
+  const link = await prisma.offerService.findFirst({
+    where: {
+      serviceId,
+      offer: {
+        isActive: true,
+        startDate: { lte: now },
+        endDate: { gte: now },
+      },
+    },
+    select: {
+      offer: {
+        select: {
+          id: true,
+          discountType: true,
+          discountValue: true,
+          usageLimit: true,
+          usedCount: true,
+        },
+      },
+    },
+  });
+  if (!link) return null;
+  const { offer } = link;
+  // Respect usage limit
+  if (offer.usageLimit !== null && offer.usedCount >= offer.usageLimit) return null;
+  return offer;
+}
+
+function resolveDiscount(price, offer) {
+  if (!offer) return { discount: 0, finalAmount: price };
+  const discount = offer.discountType === "PERCENTAGE"
+    ? Math.min(price, price * (offer.discountValue / 100))
+    : Math.min(price, offer.discountValue);
+  return {
+    discount: Number(discount.toFixed(2)),
+    finalAmount: Number((price - discount).toFixed(2)),
+  };
+}
+
 export async function seedAppointments(seedClientEmails, seedStaffEmails) {
   await resetSeededAppointmentsAndReviews(seedClientEmails);
 
@@ -99,7 +144,34 @@ export async function seedAppointments(seedClientEmails, seedStaffEmails) {
 
     // Seed corresponding BookingPayment record for every appointment
     const staffService = staffServiceMap.get(seed.staffId);
-    const amount = staffService ? Math.round(staffService.service.price) : 150;
+    const basePrice = staffService ? Math.round(staffService.service.price) : 150;
+
+    // Apply an offer to paid appointments so the demo data reflects the new pricing fields
+    const isPaid =
+      seed.status === AppointmentStatus.COMPLETED ||
+      seed.status === AppointmentStatus.CONFIRMED ||
+      seed.status === AppointmentStatus.IN_PROGRESS ||
+      seed.status === AppointmentStatus.CANCELED;
+
+    let appliedOfferId = null;
+    let discountAmount = 0;
+    let finalAmount = basePrice;
+
+    if (isPaid && staffService) {
+      const offer = await findActiveOfferForService(seed.serviceId);
+      if (offer) {
+        const resolved = resolveDiscount(basePrice, offer);
+        discountAmount = resolved.discount;
+        finalAmount = resolved.finalAmount;
+        appliedOfferId = offer.id;
+
+        // Keep usedCount consistent with the number of seeded paid appointments
+        await prisma.offer.update({
+          where: { id: offer.id },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
+    }
 
     let paymentStatus = "PENDING";
     let paidAt = null;
@@ -120,9 +192,10 @@ export async function seedAppointments(seedClientEmails, seedStaffEmails) {
       data: {
         branchId: seed.branchId,
         appointmentId: appointment.id,
-        amount,
-        originalAmount: amount,
-        discountAmount: 0,
+        amount: finalAmount,
+        originalAmount: basePrice,
+        discountAmount,
+        appliedOfferId,
         status: paymentStatus,
         paidAt,
       },

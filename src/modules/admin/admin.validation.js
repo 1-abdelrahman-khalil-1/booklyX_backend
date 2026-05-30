@@ -2,7 +2,7 @@ import { z } from "zod";
 import { tr } from "../../lib/i18n/index.js";
 import { createValidationInputValidator } from "../../lib/validation/helpers.js";
 import { zIdParamSchema } from "../../lib/validation/primitives.js";
-import { AdminValidationError } from "./admin.service.js";
+import { AdminValidationError } from "./errors.js";
 
 export const validateAdminInput = createValidationInputValidator(AdminValidationError);
 

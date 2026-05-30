@@ -1,8 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
-import prisma from "../../../lib/prisma.js";
-import * as staffService from "../staff.service.js";
 
-jest.mock("../../../lib/prisma.js");
+const prisma = {};
+
+await jest.unstable_mockModule("../../../lib/prisma.js", () => ({
+  default: prisma,
+}));
+
+const profileService = await import("../profile/profile.service.js");
+const scheduleService = await import("../schedule/schedule.service.js");
+const appointmentsService = await import("../appointments/appointments.service.js");
+const incomeService = await import("../income/income.service.js");
+const servicesService = await import("../services/services.service.js");
+const availabilityService = await import("../availability/availability.service.js");
+
+const staffService = {
+  ...profileService,
+  ...scheduleService,
+  ...appointmentsService,
+  ...incomeService,
+  ...servicesService,
+  ...availabilityService,
+};
 
 // Setup default mock structure for prisma
 beforeEach(() => {

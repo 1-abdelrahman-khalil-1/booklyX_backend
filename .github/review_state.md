@@ -124,3 +124,13 @@ Most previously reported code issues are fixed and should not be re-reviewed unl
 | src/modules/branch_admin/branch_admin.service.js | ✅ Clean | 0 | 2026-05-29 |
 | src/modules/branch_admin/branch_admin.validation.js | ✅ Clean | 0 | 2026-05-29 |
 | src/modules/branch_admin/branch_admin.routes.js | ✅ Clean | 0 | 2026-05-29 |
+## Review — 2026-05-30
+
+| File | Status | Issues Count | Last Reviewed |
+|------|--------|-------------|--------------|
+| src/modules/offers/offers.routes.js | ✅ Clean | 0 | 2026-05-30 |
+| src/modules/offers/offers.controller.js | ⚠️ Has Issues | 1 | 2026-05-30 |
+| src/modules/offers/offers.service.js | ⚠️ Has Issues | 3 | 2026-05-30 |
+| src/modules/offers/offers.validation.js | ⚠️ Has Issues | 1 | 2026-05-30 |
+| src/modules/offers/__tests__/offers.service.test.js | ⚠️ Has Issues | 1 | 2026-05-30 |
+| openapi.yaml (Offer schema + endpoints) | ⚠️ Has Issues | 1 | 2026-05-30 |

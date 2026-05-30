@@ -1,9 +1,27 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
-import prisma from "../../../lib/prisma.js";
 import { Role } from "../../../generated/prisma/client.js";
-import * as clientService from "../client.service.js";
 
-jest.mock("../../../lib/prisma.js");
+const prisma = {};
+
+await jest.unstable_mockModule("../../../lib/prisma.js", () => ({
+  default: prisma,
+}));
+
+const dashboardService = await import("../dashboard/dashboard.service.js");
+const discoveryService = await import("../discovery/discovery.service.js");
+const branchesService = await import("../branches/branches.service.js");
+const staffService = await import("../staff/staff.service.js");
+const appointmentsService = await import("../appointments/appointments.service.js");
+const favouritesService = await import("../favourites/favourites.service.js");
+
+const clientService = {
+  ...dashboardService,
+  ...discoveryService,
+  ...branchesService,
+  ...staffService,
+  ...appointmentsService,
+  ...favouritesService,
+};
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -31,6 +49,7 @@ beforeEach(() => {
 
   prisma.offer = {
     findMany: jest.fn(),
+    findUnique: jest.fn(),
     update: jest.fn(),
   };
 
@@ -71,6 +90,7 @@ beforeEach(() => {
   };
 
   prisma.$queryRaw = jest.fn();
+  prisma.$executeRaw = jest.fn().mockResolvedValue(1); // default: 1 row affected = success
   prisma.$transaction = jest.fn((cb) => {
     if (typeof cb === "function") {
       return cb(prisma);
@@ -237,6 +257,7 @@ describe("Client Service", () => {
       );
 
       expect(result.appointment).toHaveProperty("status", "PENDING");
+      expect(result.appliedOffer).toBeNull();
       expect(prisma.appointment.create).toHaveBeenCalled();
 
       const paymentCall = prisma.bookingPayment.create.mock.calls[0][0].data;
@@ -277,7 +298,7 @@ describe("Client Service", () => {
       prisma.bookingPayment.create.mockResolvedValueOnce({ id: 22, status: "PENDING", amount: 240 });
 
       const targetDate = new Date(Date.now() + 1000 * 60 * 60 * 3);
-      await clientService.reserveAppointment(
+      const result = await clientService.reserveAppointment(
         { serviceId: 15, staffId: 5, scheduledAt: targetDate.toISOString() },
         authUser
       );
@@ -287,12 +308,20 @@ describe("Client Service", () => {
       expect(paymentCall.originalAmount).toBe(300);
       expect(paymentCall.discountAmount).toBe(60);
       expect(paymentCall.appliedOfferId).toBe(7);
+
+      // appliedOffer should be included in the reserve response
+      expect(result.appliedOffer).toMatchObject({
+        id: 7,
+        title: "20% Summer Sale",
+        discountType: "PERCENTAGE",
+        discountValue: 20,
+      });
     });
   });
 
   // --- Payment Confirmation Engine ---
   describe("confirmAppointmentPayment", () => {
-    it("should confirm the appointment and increment offer usedCount if offer was applied", async () => {
+    it("should confirm the appointment and atomically increment offer usedCount via raw SQL", async () => {
       prisma.client.findUnique.mockResolvedValueOnce(mockClient);
       prisma.appointment.findUnique.mockResolvedValueOnce({
         id: 99,
@@ -303,21 +332,38 @@ describe("Client Service", () => {
 
       prisma.appointment.update.mockResolvedValueOnce({ id: 99, status: "CONFIRMED" });
       prisma.bookingPayment.update.mockResolvedValueOnce({ id: 22, status: "PAID" });
-      prisma.offer.update.mockResolvedValueOnce({ id: 7, usedCount: 1 });
+      // $executeRaw returns 1 (offer found and incremented)
+      prisma.$executeRaw.mockResolvedValueOnce(1);
 
       const result = await clientService.confirmAppointmentPayment(99, { success: true }, authUser);
 
       expect(result.appointment.status).toBe("CONFIRMED");
       expect(result.payment.status).toBe("PAID");
-      expect(prisma.offer.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 7 },
-          data: { usedCount: { increment: 1 } },
-        })
-      );
+      // Atomic raw SQL increment was called (not offer.update)
+      expect(prisma.$executeRaw).toHaveBeenCalled();
+      expect(prisma.offer.update).not.toHaveBeenCalled();
     });
 
-    it("should confirm the appointment without offer increment when no offer was applied", async () => {
+    it("should abort confirmation with 409 when offer is exhausted or expired at payment time", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.appointment.findUnique.mockResolvedValueOnce({
+        id: 99,
+        clientId: 1,
+        status: "PENDING",
+        bookingPayment: { id: 22, appliedOfferId: 7 },
+      });
+
+      prisma.appointment.update.mockResolvedValueOnce({ id: 99, status: "CONFIRMED" });
+      prisma.bookingPayment.update.mockResolvedValueOnce({ id: 22, status: "PAID" });
+      // $executeRaw returns 0 => offer expired or limit reached
+      prisma.$executeRaw.mockResolvedValueOnce(0);
+
+      await expect(
+        clientService.confirmAppointmentPayment(99, { success: true }, authUser)
+      ).rejects.toThrow();
+    });
+
+    it("should confirm the appointment without touching offers when no offer was applied", async () => {
       prisma.client.findUnique.mockResolvedValueOnce(mockClient);
       prisma.appointment.findUnique.mockResolvedValueOnce({
         id: 99,
@@ -333,10 +379,11 @@ describe("Client Service", () => {
 
       expect(result.appointment.status).toBe("CONFIRMED");
       expect(result.payment.status).toBe("PAID");
+      expect(prisma.$executeRaw).not.toHaveBeenCalled();
       expect(prisma.offer.update).not.toHaveBeenCalled();
     });
 
-    it("should leave the appointment pending and NOT increment offer usedCount if payment failed", async () => {
+    it("should leave the appointment pending and NOT touch offers if payment failed", async () => {
       prisma.client.findUnique.mockResolvedValueOnce(mockClient);
       prisma.appointment.findUnique.mockResolvedValueOnce({
         id: 99,
@@ -351,6 +398,7 @@ describe("Client Service", () => {
 
       expect(result.appointment.status).toBe("PENDING");
       expect(result.payment.status).toBe("FAILED");
+      expect(prisma.$executeRaw).not.toHaveBeenCalled();
       expect(prisma.offer.update).not.toHaveBeenCalled();
     });
   });
@@ -373,26 +421,96 @@ describe("Client Service", () => {
       await expect(clientService.cancelAppointment(99, authUser)).rejects.toThrow();
     });
 
-    it("should refund payment if cancelled outside the allowed window", async () => {
+    it("should refund payment and restore offer slot when offer is active and in-date", async () => {
       prisma.client.findUnique.mockResolvedValueOnce(mockClient);
 
-      // Scheduled 48 hours from now (outside 24 hours window)
       const scheduledAt = new Date(Date.now() + 1000 * 60 * 60 * 48);
       prisma.appointment.findUnique.mockResolvedValueOnce({
         id: 99,
         clientId: 1,
         scheduledAt,
         branch: { allowCancellationBeforeHours: 24 },
-        bookingPayment: { status: "PAID" },
+        bookingPayment: { id: 22, status: "PAID", appliedOfferId: 7 },
       });
 
       prisma.appointment.update.mockResolvedValueOnce({ id: 99, status: "CANCELED" });
       prisma.bookingPayment.update.mockResolvedValueOnce({ id: 22, status: "REFUNDED" });
+      // Offer is active, within validity, and has usedCount > 0
+      prisma.offer.findUnique.mockResolvedValueOnce({
+        isActive: true,
+        endDate: new Date(Date.now() + 86400000),
+        usedCount: 3,
+      });
+      prisma.offer.update.mockResolvedValueOnce({ id: 7, usedCount: 2 });
 
       const result = await clientService.cancelAppointment(99, authUser);
 
       expect(result.appointment.status).toBe("CANCELED");
       expect(result.payment.status).toBe("REFUNDED");
+      expect(prisma.offer.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 7 },
+          data: { usedCount: { decrement: 1 } },
+        })
+      );
+    });
+
+    it("should NOT restore offer slot when offer has already expired", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+
+      const scheduledAt = new Date(Date.now() + 1000 * 60 * 60 * 48);
+      prisma.appointment.findUnique.mockResolvedValueOnce({
+        id: 99,
+        clientId: 1,
+        scheduledAt,
+        branch: { allowCancellationBeforeHours: 24 },
+        bookingPayment: { id: 22, status: "PAID", appliedOfferId: 7 },
+      });
+
+      prisma.appointment.update.mockResolvedValueOnce({ id: 99, status: "CANCELED" });
+      prisma.bookingPayment.update.mockResolvedValueOnce({ id: 22, status: "REFUNDED" });
+      // Offer endDate is in the past
+      prisma.offer.findUnique.mockResolvedValueOnce({
+        isActive: true,
+        endDate: new Date(Date.now() - 1000),
+        usedCount: 1,
+      });
+
+      const result = await clientService.cancelAppointment(99, authUser);
+
+      expect(result.appointment.status).toBe("CANCELED");
+      expect(result.payment.status).toBe("REFUNDED");
+      // No decrement — offer has expired
+      expect(prisma.offer.update).not.toHaveBeenCalled();
+    });
+
+    it("should NOT restore offer slot when offer is manually disabled (isActive=false)", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+
+      const scheduledAt = new Date(Date.now() + 1000 * 60 * 60 * 48);
+      prisma.appointment.findUnique.mockResolvedValueOnce({
+        id: 99,
+        clientId: 1,
+        scheduledAt,
+        branch: { allowCancellationBeforeHours: 24 },
+        bookingPayment: { id: 22, status: "PAID", appliedOfferId: 7 },
+      });
+
+      prisma.appointment.update.mockResolvedValueOnce({ id: 99, status: "CANCELED" });
+      prisma.bookingPayment.update.mockResolvedValueOnce({ id: 22, status: "REFUNDED" });
+      // Offer is within date but manually disabled
+      prisma.offer.findUnique.mockResolvedValueOnce({
+        isActive: false,
+        endDate: new Date(Date.now() + 86400000),
+        usedCount: 1,
+      });
+
+      const result = await clientService.cancelAppointment(99, authUser);
+
+      expect(result.appointment.status).toBe("CANCELED");
+      expect(result.payment.status).toBe("REFUNDED");
+      // No decrement — offer is inactive
+      expect(prisma.offer.update).not.toHaveBeenCalled();
     });
   });
 

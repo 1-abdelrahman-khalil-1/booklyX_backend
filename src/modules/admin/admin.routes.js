@@ -1,21 +1,16 @@
 import { Router } from "express";
 import { Role } from "../../generated/prisma/client.js";
 import { authenticate, authorize } from "../../middleware/authenticate.js";
+import { getRecentActivitiesHandler } from "./activities/activities.controller.js";
+import { getPlatformAnalyticsHandler } from "./analytics/analytics.controller.js";
 import {
     approveBranchHandler,
-    approveServiceHandler,
     getBranchDetailsHandler,
-    getBranchPaymentDetailsHandler,
-    getPlatformAnalyticsHandler,
-    getRecentActivitiesHandler,
-    getServiceDetailsHandler,
-    listBranchPaymentsHandler,
     listBranchesHandler,
-    listServicesHandler,
-    refundBranchPaymentHandler,
     rejectBranchHandler,
-    rejectServiceHandler
-} from "./admin.controller.js";
+} from "./branches/branches.controller.js";
+import { getBranchPaymentDetailsHandler, listBranchPaymentsHandler, refundBranchPaymentHandler } from "./payments/payments.controller.js";
+import { approveServiceHandler, getServiceDetailsHandler, listServicesHandler, rejectServiceHandler } from "./services/services.controller.js";
 
 const adminRouter = Router();
 

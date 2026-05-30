@@ -1,25 +1,25 @@
 import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    jest
 } from "@jest/globals";
 import {
-  BranchStatus,
-  PaymentStatus,
-  ServiceApprovalStatus,
+    BranchStatus,
+    PaymentStatus,
+    ServiceApprovalStatus,
 } from "../../../generated/prisma/client.js";
 import prisma from "../../../lib/prisma.js";
+import { getRecentActivities } from "../activities/activities.service.js";
 import {
-  listBranchPayments,
-  refundBranchPayment,
-  getRecentActivities,
-  PaymentNotFoundError,
-  PaymentAlreadyRefundedError,
-  InvalidPaymentStatusForRefundError,
-} from "../admin.service.js";
+    InvalidPaymentStatusForRefundError,
+    listBranchPayments,
+    PaymentAlreadyRefundedError,
+    PaymentNotFoundError,
+    refundBranchPayment,
+} from "../payments/payments.service.js";
 
 describe("Admin Service - listBranchPayments", () => {
   beforeEach(() => {
@@ -80,8 +80,10 @@ describe("Admin Service - listBranchPayments", () => {
         where: expect.objectContaining({
           status: PaymentStatus.REFUNDED,
           branch: {
-            businessName: {
-              contains: "Clinic",
+            is: {
+              businessName: {
+                contains: "Clinic",
+              },
             },
           },
         }),

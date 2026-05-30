@@ -13,7 +13,7 @@ Before implementation, the agent must understand the system context.
   * Appointment
   * BookingPayment
   * StaffAvailability
-  * Review
+  * Review (only has pagination but others no)
   * Offer
 
 Platform expectations:

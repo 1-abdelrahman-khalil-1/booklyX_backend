@@ -1,38 +1,38 @@
 import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    jest
 } from "@jest/globals";
 import bcrypt from "bcrypt";
 import {
-  BranchStatus,
-  Role,
-  StaffRole,
-  UserStatus,
+    BranchStatus,
+    Role,
+    StaffRole,
+    UserStatus,
 } from "../../../generated/prisma/client.js";
 import prisma from "../../../lib/prisma.js";
 import { expectValidationError } from "../../../lib/validation/test-helpers.js";
 import {
-  activateSubscription,
-  BranchAdminValidationError,
-  BranchNotFoundError,
-  createStaff,
-  deleteStaff,
-  InactivePlanError,
-  InvalidPlanError,
-  StaffNotFoundError,
-  submitBranch,
-  SubscriptionActivationForbiddenError,
-  SubscriptionAlreadyActiveError,
-  updateBranchAdminProfile,
-} from "../branch_admin.service.js";
+    BranchAdminValidationError,
+    BranchNotFoundError,
+    InactivePlanError,
+    InvalidPlanError,
+    StaffNotFoundError,
+    SubscriptionActivationForbiddenError,
+    SubscriptionAlreadyActiveError,
+} from "../errors.js";
+
 import {
-  applySchema,
-  validateBranchAdminInput,
+    applySchema,
+    validateBranchAdminInput,
 } from "../branch_admin.validation.js";
+import { updateBranchAdminProfile } from "../profile/profile.service.js";
+import { submitBranch } from "../registration/registration.service.js";
+import { createStaff, deleteStaff } from "../staff/staff.service.js";
+import { activateSubscription } from "../subscription/subscription.service.js";
 
 const validBranchSubmissionData = {
   planId: 1,
@@ -546,7 +546,7 @@ describe("Branch Admin Service - updateStaff", () => {
     await expect(prisma.branchAdmin.findUnique).not.toHaveBeenCalled();
 
     // Call updateStaff
-    const { updateStaff } = await import("../branch_admin.service.js");
+    const { updateStaff } = await import("../staff/staff.service.js");
     const result = await updateStaff(updateData, branchAdminUserId);
 
     expect(userUpdateSpy).toHaveBeenCalledWith({

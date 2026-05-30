@@ -3,7 +3,7 @@ import { Platform, Role, VerificationType } from "../../generated/prisma/client.
 import { tr } from "../../lib/i18n/index.js";
 import { createValidationInputValidator } from "../../lib/validation/helpers.js";
 import { zEmail, zPassword, zPhone } from "../../lib/validation/primitives.js";
-import { AuthValidationError } from "./auth.service.js";
+import { AuthValidationError } from "./errors.js";
 export const loginSchema = z.object({
   email: zEmail(),
   role: z.enum([Role.client, Role.branch_admin, Role.super_admin, Role.staff], {

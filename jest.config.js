@@ -1,6 +1,8 @@
 export default {
   testEnvironment: "node",
-  transform: {},
+  transform: {
+    "^.+\\.jsx?$": ["babel-jest"],
+  },
   moduleDirectories: ["node_modules", "src"],
   testMatch: ["**/__tests__/**/*.js", "**/?(*.)+(spec|test).js"],
   testPathIgnorePatterns: ["/node_modules/", "/.history/"],
@@ -11,4 +13,5 @@ export default {
   ],
   coverageDirectory: "coverage",
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+  testRunner: "jest-circus/runner",
 };
