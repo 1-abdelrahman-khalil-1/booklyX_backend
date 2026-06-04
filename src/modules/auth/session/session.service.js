@@ -41,7 +41,7 @@ export async function login(data, platform) {
     if (!user.branchAdmin || user.branchAdmin.status !== BranchStatus.APPROVED) throw new BranchAdminNotApprovedError();
   }
 
-  if (!isPlatformAllowedForRole(user.role, platform)) throw new InvalidTokenError();
+  if (!isPlatformAllowedForRole(user.role, platform)) throw new PlatformAccessDeniedError();
 
   if (!user.emailVerified) throw new EmailNotVerifiedError(helpers.toSafeUser(user));
   if (!user.phoneVerified) throw new PhoneNotVerifiedError(helpers.toSafeUser(user));
