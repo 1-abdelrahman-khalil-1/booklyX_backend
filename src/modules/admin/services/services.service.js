@@ -1,21 +1,7 @@
 import { ServiceApprovalStatus } from "../../../generated/prisma/client.js";
 import { tr } from "../../../lib/i18n/index.js";
 import prisma from "../../../lib/prisma.js";
-import { AppError } from "../../../utils/AppError.js";
-
-export class ServiceNotFound extends AppError {
-  constructor() {
-    super(tr.SERVICE_NOT_FOUND, 404);
-    this.name = "ServiceNotFound";
-  }
-}
-
-export class ServiceNotPendingError extends AppError {
-  constructor() {
-    super(tr.SERVICE_IS_NOT_PENDING_APPROVAL, 409);
-    this.name = "ServiceNotPendingError";
-  }
-}
+import { ServiceNotPendingError, ServiceNotFound } from "../errors.js";
 
 export async function listServices(status) {
   return prisma.service.findMany({

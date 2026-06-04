@@ -2201,13 +2201,13 @@ components:
           "data":
             [
               {
-                "id": "act_001",
+                "id": 1,
                 "type": "BRANCH_APPLICATION",
                 "message": "New branch application from 'Glow Wellness Spa'",
                 "timestamp": "2026-05-29T10:15:30.000Z",
               },
               {
-                "id": "act_002",
+                "id": 2,
                 "type": "SUBSCRIPTION_RENEWAL",
                 "message": "Branch 'Hassan Beauty Salon' renewed 'Pro' plan",
                 "timestamp": "2026-05-29T08:30:00.000Z",
@@ -6914,7 +6914,7 @@ paths:
           $ref: "#/components/responses/NotFound"
 
   /admin/branches/{id}/approve:
-    post:
+    patch:
       tags: [Super_admin/Branches]
       summary: Approve pending branch
       description: Approve a branch only when status is PENDING_APPROVAL.
@@ -6955,7 +6955,7 @@ paths:
           $ref: "#/components/responses/NotFound"
 
   /admin/branches/{id}/reject:
-    post:
+    patch:
       tags: [Super_admin/Branches]
       summary: Reject pending branch
       description: Reject a branch only when status is PENDING_APPROVAL.
@@ -7205,6 +7205,39 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /admin/analytics/recent-activities:
+    get:
+      tags: [Super_admin/Analytics]
+      summary: Get recent activities
+      description: Returns recent platform activities.
+      operationId: getAdminAnalyticsRecentActivities
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      responses:
+        "200":
+          description: Recent platform activities fetched
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/AdminAnalyticsRecentActivitiesResponse"
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   /admin/payments:
     get:
       tags: [Super_admin/Payments]
@@ -7274,6 +7307,47 @@ paths:
                     properties:
                       data:
                         type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /admin/payments/{paymentId}/refund:
+    post:
+      tags: [Super_admin/Payments]
+      summary: Refund branch payment
+      description: Refund a branch subscription payment.
+      operationId: postAdminPaymentsByPaymentIdRefund
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Payment refunded successfully
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/AdminPaymentRefundResponse"
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -7711,7 +7785,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
 
   /admin/services/{id}/approve:
-    post:
+    patch:
       tags: [Super_admin/Services]
       summary: Approve pending service
       description: Approve pending service.
@@ -7752,7 +7826,7 @@ paths:
           $ref: "#/components/responses/NotFound"
 
   /admin/services/{id}/reject:
-    post:
+    patch:
       tags: [Super_admin/Services]
       summary: Reject pending service
       description: Reject pending service.
@@ -7840,6 +7914,11 @@ paths:
                   format: binary
                   nullable: true
                   description: "Image file upload (e.g. PNG/JPG)"
+                imageUrl:
+                  type: string
+                  format: uri
+                  nullable: true
+                  example: https://cdn.booklyx.com/offers/weekend-promo.png
                 discountType:
                   type: string
                   enum: [PERCENTAGE, FIXED]
@@ -8011,6 +8090,11 @@ paths:
                   format: binary
                   nullable: true
                   description: "New image file upload"
+                imageUrl:
+                  type: string
+                  format: uri
+                  nullable: true
+                  example: https://cdn.booklyx.com/offers/weekend-promo-updated.png
                 discountType:
                   type: string
                   enum: [PERCENTAGE, FIXED]

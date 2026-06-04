@@ -3,7 +3,7 @@ import { OfferDiscountType } from "../../../generated/prisma/client.js";
 import { tr } from "../../../lib/i18n/index.js";
 import { createValidationInputValidator, requireAtLeastOneField } from "../../../lib/validation/helpers.js";
 import { zId, zIsoDate } from "../../../lib/validation/primitives.js";
-import { OffersValidationError } from "./offers.service.js";
+import { OffersValidationError } from "../errors.js";
 
 export const createOfferSchema = z
   .object({

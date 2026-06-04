@@ -5,44 +5,15 @@ import {
 } from "../../../generated/prisma/client.js";
 import { tr } from "../../../lib/i18n/index.js";
 import prisma from "../../../lib/prisma.js";
-import { AppError } from "../../../utils/AppError.js";
 import { ensureOffersEnabled } from "../../../utils/subscriptionGuards.js";
+import {
+  OffersValidationError,
+  OfferNotFoundError,
+  BranchAdminNotFoundError,
+  OfferNotAvailableError,
+  OfferExpiredOrExhaustedError,
+} from "../errors.js";
 // Validation is now handled in offers.controller.js
-
-export class OffersValidationError extends AppError {
-  constructor(message, params) {
-    super(message, 400, params);
-    this.name = "OffersValidationError";
-  }
-}
-
-export class OfferNotFoundError extends AppError {
-  constructor() {
-    super(tr.OFFER_NOT_FOUND, 404);
-    this.name = "OfferNotFoundError";
-  }
-}
-
-export class BranchAdminNotFoundError extends AppError {
-  constructor() {
-    super(tr.BRANCH_NOT_FOUND, 404);
-    this.name = "BranchAdminNotFoundError";
-  }
-}
-
-export class OfferNotAvailableError extends AppError {
-  constructor() {
-    super(tr.OFFER_NOT_AVAILABLE, 409);
-    this.name = "OfferNotAvailableError";
-  }
-}
-
-export class OfferExpiredOrExhaustedError extends AppError {
-  constructor() {
-    super(tr.OFFER_EXPIRED_OR_EXHAUSTED, 409);
-    this.name = "OfferExpiredOrExhaustedError";
-  }
-}
 
 async function getApprovedBranchAdmin(branchAdminUserId) {
   const branchAdmin = await prisma.branchAdmin.findUnique({

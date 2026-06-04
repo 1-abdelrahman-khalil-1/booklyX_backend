@@ -1,29 +1,11 @@
 import { PaymentStatus } from "../../../generated/prisma/client.js";
-import { tr } from "../../../lib/i18n/index.js";
 import prisma from "../../../lib/prisma.js";
-import { AppError } from "../../../utils/AppError.js";
 import { toRangeWhere } from "../../../utils/period.js";
-
-export class PaymentNotFoundError extends AppError {
-  constructor() {
-    super(tr.PAYMENT_NOT_FOUND, 404);
-    this.name = "PaymentNotFoundError";
-  }
-}
-
-export class InvalidPaymentStatusForRefundError extends AppError {
-  constructor() {
-    super(tr.INVALID_PAYMENT_STATUS_FOR_REFUND, 400);
-    this.name = "InvalidPaymentStatusForRefundError";
-  }
-}
-
-export class PaymentAlreadyRefundedError extends AppError {
-  constructor() {
-    super(tr.PAYMENT_ALREADY_REFUNDED, 409);
-    this.name = "PaymentAlreadyRefundedError";
-  }
-}
+import {
+    InvalidPaymentStatusForRefundError,
+    PaymentAlreadyRefundedError,
+    PaymentNotFoundError,
+} from "../errors.js";
 
 /**
  * @param {{page?:number, limit?:number, status?:import("../../../generated/prisma/client.js").PaymentStatus, search?:string, period?:any}} [opts]

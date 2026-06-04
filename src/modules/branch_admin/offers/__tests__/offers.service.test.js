@@ -12,7 +12,10 @@ import {
 } from "../../../../generated/prisma/client.js";
 import prisma from "../../../../lib/prisma.js";
 import {
+    OfferNotFoundError,
     OffersValidationError,
+} from "../../errors.js";
+import {
     calculateBestOfferForService,
     createOffer,
     deleteOffer,
@@ -175,6 +178,44 @@ describe("Offers Service", () => {
       expect(result.id).toBe("offer-id");
       expect(result.title).toBe("New Title");
     });
+
+    it("should throw OfferNotFoundError if the offer does not exist or belongs to another branch", async () => {
+      jest.spyOn(prisma.offer, "findFirst").mockResolvedValue(null);
+
+      await expect(
+        updateOffer("non-existent-id", { title: "New Title" }, 77),
+      ).rejects.toThrow(OfferNotFoundError);
+    });
+
+    it("should throw OffersValidationError when updated discount percentage is more than 100", async () => {
+      jest.spyOn(prisma.offer, "findFirst").mockResolvedValue({
+        id: "offer-id",
+        title: "Old Title",
+        discountType: OfferDiscountType.PERCENTAGE,
+        discountValue: 10,
+        startDate: new Date("2026-04-01"),
+        endDate: new Date("2026-04-30"),
+      });
+
+      await expect(
+        updateOffer("offer-id", { discountValue: 120 }, 77),
+      ).rejects.toThrow(OffersValidationError);
+    });
+
+    it("should throw OffersValidationError when updated end date is before or equal to start date", async () => {
+      jest.spyOn(prisma.offer, "findFirst").mockResolvedValue({
+        id: "offer-id",
+        title: "Old Title",
+        discountType: OfferDiscountType.PERCENTAGE,
+        discountValue: 10,
+        startDate: new Date("2026-04-01"),
+        endDate: new Date("2026-04-30"),
+      });
+
+      await expect(
+        updateOffer("offer-id", { endDate: "2026-03-31" }, 77),
+      ).rejects.toThrow(OffersValidationError);
+    });
   });
 
   describe("toggleOffer", () => {
@@ -198,6 +239,14 @@ describe("Offers Service", () => {
       });
       expect(result.isActive).toBe(false);
     });
+
+    it("should throw OfferNotFoundError if the offer does not exist or belongs to another branch", async () => {
+      jest.spyOn(prisma.offer, "findFirst").mockResolvedValue(null);
+
+      await expect(
+        toggleOffer("non-existent-id", 77),
+      ).rejects.toThrow(OfferNotFoundError);
+    });
   });
 
   describe("deleteOffer", () => {
@@ -216,6 +265,14 @@ describe("Offers Service", () => {
         where: { id: "offer-id" },
       });
       expect(result.id).toBe("offer-id");
+    });
+
+    it("should throw OfferNotFoundError if the offer does not exist or belongs to another branch", async () => {
+      jest.spyOn(prisma.offer, "findFirst").mockResolvedValue(null);
+
+      await expect(
+        deleteOffer("non-existent-id", 77),
+      ).rejects.toThrow(OfferNotFoundError);
     });
   });
 

@@ -1,21 +1,7 @@
 import { BranchStatus } from "../../../generated/prisma/client.js";
 import { tr } from "../../../lib/i18n/index.js";
 import prisma from "../../../lib/prisma.js";
-import { AppError } from "../../../utils/AppError.js";
-
-export class BranchNotFound extends AppError {
-  constructor() {
-    super(tr.BRANCH_NOT_FOUND, 404);
-    this.name = "BranchNotFound";
-  }
-}
-
-export class BranchIsNotPendingError extends AppError {
-  constructor() {
-    super(tr.BRANCH_IS_NOT_PENDING_APPROVAL, 409);
-    this.name = "BranchIsNotPendingError";
-  }
-}
+import { BranchIsNotPendingError, BranchNotFound } from "../errors.js";
 
 export async function listBranches(status) {
   return prisma.branchAdmin.findMany({

@@ -2,15 +2,8 @@ import { z } from "zod";
 import { tr } from "../../lib/i18n/index.js";
 import { createValidationInputValidator } from "../../lib/validation/helpers.js";
 import { zImageUrl } from "../../lib/validation/primitives.js";
-import { AppError } from "../../utils/AppError.js";
 import { IncomeRangeValues } from "../../utils/enums.js";
-
-class StaffValidationError extends AppError {
-  constructor(message, statusCode = 400, params = {}) {
-    super(message, statusCode, params);
-    this.name = "StaffValidationError";
-  }
-}
+import { StaffValidationError } from "./errors.js";
 
 // ─── Schedule Query ──
 export const scheduleQuerySchema = z.object({

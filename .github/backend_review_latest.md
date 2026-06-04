@@ -1,19 +1,19 @@
-# Backend Code Review Report — Offers Module
+# Backend Code Review Report — Admin Module
 
 ## Summary
 
-- **Feature Module:** Offers (`src/modules/offers/`)
-- **Review Date:** 2026-05-30
-- **Files Reviewed:** 4 (`offers.routes.js`, `offers.controller.js`, `offers.service.js`, `offers.validation.js`) + `offers.service.test.js`
+- **Feature Module:** Admin (`src/modules/admin/`)
+- **Review Date:** 2026-06-04
+- **Files Reviewed:** 13 (`admin.routes.js`, `admin.validation.js`, `errors.js`, and the controller/service pairs for `activities`, `analytics`, `branches`, `payments`, `services`)
 - **Package versions:** Zod `^4.3.6`, Prisma `^6.16.3`, Express `^5.2.1`
 - **Workflow Reference:** `.github/ai_workflow.md`
 
 | Severity | Count |
 |----------|-------|
-| 🔴 Critical | 2 |
-| 🟠 Major | 1 |
+| 🔴 Critical | 1 |
+| 🟠 Major | 3 |
 | 🟡 Minor | 0 |
-| 🔵 Suggestion | 1 |
+| 🔵 Suggestion | 0 |
 
 ---
 
@@ -21,115 +21,57 @@
 
 | Severity | Issue No. | File | Issue | Workflow Ref | Current Code | Suggested Edit |
 |----------|-----------|------|-------|--------------|--------------|----------------|
-| 🔴 Critical | 1 | `offers.service.js:76-93` + `offers.service.js:109-141` | `imageUrl` field exists in the Prisma `Offer` model and is stored by the seed, but is **never written on `createOffer`**, **never written on `updateOffer`**, and **never included in `mapOfferWithServices`** response. The field is silently dropped on every write and every read. | Workflow §4.8 — Preserve existing data contracts; §7 AI Self-review — no business logic bypass | `mapOfferWithServices` omits `imageUrl`; `prisma.offer.create` has no `imageUrl` field | See fix below |
-| 🔴 Critical | 2 | `openapi.yaml:574-640` (Offer schema) + `openapi.yaml:7807-7858` (POST body) + `openapi.yaml:7974-8008` (PUT body) | `imageUrl` field is completely missing from (a) the `Offer` response schema, (b) the `POST /offers` request body, and (c) the `PUT /offers/{id}` request body in OpenAPI — despite existing in the DB schema. This causes a contract mismatch between the API and its documentation. | Workflow §7 Documentation — update OpenAPI when API changes; Review prompt §4.18 — Request/Response mismatch is 🟠 Major; §4.19 — missing field is 🔴 Critical when it's in the DB | `Offer` schema ends at `updatedAt`/`services`, no `imageUrl` property | See fix below |
-| 🟠 Major | 3 | `offers.service.js:289-313` | `listBranchOffers` returns **all offers with no pagination**. A branch with many offers will load them all in a single query — violates §8 Performance: "Use pagination for list endpoints." | Workflow §8 Performance — use pagination for list endpoints | `prisma.offer.findMany({ where: { branchId: ... }, orderBy: { createdAt: 'desc' } })` — no `take`/`skip` | Add `page`/`limit` query params in controller + `take`/`skip` in service |
-| 🟠 Major | 4 | `offers.service.test.js` | **`updateOffer`, `toggleOffer`, `deleteOffer`, and `listBranchOffers` have zero test coverage.** Only `createOffer`, `calculateBestOfferForService`, and `incrementOfferUsedCount` are tested. Critical paths like ownership validation on update/delete are untested. | Workflow §9 Testing — critical paths must be covered; Review prompt §4.11 — missing tests on critical paths is 🟠 Major | No `describe` blocks for `updateOffer`, `toggleOffer`, `deleteOffer`, `listBranchOffers` | Add test cases for each missing function (see suggestion below) |
-| 🔵 Suggestion | 5 | `offers.service.js:191-229` | `updateOffer` uses a transaction only when `serviceIds` are provided. When only scalar fields change (title, discountType, etc.) the update runs outside a transaction — acceptable today since it's a single write, but worth noting if the model grows. | Workflow §4.4 Transactions — use when multiple writes must succeed together | Transaction wrapped in `if (uniqueServiceIds)` conditional | Consider always wrapping in transaction for consistency, or document the intentional decision with a comment |
+| 🔴 Critical | 1 | `branches.service.js:94-101` | `approveBranch` updates the branch status to `APPROVED` but **never creates the associated `User` record** or links the `userId` in the DB. This completely breaks the branch admin login flow. | Workflow §4.6 — Visible branches requires active subscription and approved status; §5.15 — Business Rules Enforcement | `prisma.branchAdmin.update({ where: { id: branch.id }, data: { status: BranchStatus.APPROVED } })` | Wrap user creation and branch status update in a transaction (see fix below) |
+| 🟠 Major | 2 | `openapi.yaml` | The following endpoints are implemented in the routing layer (`admin.routes.js`) but are **completely missing from `openapi.yaml`**: <br>1. `GET /admin/analytics/recent-activities`<br>2. `POST /admin/payments/{paymentId}/refund` | Workflow §7 Documentation — update OpenAPI when API changes; Review prompt §5.17 — Missing endpoint is 🟠 Major | Endpoints are present in routes, but not declared in `openapi.yaml` | Document both endpoints in `openapi.yaml` with correct schemas, parameters, and examples |
+| 🟠 Major | 3 | `openapi.yaml:6916-6980` + `openapi.yaml:7713-7765` | **HTTP Method Mismatch**: The branch and service approval/rejection endpoints are defined as `POST` in `openapi.yaml`, but the code defines them as `PATCH` routes. | Review prompt §5.17 — Request/Response mismatch is 🟠 Major | OpenAPI has `post:` routes; `admin.routes.js` has `adminRouter.patch` | Align `openapi.yaml` routes to use `patch:` instead of `post:` for approval and rejection paths |
+| 🟠 Major | 4 | `admin.service.test.js` | **Critical admin service paths have zero test coverage.** The tests only cover `listBranchPayments`, `refundBranchPayment`, and `getRecentActivities`. `listBranches`, `getBranchDetails`, `approveBranch`, `rejectBranch`, `listServices`, `getServiceDetails`, `approveService`, `rejectService`, and `getPlatformAnalytics` are completely untested. | Workflow §9 Testing — critical paths must be covered; Review prompt §5.10 — missing tests on critical paths is 🟠 Major | No test coverage for branches, services, or analytics service layers | Add test cases for each of the missing service functions to `admin.service.test.js` |
 
 ---
 
 ## Issue Fixes
 
-### Fix #1 — Add `imageUrl` to service create/update/map
+### Fix #1 — Create User on Branch Approval
 
-**`offers.service.js` — `mapOfferWithServices`:**
+**`branches.service.js`:**
 ```js
-function mapOfferWithServices(offer) {
-  return {
-    id: offer.id,
-    title: offer.title,
-    description: offer.description,
-    imageUrl: offer.imageUrl ?? null,   // ← ADD
-    discountType: offer.discountType,
-    discountValue: offer.discountValue,
-    startDate: offer.startDate,
-    endDate: offer.endDate,
-    isActive: offer.isActive,
-    usageLimit: offer.usageLimit,
-    usedCount: offer.usedCount,
-    branchId: offer.branchId,
-    createdAt: offer.createdAt,
-    updatedAt: offer.updatedAt,
-    services: offer.services.map((link) => link.service),
-  };
+import { BranchStatus, Role, UserStatus } from "../../../generated/prisma/client.js";
+
+// ...
+
+export async function approveBranch(id) {
+  const branch = await prisma.branchAdmin.findUnique({ where: { id } });
+  if (!branch) throw new BranchNotFound();
+  if (branch.status !== BranchStatus.PENDING_APPROVAL) throw new BranchIsNotPendingError();
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Create the User record
+    const user = await tx.user.create({
+      data: {
+        name: branch.ownerName,
+        email: branch.email,
+        password: branch.passwordHash,
+        phone: branch.phone,
+        role: Role.branch_admin,
+        status: UserStatus.ACTIVE,
+        emailVerified: branch.emailVerified,
+        phoneVerified: branch.phoneVerified,
+      },
+    });
+
+    // 2. Link User and Approve Branch
+    await tx.branchAdmin.update({
+      where: { id: branch.id },
+      data: {
+        status: BranchStatus.APPROVED,
+        rejectionReason: null,
+        userId: user.id,
+      },
+    });
+  });
+
+  return { message: tr.BRANCH_APPROVED };
 }
 ```
-
-**`createOffer` — add `imageUrl` to Prisma create:**
-```js
-const offer = await prisma.offer.create({
-  data: {
-    branchId: branchAdmin.id,
-    title: data.title,
-    description: data.description,
-    imageUrl: data.imageUrl ?? null,   // ← ADD
-    discountType: data.discountType,
-    // ...
-  },
-  // ...
-});
-```
-
-**`updateOffer` — add `imageUrl` to Prisma update:**
-```js
-return tx.offer.update({
-  where: { id: existingOffer.id },
-  data: {
-    title: data.title ?? existingOffer.title,
-    description: data.description === undefined ? existingOffer.description : data.description,
-    imageUrl: data.imageUrl === undefined ? existingOffer.imageUrl : data.imageUrl,  // ← ADD
-    // ...
-  },
-  // ...
-});
-```
-
-**`offers.validation.js` — add `imageUrl` to both schemas:**
-```js
-// In createOfferSchema properties:
-imageUrl: z.string().url().nullable().optional(),
-
-// In updateOfferSchema properties:
-imageUrl: z.string().url().nullable().optional(),
-```
-
----
-
-### Fix #2 — Add `imageUrl` to OpenAPI
-
-**In `components/schemas/Offer` (after `description`):**
-```yaml
-imageUrl:
-  type: string
-  format: uri
-  nullable: true
-  example: https://cdn.booklyx.com/offers/weekend-promo.png
-```
-
-**In `POST /offers` requestBody schema properties:**
-```yaml
-imageUrl:
-  type: string
-  format: uri
-  nullable: true
-  example: https://cdn.booklyx.com/offers/weekend-promo.png
-```
-
-**In `PUT /offers/{id}` requestBody schema properties:**
-```yaml
-imageUrl:
-  type: string
-  format: uri
-  nullable: true
-  example: https://cdn.booklyx.com/offers/weekend-promo-updated.png
-```
-
----
-
-### Fix #3 — Paginate `listBranchOffers`
-
-*(Intentionally Ignored: User specified that pagination is only required for reviews, not for list endpoints like branch offers)*
 
 ---
 
@@ -137,32 +79,39 @@ imageUrl:
 
 | File | Status |
 |------|--------|
-| `src/modules/offers/offers.routes.js` | ✅ Clean (Fixed) |
-| `src/modules/offers/offers.controller.js` | ✅ Clean (Fixed) |
-| `src/modules/offers/offers.service.js` | ✅ Clean (Fixed, Issue #3 ignored intentionally) |
-| `src/modules/offers/offers.validation.js` | ✅ Clean (Fixed) |
-| `src/modules/offers/__tests__/offers.service.test.js` | ✅ Clean (Fixed) |
-| `openapi.yaml` (Offer schema + endpoints) | ✅ Clean (Fixed) |
+| `src/modules/admin/admin.routes.js` | ✅ Clean |
+| `src/modules/admin/admin.validation.js` | ✅ Clean |
+| `src/modules/admin/errors.js` | ✅ Clean |
+| `src/modules/admin/activities/activities.controller.js` | ✅ Clean |
+| `src/modules/admin/activities/activities.service.js` | ✅ Clean |
+| `src/modules/admin/analytics/analytics.controller.js` | ✅ Clean |
+| `src/modules/admin/analytics/analytics.service.js` | ✅ Clean |
+| `src/modules/admin/branches/branches.controller.js` | ✅ Clean |
+| `src/modules/admin/branches/branches.service.js` | ⚠️ Has Issues (Critical #1) |
+| `src/modules/admin/payments/payments.controller.js` | ✅ Clean |
+| `src/modules/admin/payments/payments.service.js` | ✅ Clean |
+| `src/modules/admin/services/services.controller.js` | ✅ Clean |
+| `src/modules/admin/services/services.service.js` | ✅ Clean |
+| `src/modules/admin/__tests__/admin.service.test.js` | ⚠️ Has Issues (Major #4) |
+| `openapi.yaml` (Admin section) | ⚠️ Has Issues (Major #2, Major #3) |
 
 ---
 
 ## Final Output
 
-- Files reviewed: 5 (+ OpenAPI section)
-- 🔴 Critical: 2
-- 🟠 Major: 2
+- Files reviewed: 14
+- 🔴 Critical: 1
+- 🟠 Major: 3
 - 🟡 Minor: 0
-- 🔵 Suggestions: 1
+- 🔵 Suggestions: 0
 
 ---
 
 ## Top 3 Issues
 
-1. **🔴 `imageUrl` silently dropped on every write and read** — The field exists in the DB and is populated by seed, but the service never persists it on create/update and never returns it in the response. Every offer image is lost.
-
-2. **🔴 OpenAPI contract mismatch on `imageUrl`** — `Offer` schema, POST request body, and PUT request body all lack `imageUrl`. Clients (mobile/web) have no way to know this field exists or how to send/receive it.
-
-3. **🟠 Zero test coverage for `updateOffer`, `toggleOffer`, `deleteOffer`, `listBranchOffers`** — Ownership validation (branchId check before delete/update) is the most security-critical path and it has no test whatsoever.
+1. **🔴 `approveBranch` does not create the associated `User` record** — When a branch is approved, its status is updated but no `User` is created. Since the login flow verifies that a matching `User` record with role `branch_admin` exists, approved branch admins are blocked from logging in.
+2. **🟠 OpenAPI Missing Endpoints** — The `/admin/analytics/recent-activities` (GET) and `/admin/payments/{paymentId}/refund` (POST) endpoints exist in code but are completely undocumented.
+3. **🟠 HTTP Method Mismatches** — OpenAPI defines approval/rejection endpoints as `POST` while the code implements them as `PATCH`.
 
 ---
 
@@ -170,9 +119,8 @@ imageUrl:
 
 ```
 Start = 10
--2 × 2 (🔴) = -4
--1 × 2 (🟠) = -2
--0.1 × 1 (🔵) = -0.1
+-2 × 1 (🔴) = -2
+-1 × 3 (🟠) = -3
 
-Final: 3.9/10
+Final: 5/10
 ```

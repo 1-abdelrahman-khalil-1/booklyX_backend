@@ -168,3 +168,38 @@ export class PaymentAlreadyRefundedError extends AppError {
     this.name = "PaymentAlreadyRefundedError";
   }
 }
+
+export class OffersValidationError extends AppError {
+  constructor(message, params) {
+    super(message, 400, params);
+    this.name = "OffersValidationError";
+  }
+}
+
+export class OfferNotFoundError extends AppError {
+  constructor() {
+    super(tr.OFFER_NOT_FOUND, 404);
+    this.name = "OfferNotFoundError";
+  }
+}
+
+export class BranchAdminNotFoundError extends AppError {
+  constructor() {
+    super(tr.BRANCH_NOT_FOUND, 404);
+    this.name = "BranchAdminNotFoundError";
+  }
+}
+
+export class OfferNotAvailableError extends AppError {
+  constructor() {
+    super(tr.OFFER_NOT_AVAILABLE, 409);
+    this.name = "OfferNotAvailableError";
+  }
+}
+
+export class OfferExpiredOrExhaustedError extends AppError {
+  constructor() {
+    super(tr.OFFER_EXPIRED_OR_EXHAUSTED, 409);
+    this.name = "OfferExpiredOrExhaustedError";
+  }
+}

@@ -14,12 +14,31 @@ import {
 import prisma from "../../../lib/prisma.js";
 import { getRecentActivities } from "../activities/activities.service.js";
 import {
-    InvalidPaymentStatusForRefundError,
     listBranchPayments,
-    PaymentAlreadyRefundedError,
-    PaymentNotFoundError,
     refundBranchPayment,
 } from "../payments/payments.service.js";
+import {
+    listBranches,
+    getBranchDetails,
+    approveBranch,
+    rejectBranch,
+} from "../branches/branches.service.js";
+import {
+    listServices,
+    getServiceDetails,
+    approveService,
+    rejectService,
+} from "../services/services.service.js";
+import { getPlatformAnalytics } from "../analytics/analytics.service.js";
+import {
+    BranchIsNotPendingError,
+    BranchNotFound,
+    InvalidPaymentStatusForRefundError,
+    PaymentAlreadyRefundedError,
+    PaymentNotFoundError,
+    ServiceNotPendingError,
+    ServiceNotFound,
+} from "../errors.js";
 
 describe("Admin Service - listBranchPayments", () => {
   beforeEach(() => {
@@ -218,5 +237,263 @@ describe("Admin Service - getRecentActivities", () => {
     expect(result[1].type).toBe("service_approved");
     expect(result[2].type).toBe("branch_approved");
     expect(result[3].type).toBe("new_branch_application");
+  });
+});
+
+describe("Admin Service - listBranches", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should list branches matching status or defaulting to PENDING_APPROVAL", async () => {
+    const mockBranches = [
+      { id: 1, businessName: "Branch A", ownerName: "Owner A", category: "SPA", city: "Cairo", logoUrl: null, status: BranchStatus.PENDING_APPROVAL, rejectionReason: null, createdAt: new Date() },
+    ];
+    jest.spyOn(prisma.branchAdmin, "findMany").mockResolvedValue(mockBranches);
+
+    const result = await listBranches();
+    expect(prisma.branchAdmin.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { status: BranchStatus.PENDING_APPROVAL },
+    }));
+    expect(result).toHaveLength(1);
+    expect(result[0].businessName).toBe("Branch A");
+  });
+
+  it("should list branches matching custom status filter", async () => {
+    jest.spyOn(prisma.branchAdmin, "findMany").mockResolvedValue([]);
+    await listBranches(BranchStatus.APPROVED);
+    expect(prisma.branchAdmin.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { status: BranchStatus.APPROVED },
+    }));
+  });
+});
+
+describe("Admin Service - getBranchDetails", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should retrieve branch details successfully", async () => {
+    const mockBranch = { id: 1, ownerName: "Owner A", email: "owner@a.com", phone: "0100", businessName: "Branch A", plan: { name: "Starter" }, documents: [] };
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(mockBranch);
+
+    const result = await getBranchDetails(1);
+    expect(result.businessName).toBe("Branch A");
+  });
+
+  it("should throw BranchNotFound when branch does not exist", async () => {
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(null);
+    await expect(getBranchDetails(999)).rejects.toThrow(BranchNotFound);
+  });
+});
+
+describe("Admin Service - approveBranch", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should throw BranchNotFound if branch does not exist", async () => {
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(null);
+    await expect(approveBranch(999)).rejects.toThrow(BranchNotFound);
+  });
+
+  it("should throw BranchIsNotPendingError if status is not PENDING_APPROVAL", async () => {
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 1, status: BranchStatus.APPROVED });
+    await expect(approveBranch(1)).rejects.toThrow(BranchIsNotPendingError);
+  });
+
+  it("should approve the branch successfully when status is pending", async () => {
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 1, status: BranchStatus.PENDING_APPROVAL });
+    const updateSpy = jest.spyOn(prisma.branchAdmin, "update").mockResolvedValue({});
+
+    const result = await approveBranch(1);
+    expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 1 },
+      data: { status: BranchStatus.APPROVED, rejectionReason: null },
+    }));
+    expect(result.message).toBeDefined();
+  });
+});
+
+describe("Admin Service - rejectBranch", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should throw BranchNotFound if branch does not exist", async () => {
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(null);
+    await expect(rejectBranch(999, "Bad info")).rejects.toThrow(BranchNotFound);
+  });
+
+  it("should throw BranchIsNotPendingError if status is not PENDING_APPROVAL", async () => {
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 1, status: BranchStatus.APPROVED });
+    await expect(rejectBranch(1, "Bad info")).rejects.toThrow(BranchIsNotPendingError);
+  });
+
+  it("should reject the branch successfully when status is pending", async () => {
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 1, status: BranchStatus.PENDING_APPROVAL });
+    const updateSpy = jest.spyOn(prisma.branchAdmin, "update").mockResolvedValue({});
+
+    const result = await rejectBranch(1, "Incomplete docs");
+    expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 1 },
+      data: { status: BranchStatus.REJECTED, rejectionReason: "Incomplete docs" },
+    }));
+    expect(result.message).toBeDefined();
+  });
+});
+
+describe("Admin Service - listServices", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should list services matching status or defaulting to PENDING_APPROVAL", async () => {
+    const mockServices = [
+      { id: 1, name: "Haircut", price: 100, status: ServiceApprovalStatus.PENDING_APPROVAL, createdAt: new Date() },
+    ];
+    jest.spyOn(prisma.service, "findMany").mockResolvedValue(mockServices);
+
+    const result = await listServices();
+    expect(prisma.service.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { status: ServiceApprovalStatus.PENDING_APPROVAL },
+    }));
+    expect(result).toHaveLength(1);
+  });
+
+  it("should list services matching custom status filter", async () => {
+    jest.spyOn(prisma.service, "findMany").mockResolvedValue([]);
+    await listServices(ServiceApprovalStatus.APPROVED);
+    expect(prisma.service.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { status: ServiceApprovalStatus.APPROVED },
+    }));
+  });
+});
+
+describe("Admin Service - getServiceDetails", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should retrieve service details successfully", async () => {
+    const mockService = { id: 1, name: "Haircut", price: 100, branch: { businessName: "Branch A" } };
+    jest.spyOn(prisma.service, "findUnique").mockResolvedValue(mockService);
+
+    const result = await getServiceDetails(1);
+    expect(result.name).toBe("Haircut");
+  });
+
+  it("should throw ServiceNotFound when service does not exist", async () => {
+    jest.spyOn(prisma.service, "findUnique").mockResolvedValue(null);
+    await expect(getServiceDetails(999)).rejects.toThrow(ServiceNotFound);
+  });
+});
+
+describe("Admin Service - approveService", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should throw ServiceNotFound if service does not exist", async () => {
+    jest.spyOn(prisma.service, "findUnique").mockResolvedValue(null);
+    await expect(approveService(999)).rejects.toThrow(ServiceNotFound);
+  });
+
+  it("should throw ServiceNotPendingError if status is not PENDING_APPROVAL", async () => {
+    jest.spyOn(prisma.service, "findUnique").mockResolvedValue({ id: 1, status: ServiceApprovalStatus.APPROVED });
+    await expect(approveService(1)).rejects.toThrow(ServiceNotPendingError);
+  });
+
+  it("should approve the service successfully when status is pending", async () => {
+    jest.spyOn(prisma.service, "findUnique").mockResolvedValue({ id: 1, status: ServiceApprovalStatus.PENDING_APPROVAL });
+    const updateSpy = jest.spyOn(prisma.service, "update").mockResolvedValue({ id: 1, name: "Haircut" });
+
+    const result = await approveService(1);
+    expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 1 },
+      data: expect.objectContaining({ status: ServiceApprovalStatus.APPROVED }),
+    }));
+    expect(result.service.name).toBe("Haircut");
+  });
+});
+
+describe("Admin Service - rejectService", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should throw ServiceNotFound if service does not exist", async () => {
+    jest.spyOn(prisma.service, "findUnique").mockResolvedValue(null);
+    await expect(rejectService(999, "Bad service")).rejects.toThrow(ServiceNotFound);
+  });
+
+  it("should throw ServiceNotPendingError if status is not PENDING_APPROVAL", async () => {
+    jest.spyOn(prisma.service, "findUnique").mockResolvedValue({ id: 1, status: ServiceApprovalStatus.APPROVED });
+    await expect(rejectService(1, "Bad service")).rejects.toThrow(ServiceNotPendingError);
+  });
+
+  it("should reject the service successfully when status is pending", async () => {
+    jest.spyOn(prisma.service, "findUnique").mockResolvedValue({ id: 1, status: ServiceApprovalStatus.PENDING_APPROVAL });
+    const updateSpy = jest.spyOn(prisma.service, "update").mockResolvedValue({ id: 1, name: "Haircut" });
+
+    const result = await rejectService(1, "Not allowed name");
+    expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 1 },
+      data: expect.objectContaining({ status: ServiceApprovalStatus.REJECTED, rejectionReason: "Not allowed name" }),
+    }));
+    expect(result.service.name).toBe("Haircut");
+  });
+});
+
+describe("Admin Service - getPlatformAnalytics", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should calculate active businesses and total subscription revenue", async () => {
+    jest.spyOn(prisma.branchAdmin, "count").mockResolvedValue(10);
+    jest.spyOn(prisma.subscriptionPayment, "aggregate").mockResolvedValue({ _sum: { amount: 1500 } });
+
+    const result = await getPlatformAnalytics("this_month");
+    expect(prisma.branchAdmin.count).toHaveBeenCalled();
+    expect(prisma.subscriptionPayment.aggregate).toHaveBeenCalled();
+    expect(result.totalActiveBusinesses).toBe(10);
+    expect(result.totalSubscriptionRevenue).toBe(1500);
   });
 });
