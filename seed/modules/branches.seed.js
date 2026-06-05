@@ -1,7 +1,7 @@
 import { hashPassword } from "../helpers/bcrypt.js";
 import { prisma } from "../helpers/prisma.js";
 import { SEED_BRANCH_DOCUMENT_TYPES } from "../config/constants.js";
-import { getBranchDocumentUrl } from "../helpers/random.js";
+import { getBranchDocumentUrl, getBranchProfileImage } from "../helpers/random.js";
 import { AvailabilityStatus, BranchStatus, Role, UserStatus, VerificationType } from "../../src/generated/prisma/client.js";
 
 function buildDefaultBranchAvailabilityRows(branchAdminId) {
@@ -29,6 +29,7 @@ export async function seedBranches({ starterPlan, branchSubmissions }) {
   const seededApprovedBranches = [];
   const seededBranchAdmins = [];
 
+  let i = 0;
   for (const branchSubmission of branchSubmissions) {
     const ownerPasswordHash = await hashPassword(branchSubmission.password);
 
@@ -85,6 +86,7 @@ export async function seedBranches({ starterPlan, branchSubmissions }) {
           phoneVerified: true,
           rejectionReason: branchSubmission.rejectionReason,
           userId: branchAdminUser.id,
+          logoUrl: getBranchProfileImage(branchSubmission.category, i),
         },
       });
     } else {
@@ -110,6 +112,7 @@ export async function seedBranches({ starterPlan, branchSubmissions }) {
           phoneVerified: true,
           rejectionReason: branchSubmission.rejectionReason,
           userId: branchAdminUser.id,
+          logoUrl: getBranchProfileImage(branchSubmission.category, i),
         },
       });
     }
@@ -188,6 +191,7 @@ export async function seedBranches({ starterPlan, branchSubmissions }) {
         data: buildDefaultBranchAvailabilityRows(branchAdmin.id),
       });
     }
+    i++;
   }
 
   return { branchSubmissions, seededApprovedBranches, seededBranchAdmins };

@@ -7,6 +7,6 @@ import { homeDashboardQuerySchema, validateClientInput } from "../client.validat
 export const getHomeDashboardHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const query = validateClientInput(homeDashboardQuerySchema, req.query);
-  const result = await getHomeDashboard(query, req.user);
+  const result = await getHomeDashboard(query);
   successResponse(res, 200, t(tr.DASHBOARD_RETRIEVED_SUCCESSFULLY, lang), result);
 });

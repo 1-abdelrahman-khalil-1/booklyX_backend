@@ -27,6 +27,9 @@ export const homeDashboardQuerySchema = z.object({
   lat: z.coerce.number().min(-90).max(90).optional(),
   lng: z.coerce.number().min(-180).max(180).optional(),
   radius: z.coerce.number().min(1).max(50).optional().default(20),
+  category: z.enum(Object.values(BusinessCategory), {
+    error: tr.INVALID_ENUM_VALUE,
+  }).optional(),
 });
 
 // 2. Staff Availability Slots Validation
@@ -48,6 +51,12 @@ export const reserveAppointmentSchema = z.object({
 // 4. Favourites Filter Validation
 export const favouritesQuerySchema = z.object({
   type: z.enum(["branch_admin", "staff"], {
+    error: tr.INVALID_ENUM_VALUE,
+  }).optional(),
+});
+
+export const getAppointmentsQuerySchema = z.object({
+  status: z.enum(["pending", "upcoming", "closed"], {
     error: tr.INVALID_ENUM_VALUE,
   }).optional(),
 });

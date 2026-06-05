@@ -24,6 +24,19 @@ export function getBranchDocumentUrl() {
   return pickRandom(ASSETS.certificates);
 }
 
+export function getBranchProfileImage(category, index = 0) {
+  switch (category) {
+    case BusinessCategory.BARBER:
+      return ASSETS.businessImages.barber[index % ASSETS.businessImages.barber.length];
+    case BusinessCategory.CLINIC:
+      return ASSETS.businessImages.medical[index % ASSETS.businessImages.medical.length];
+    case BusinessCategory.SPA:
+      return ASSETS.businessImages.spa[index % ASSETS.businessImages.spa.length];
+    default:
+      return pickRandom(ASSETS.businessImages.spa, index);
+  }
+}
+
 export function getServiceImage(category, index = 0) {
   switch (category) {
     case BusinessCategory.BARBER:

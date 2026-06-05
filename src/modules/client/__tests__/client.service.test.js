@@ -129,12 +129,32 @@ describe("Client Service", () => {
         },
       ]);
 
-      const result = await clientService.getHomeDashboard({ lat: "30.0444", lng: "31.2357" }, authUser);
+      const result = await clientService.getHomeDashboard({ lat: "30.0444", lng: "31.2357" });
 
       expect(result).toHaveProperty("offers");
       expect(result).toHaveProperty("categories");
       expect(result).toHaveProperty("nearbyProviders");
       expect(result.nearbyProviders[0]).toHaveProperty("distance", 1.2);
+    });
+
+    it("should filter nearby providers by category when category parameter is passed", async () => {
+      prisma.offer.findMany.mockResolvedValueOnce([]);
+      prisma.$queryRaw.mockResolvedValueOnce([
+        {
+          id: 3,
+          name: "Zen Spa",
+          category: "SPA",
+          latitude: 30.05,
+          longitude: 31.24,
+          distance: 1200,
+        },
+      ]);
+
+      const result = await clientService.getHomeDashboard({ lat: "30.0444", lng: "31.2357", category: "SPA" });
+
+      expect(result.nearbyProviders).toHaveLength(1);
+      expect(result.nearbyProviders[0]).toHaveProperty("category", "SPA");
+      expect(prisma.$queryRaw).toHaveBeenCalled();
     });
   });
 
@@ -511,6 +531,74 @@ describe("Client Service", () => {
       expect(result.payment.status).toBe("REFUNDED");
       // No decrement — offer is inactive
       expect(prisma.offer.update).not.toHaveBeenCalled();
+    });
+  });
+
+  // --- Client Appointments Filtering ---
+  describe("getClientAppointments", () => {
+    it("should retrieve all client appointments when status filter is not provided", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.appointment.findMany.mockResolvedValueOnce([{ id: 1, status: "PENDING" }]);
+
+      const result = await clientService.getClientAppointments(authUser);
+
+      expect(result).toHaveLength(1);
+      expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { clientId: mockClient.id },
+        })
+      );
+    });
+
+    it("should filter by pending status", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.appointment.findMany.mockResolvedValueOnce([]);
+
+      await clientService.getClientAppointments(authUser, { status: "pending" });
+
+      expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            clientId: mockClient.id,
+            status: { notIn: ["CANCELED", "COMPLETED"] },
+            bookingPayment: { status: "PENDING" },
+          },
+        })
+      );
+    });
+
+    it("should filter by upcoming status", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.appointment.findMany.mockResolvedValueOnce([]);
+
+      await clientService.getClientAppointments(authUser, { status: "upcoming" });
+
+      expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            clientId: mockClient.id,
+            status: { notIn: ["CANCELED", "COMPLETED"] },
+            bookingPayment: { status: "PAID" },
+            scheduledAt: expect.any(Object),
+          },
+        })
+      );
+    });
+
+    it("should filter by closed status", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.appointment.findMany.mockResolvedValueOnce([]);
+
+      await clientService.getClientAppointments(authUser, { status: "closed" });
+
+      expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            clientId: mockClient.id,
+            status: { in: ["COMPLETED", "CANCELED"] },
+          },
+        })
+      );
     });
   });
 

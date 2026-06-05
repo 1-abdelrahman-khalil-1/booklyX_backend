@@ -3795,6 +3795,13 @@ paths:
             maximum: 50
             default: 5
             example: 5
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [SPA, CLINIC, BARBER]
+            example: "SPA"
       responses:
         "200":
           description: Dashboard feeds retrieved successfully
@@ -4329,6 +4336,13 @@ paths:
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeader"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, upcoming, closed]
+            example: "upcoming"
       responses:
         "200":
           description: Bookings list loaded successfully

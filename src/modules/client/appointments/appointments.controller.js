@@ -10,7 +10,7 @@ import {
   getClientAppointments,
   reserveAppointment,
 } from "./appointments.service.js";
-import { reserveAppointmentSchema, validateClientInput } from "../client.validation.js";
+import { getAppointmentsQuerySchema, reserveAppointmentSchema, validateClientInput } from "../client.validation.js";
 
 export const reserveAppointmentHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
@@ -39,7 +39,8 @@ export const confirmAppointmentPaymentHandler = asyncHandler(async (req, res) =>
 
 export const getClientAppointmentsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await getClientAppointments(req.user);
+  const query = validateClientInput(getAppointmentsQuerySchema, req.query);
+  const result = await getClientAppointments(req.user, query);
   successResponse(res, 200, t(tr.APPOINTMENTS_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 

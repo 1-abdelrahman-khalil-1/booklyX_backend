@@ -1,11 +1,12 @@
 import { BranchStatus, BusinessCategory } from "../../../generated/prisma/client.js";
 import prisma from "../../../lib/prisma.js";
 
-export async function getHomeDashboard(query, authUser) {
+export async function getHomeDashboard(query) {
   const lat = query.lat ? parseFloat(query.lat) : 30.0444;
   const lng = query.lng ? parseFloat(query.lng) : 31.2357;
   const radius = query.radius ? parseFloat(query.radius) : 20.0;
   const radiusMeters = radius * 1000;
+  const categoryFilter = query.category || null;
 
   // Active Offers Carousel (belonging to APPROVED visible branches)
   const offers = await prisma.offer.findMany({
@@ -39,15 +40,25 @@ export async function getHomeDashboard(query, authUser) {
   const categories = Object.values(BusinessCategory);
 
   // Nearby Highlighted Providers within 20km, sorted by distance
-  const nearbyProviders = await prisma.$queryRaw`
-    SELECT id, businessName as name, category, description, logoUrl as profileImage, averageRating as rating, reviewCount as totalReviews, latitude, longitude,
-           ST_Distance_Sphere(point(longitude, latitude), point(${lng}, ${lat})) as distance
-    FROM BranchAdmin
-    WHERE status = 'APPROVED' AND isSubscriptionActive = 1
-    HAVING distance <= ${radiusMeters}
-    ORDER BY distance ASC
-    LIMIT 10
-  `;
+  const nearbyProviders = categoryFilter
+    ? await prisma.$queryRaw`
+        SELECT id, businessName as name, category, description, logoUrl as profileImage, averageRating as rating, reviewCount as totalReviews, latitude, longitude,
+               ST_Distance_Sphere(point(longitude, latitude), point(${lng}, ${lat})) as distance
+        FROM BranchAdmin
+        WHERE status = 'APPROVED' AND isSubscriptionActive = 1 AND category = ${categoryFilter}
+        HAVING distance <= ${radiusMeters}
+        ORDER BY distance ASC
+        LIMIT 10
+      `
+    : await prisma.$queryRaw`
+        SELECT id, businessName as name, category, description, logoUrl as profileImage, averageRating as rating, reviewCount as totalReviews, latitude, longitude,
+               ST_Distance_Sphere(point(longitude, latitude), point(${lng}, ${lat})) as distance
+        FROM BranchAdmin
+        WHERE status = 'APPROVED' AND isSubscriptionActive = 1
+        HAVING distance <= ${radiusMeters}
+        ORDER BY distance ASC
+        LIMIT 10
+      `;
 
   // Parse distance numeric floats and structure coordinates
   const providersArray = Array.isArray(nearbyProviders) ? nearbyProviders : [];

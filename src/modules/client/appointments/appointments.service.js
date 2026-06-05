@@ -120,7 +120,7 @@ export async function reserveAppointment(data, authUser) {
     return {
       appointment,
       payment,
-      appliedOffer: appliedOfferId
+      appliedOffer: offerCalc.appliedOffer
         ? {
             id: offerCalc.appliedOffer.id,
             title: offerCalc.appliedOffer.title,
@@ -195,11 +195,25 @@ export async function confirmAppointmentPayment(appointmentId, data, authUser) {
   return result;
 }
 
-export async function getClientAppointments(authUser) {
+export async function getClientAppointments(authUser, query = {}) {
   const client = await getClientByUserId(authUser.sub);
+  const { status } = query;
+
+  const where = { clientId: client.id };
+
+  if (status === "pending") {
+    where.status = { notIn: [AppointmentStatus.CANCELED, AppointmentStatus.COMPLETED] };
+    where.bookingPayment = { status: PaymentStatus.PENDING };
+  } else if (status === "upcoming") {
+    where.status = { notIn: [AppointmentStatus.CANCELED, AppointmentStatus.COMPLETED] };
+    where.bookingPayment = { status: PaymentStatus.PAID };
+    where.scheduledAt = { gt: new Date() };
+  } else if (status === "closed") {
+    where.status = { in: [AppointmentStatus.COMPLETED, AppointmentStatus.CANCELED] };
+  }
 
   const appointments = await prisma.appointment.findMany({
-    where: { clientId: client.id },
+    where,
     include: {
       service: { select: { id: true, name: true, price: true, durationMinutes: true, imageUrl: true } },
       staff: { include: { user: { select: { name: true } } } },
