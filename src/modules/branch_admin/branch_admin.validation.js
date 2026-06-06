@@ -72,23 +72,46 @@ export const resendCodeSchema = z.object({
 export const createStaffSchema = z.object({
   name: z.string({ error: tr.NAME_REQUIRED }),
   email: zEmail({ requiredMessage: tr.EMAIL_INVALID, invalidMessage: tr.EMAIL_INVALID }),
-  age: z
-    .number({ error: tr.AGE_REQUIRED })
-    .int({ message: tr.AGE_MUST_BE_INTEGER })
-    .min(18, tr.AGE_MINIMUM),
+  age: z.preprocess(
+    (val) => (val === "" || val === undefined ? undefined : Number(val)),
+    z
+      .number({ error: tr.AGE_REQUIRED })
+      .int({ message: tr.AGE_MUST_BE_INTEGER })
+      .min(18, tr.AGE_MINIMUM)
+  ),
   startDate: zIsoDate({ requiredMessage: tr.START_DATE_REQUIRED }),
   phone: zPhone(),
   password: zPassword(),
-  staffRole: z.enum(Object.values(StaffRole), {
-    error: tr.INVALID_ENUM_VALUE,
-  }),
-  profileImageUrl: zImageUrl().optional(),
-  commissionPercentage: z.number().min(0, tr.COMMISSION_OUT_OF_RANGE).max(100, tr.COMMISSION_OUT_OF_RANGE),
-  serviceIds: z
-    .array(zId, {
-      error: tr.STAFF_SERVICES_REQUIRED,
+  staffRole: z
+    .enum(Object.values(StaffRole), {
+      error: tr.INVALID_ENUM_VALUE,
     })
-    .min(1, tr.STAFF_SERVICES_REQUIRED),
+    .default(StaffRole.BARBER),
+  profileImageUrl: zImageUrl().optional(),
+  commissionPercentage: z.preprocess(
+    (val) => (val === "" || val === undefined ? undefined : Number(val)),
+    z
+      .number({ error: tr.COMMISSION_OUT_OF_RANGE })
+      .min(0, tr.COMMISSION_OUT_OF_RANGE)
+      .max(100, tr.COMMISSION_OUT_OF_RANGE)
+  ).default(15),
+  serviceIds: z.preprocess(
+    (val) => {
+      if (typeof val === "string") {
+        if (val.trim() === "") return [];
+        return val.split(",").map((s) => Number(s.trim()));
+      }
+      if (Array.isArray(val)) {
+        return val.map((s) => Number(s));
+      }
+      return val;
+    },
+    z
+      .array(zId, {
+        error: tr.STAFF_SERVICES_REQUIRED,
+      })
+      .min(1, tr.STAFF_SERVICES_REQUIRED)
+  ),
 });
 
 export const updateStaffSchema = z
@@ -97,11 +120,14 @@ export const updateStaffSchema = z
     name: z.string({ error: tr.NAME_REQUIRED }).trim().min(1, tr.NAME_REQUIRED).optional(),
     email: zEmail({ requiredMessage: tr.EMAIL_INVALID, invalidMessage: tr.EMAIL_INVALID }).optional(),
     phone: zPhone().optional(),
-    age: z
-      .number({ error: tr.AGE_REQUIRED })
-      .int({ message: tr.AGE_MUST_BE_INTEGER })
-      .min(18, tr.AGE_MINIMUM)
-      .optional(),
+    age: z.preprocess(
+      (val) => (val === "" || val === undefined ? undefined : Number(val)),
+      z
+        .number({ error: tr.AGE_REQUIRED })
+        .int({ message: tr.AGE_MUST_BE_INTEGER })
+        .min(18, tr.AGE_MINIMUM)
+        .optional()
+    ),
     startDate: zIsoDate({ requiredMessage: tr.START_DATE_REQUIRED }).optional(),
     staffRole: z
       .enum(Object.values(StaffRole), {
@@ -109,17 +135,32 @@ export const updateStaffSchema = z
       })
       .optional(),
     profileImageUrl: zImageUrl().nullable().optional(),
-    commissionPercentage: z
-      .number()
-      .min(0, tr.COMMISSION_OUT_OF_RANGE)
-      .max(100, tr.COMMISSION_OUT_OF_RANGE)
-      .optional(),
-    serviceIds: z
-      .array(zId, {
-        error: tr.STAFF_SERVICES_REQUIRED,
-      })
-      .min(1, tr.STAFF_SERVICES_REQUIRED)
-      .optional(),
+    commissionPercentage: z.preprocess(
+      (val) => (val === "" || val === undefined ? undefined : Number(val)),
+      z
+        .number({ error: tr.COMMISSION_OUT_OF_RANGE })
+        .min(0, tr.COMMISSION_OUT_OF_RANGE)
+        .max(100, tr.COMMISSION_OUT_OF_RANGE)
+        .optional()
+    ),
+    serviceIds: z.preprocess(
+      (val) => {
+        if (typeof val === "string") {
+          if (val.trim() === "") return [];
+          return val.split(",").map((s) => Number(s.trim()));
+        }
+        if (Array.isArray(val)) {
+          return val.map((s) => Number(s));
+        }
+        return val;
+      },
+      z
+        .array(zId, {
+          error: tr.STAFF_SERVICES_REQUIRED,
+        })
+        .min(1, tr.STAFF_SERVICES_REQUIRED)
+        .optional()
+    ),
   })
   .superRefine((data, ctx) => {
     requireAtLeastOneField(

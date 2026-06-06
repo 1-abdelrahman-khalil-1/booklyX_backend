@@ -1550,7 +1550,7 @@ components:
         email: mona.adel@booklyx.com
         type: PHONE
 
-    CreateStaffRequest:
+    CreateStaffRequestJson:
       type: object
       required:
         [
@@ -1560,8 +1560,6 @@ components:
           password,
           age,
           startDate,
-          staffRole,
-          commissionPercentage,
           serviceIds,
         ]
       properties:
@@ -1601,6 +1599,7 @@ components:
           type: number
           minimum: 0
           maximum: 100
+          default: 15
           example: 15
         serviceIds:
           type: array
@@ -1621,7 +1620,70 @@ components:
         commissionPercentage: 15
         serviceIds: [1, 2]
 
-    UpdateStaffRequest:
+    CreateStaffRequestMultipart:
+      type: object
+      required:
+        [
+          name,
+          email,
+          phone,
+          password,
+          age,
+          startDate,
+          serviceIds,
+        ]
+      properties:
+        name:
+          type: string
+          example: Mazen Tamer
+        email:
+          type: string
+          format: email
+          example: mazen.tamer@booklyx.com
+        phone:
+          type: string
+          pattern: '^\\d{11}$'
+          example: "01000000021"
+        password:
+          type: string
+          minLength: 8
+          example: "12345678"
+        age:
+          type: integer
+          minimum: 18
+          example: 28
+        startDate:
+          type: string
+          format: date-time
+          example: 2026-03-01T00:00:00.000Z
+        staffRole:
+          type: string
+          enum: [DOCTOR, BARBER, SPA_SPECIALIST]
+          default: BARBER
+          example: BARBER
+        profileImageUrl:
+          type: string
+          format: uri
+          description: Optional. If not uploading `profile_image`, provide an existing public URL.
+          example: https://cdn.booklyx.com/staff/mazen-tamer.png
+        profile_image:
+          type: string
+          format: binary
+        commissionPercentage:
+          type: number
+          minimum: 0
+          maximum: 100
+          default: 15
+          example: 15
+        serviceIds:
+          type: array
+          minItems: 1
+          items:
+            type: integer
+            minimum: 1
+          example: [1, 2]
+
+    UpdateStaffRequestJson:
       type: object
       properties:
         name:
@@ -1652,6 +1714,54 @@ components:
           format: uri
           nullable: true
           example: https://cdn.booklyx.com/staff/mazen-tamer-v2.png
+        commissionPercentage:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 20
+        serviceIds:
+          type: array
+          minItems: 1
+          items:
+            type: integer
+            minimum: 1
+          example: [2, 3]
+
+    UpdateStaffRequestMultipart:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Mazen Tamer Updated
+        email:
+          type: string
+          format: email
+          example: mazen.updated@booklyx.com
+        phone:
+          type: string
+          pattern: '^\\d{11}$'
+          example: "01000000031"
+        age:
+          type: integer
+          minimum: 18
+          example: 29
+        startDate:
+          type: string
+          format: date-time
+          example: 2026-04-01T00:00:00.000Z
+        staffRole:
+          type: string
+          enum: [DOCTOR, BARBER, SPA_SPECIALIST]
+          example: BARBER
+        profileImageUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Optional. If not uploading `profile_image`, provide an existing public URL.
+          example: https://cdn.booklyx.com/staff/mazen-tamer-v2.png
+        profile_image:
+          type: string
+          format: binary
         commissionPercentage:
           type: number
           minimum: 0
@@ -5785,7 +5895,10 @@ paths:
     post:
       tags: [Branch_admin/Staff]
       summary: Create staff user
-      description: Create staff user.
+      description: |
+        Create staff user.
+        This endpoint supports `multipart/form-data` to upload profile image (stored as Cloudinary URL).
+        File field name: `profile_image`.
       operationId: postBranchAdminCreateStaff
       security:
         - bearerAuth: []
@@ -5795,9 +5908,12 @@ paths:
       requestBody:
         required: true
         content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateStaffRequestMultipart"
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateStaffRequest"
+              $ref: "#/components/schemas/CreateStaffRequestJson"
             examples:
               default:
                 $ref: "#/components/examples/CreateStaffRequest"
@@ -5897,7 +6013,10 @@ paths:
     put:
       tags: [Branch_admin/Staff]
       summary: Update staff by id for current branch_admin
-      description: Update staff by id for current branch_admin.
+      description: |
+        Update staff by id for current branch_admin.
+        This endpoint supports `multipart/form-data` to upload profile image (stored as Cloudinary URL).
+        File field name: `profile_image`.
       operationId: putBranchAdminStaffById
       security:
         - bearerAuth: []
@@ -5913,9 +6032,12 @@ paths:
       requestBody:
         required: true
         content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UpdateStaffRequestMultipart"
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateStaffRequest"
+              $ref: "#/components/schemas/UpdateStaffRequestJson"
             examples:
               default:
                 $ref: "#/components/examples/UpdateStaffRequest"

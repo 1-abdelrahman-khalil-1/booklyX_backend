@@ -3,11 +3,12 @@ import { zIdParamSchema } from "../../../lib/validation/primitives.js";
 import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { successResponse } from "../../../utils/response.js";
 import { createStaffSchema, updateStaffSchema, validateBranchAdminInput } from "../branch_admin.validation.js";
+import { buildStaffPayload } from "../helpers.js";
 import { createStaff, deleteStaff, getMyStaff, getMyStaffById, updateStaff } from "./staff.service.js";
 
 export const createStaffHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const data = validateBranchAdminInput(createStaffSchema, req.body);
+  const data = validateBranchAdminInput(createStaffSchema, buildStaffPayload(req));
   const result = await createStaff(data, req.user.sub);
   successResponse(res, 201, t(tr.STAFF_CREATED, lang), result);
 });
@@ -20,7 +21,7 @@ export const getMyStaffHandler = asyncHandler(async (req, res) => {
 
 export const updateStaffHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const data = validateBranchAdminInput(updateStaffSchema, { ...req.body, id: req.params.id });
+  const data = validateBranchAdminInput(updateStaffSchema, { ...buildStaffPayload(req), id: req.params.id });
   const result = await updateStaff(data, req.user.sub);
   successResponse(res, 200, t(tr.STAFF_UPDATED, lang), result);
 });

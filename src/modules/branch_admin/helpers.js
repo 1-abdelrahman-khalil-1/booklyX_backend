@@ -38,6 +38,13 @@ export function buildServicePayload(req) {
   };
 }
 
+export function buildStaffPayload(req) {
+  return {
+    ...req.body,
+    profileImageUrl: getUploadedFileUrl(firstUploadedFile(req, "profile_image")) ?? req.body.profileImageUrl,
+  };
+}
+
 export function buildProfilePayload(req) {
   return {
     ...req.body,

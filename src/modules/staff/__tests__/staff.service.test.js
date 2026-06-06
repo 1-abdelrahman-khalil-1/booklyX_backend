@@ -100,12 +100,11 @@ describe("Staff Service", () => {
 
       const result = await staffService.getStaffProfile(1, "en");
 
-      // service now returns nested shape { user: { ... } }
-      expect(result).toHaveProperty("user");
-      expect(result.user).toHaveProperty("name", "Dr. Ahmed");
-      expect(result.user).toHaveProperty("phone", "01234567890");
-      expect(result.user.staff).toHaveProperty("staffRole", "DOCTOR");
-      expect(result.user.staff).toHaveProperty("averageRating", 4.5);
+      // service returns flat user properties and nested staff property
+      expect(result).toHaveProperty("name", "Dr. Ahmed");
+      expect(result).toHaveProperty("phone", "01234567890");
+      expect(result.staff).toHaveProperty("staffRole", "DOCTOR");
+      expect(result.staff).toHaveProperty("averageRating", 4.5);
       expect(prisma.staff.findUnique).toHaveBeenCalledWith({
         where: { userId: 1 },
         select: expect.any(Object),

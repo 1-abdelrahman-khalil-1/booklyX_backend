@@ -118,7 +118,7 @@ describe("profile.mapper", () => {
       reviews: [],
     });
 
-    expect(result.user.staff).toMatchObject({
+    expect(result.staff).toMatchObject({
       staffRole: "BARBER",
       professionalProfile: {
         experience: 6,
