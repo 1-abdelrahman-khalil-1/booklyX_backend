@@ -61,5 +61,10 @@ export const getAppointmentsQuerySchema = z.object({
   }).optional(),
 });
 
+export const updateClientProfileSchema = z.object({
+  name: z.string({ error: tr.NAME_REQUIRED }).min(1, { message: tr.NAME_REQUIRED }).optional(),
+  profileImageUrl: z.string().url().optional().nullable(),
+});
+
 // Wrapper helper
 export const validateClientInput = createValidationInputValidator(ClientValidationError);

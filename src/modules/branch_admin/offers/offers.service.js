@@ -339,6 +339,8 @@ export async function getValidOffersForService(serviceId, now = new Date()) {
     select: {
       id: true,
       title: true,
+      description: true,
+      imageUrl: true,
       discountType: true,
       discountValue: true,
       startDate: true,

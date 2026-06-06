@@ -5,6 +5,7 @@ import {
   mapBranchPublicProfile,
   mapStaffProfile,
   mapStaffPublicProfile,
+  mapClientProfile,
 } from "../profile.mapper.js";
 
 describe("profile.mapper", () => {
@@ -223,6 +224,42 @@ describe("profile.mapper", () => {
     expect(staffResult.staff).toMatchObject({
       name: "Mazen Tamer",
       isActive: true,
+    });
+  });
+
+  it("maps client profiles with explicit safe fields", () => {
+    const result = mapClientProfile({
+      id: 2,
+      name: "Abdo Khalil",
+      email: "abdo.khalil@booklyx.com",
+      phone: "01000000001",
+      role: "client",
+      status: "ACTIVE",
+      emailVerified: true,
+      phoneVerified: true,
+      createdAt: new Date("2026-04-09T10:15:00.000Z"),
+      updatedAt: new Date("2026-05-01T10:15:00.000Z"),
+      client: {
+        id: 1,
+        profileImageUrl: "https://cdn.example.com/client.png",
+        createdAt: new Date("2026-04-09T10:15:00.000Z"),
+        updatedAt: new Date("2026-05-01T10:15:00.000Z"),
+      },
+    });
+
+    expect(result).toMatchObject({
+      id: 2,
+      name: "Abdo Khalil",
+      email: "abdo.khalil@booklyx.com",
+      phone: "01000000001",
+      role: "client",
+      status: "ACTIVE",
+      emailVerified: true,
+      phoneVerified: true,
+      client: {
+        id: 1,
+        profileImageUrl: "https://cdn.example.com/client.png",
+      },
     });
   });
 });

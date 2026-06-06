@@ -61,21 +61,21 @@ function mapBranchReview(review) {
     createdAt: toIsoString(review.createdAt),
     reviewer: review.client
       ? {
-          name: review.client.user.name,
-          phone: review.client.user.phone,
-        }
+        name: review.client.user.name,
+        phone: review.client.user.phone,
+      }
       : null,
     service: review.service
       ? {
-          id: review.service.id,
-          name: review.service.name,
-        }
+        id: review.service.id,
+        name: review.service.name,
+      }
       : null,
     staff: review.staff
       ? {
-          id: review.staff.id,
-          name: review.staff.user.name,
-        }
+        id: review.staff.id,
+        name: review.staff.user.name,
+      }
       : null,
   };
 }
@@ -125,16 +125,16 @@ function mapStaffReview(review) {
     createdAt: toIsoString(review.createdAt),
     reviewer: review.client
       ? {
-          id: review.client.user.id,
-          name: review.client.user.name,
-          phone: review.client.user.phone,
-        }
+        id: review.client.user.id,
+        name: review.client.user.name,
+        phone: review.client.user.phone,
+      }
       : null,
     service: review.service
       ? {
-          id: review.service.id,
-          name: review.service.name,
-        }
+        id: review.service.id,
+        name: review.service.name,
+      }
       : null,
     appointmentId: review.appointmentId,
   };
@@ -241,38 +241,37 @@ export function mapBranchPublicProfile(branch, reviews = []) {
 
 export function mapStaffProfile(staff) {
   return {
-    user: {
-      id: staff.user.id,
-      name: staff.user.name,
-      email: staff.user.email,
-      phone: staff.user.phone,
-      role: staff.user.role,
-      status: staff.user.status,
-      createdAt: toIsoString(staff.user.createdAt),
-      updatedAt: toIsoString(staff.user.updatedAt),
-      staff: {
-        id: staff.id,
-        profileImageUrl: staff.profileImageUrl,
-        staffRole: staff.staffRole,
-        age: staff.age,
-        commissionPercentage: staff.commissionPercentage,
-        isActive: staff.isActive,
-        createdAt: toIsoString(staff.createdAt),
-        updatedAt: toIsoString(staff.updatedAt),
-        branch: {
-          id: staff.branch.id,
-          businessName: staff.branch.businessName,
-          category: staff.branch.category,
-        },
-        professionalProfile: mapStaffProfessionalProfile(staff.professionalProfile),
-        certificates: (staff.certificates || []).map(mapStaffCertificate),
-        availabilities: (staff.availabilities || []).map(mapStaffAvailability),
-        services: (staff.services || []).map(mapStaffServiceLink),
-        reviews: (staff.reviews || []).map(mapStaffReview),
-        averageRating: staff.averageRating,
-        reviewCount: staff.reviewCount,
+    id: staff.user.id,
+    name: staff.user.name,
+    email: staff.user.email,
+    phone: staff.user.phone,
+    role: staff.user.role,
+    status: staff.user.status,
+    createdAt: toIsoString(staff.user.createdAt),
+    updatedAt: toIsoString(staff.user.updatedAt),
+    staff: {
+      id: staff.id,
+      profileImageUrl: staff.profileImageUrl,
+      staffRole: staff.staffRole,
+      age: staff.age,
+      commissionPercentage: staff.commissionPercentage,
+      isActive: staff.isActive,
+      createdAt: toIsoString(staff.createdAt),
+      updatedAt: toIsoString(staff.updatedAt),
+      branch: {
+        id: staff.branch.id,
+        businessName: staff.branch.businessName,
+        category: staff.branch.category,
       },
+      professionalProfile: mapStaffProfessionalProfile(staff.professionalProfile),
+      certificates: (staff.certificates || []).map(mapStaffCertificate),
+      availabilities: (staff.availabilities || []).map(mapStaffAvailability),
+      services: (staff.services || []).map(mapStaffServiceLink),
+      reviews: (staff.reviews || []).map(mapStaffReview),
+      averageRating: staff.averageRating,
+      reviewCount: staff.reviewCount,
     },
+
   };
 }
 
@@ -288,6 +287,30 @@ export function mapStaffPublicProfile(staff, reviews = []) {
       staffRole: staff.staffRole,
       isActive: staff.isActive,
     },
+  };
+}
+
+export function mapClientProfile(user) {
+  if (!user) return null;
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    status: user.status,
+    emailVerified: user.emailVerified,
+    phoneVerified: user.phoneVerified,
+    createdAt: toIsoString(user.createdAt),
+    updatedAt: toIsoString(user.updatedAt),
+    client: user.client
+      ? {
+        id: user.client.id,
+        profileImageUrl: user.client.profileImageUrl ?? null,
+        createdAt: toIsoString(user.client.createdAt),
+        updatedAt: toIsoString(user.client.updatedAt),
+      }
+      : null,
   };
 }
 

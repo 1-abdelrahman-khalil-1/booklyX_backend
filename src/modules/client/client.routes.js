@@ -6,6 +6,7 @@ import staffRouter from "./staff/staff.routes.js";
 import appointmentsRouter from "./appointments/appointments.routes.js";
 import favouritesRouter from "./favourites/favourites.routes.js";
 import offersRouter from "./offers/offers.routes.js";
+import profileRouter from "./profile/profile.routes.js";
 
 const clientRouter = Router();
 
@@ -16,5 +17,6 @@ clientRouter.use("/", staffRouter);
 clientRouter.use("/", appointmentsRouter);
 clientRouter.use("/", favouritesRouter);
 clientRouter.use("/", offersRouter);
+clientRouter.use("/", profileRouter);
 
 export default clientRouter;

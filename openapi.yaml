@@ -35,6 +35,10 @@ tags:
   - name: Staff/Income
   - name: Staff/Services
   - name: Staff/Availability
+  - name: Client/Profile
+  - name: Client/Discovery
+  - name: Client/Services
+  - name: Client/Offers
   - name: Super_admin/Branches
   - name: Super_admin/Users
   - name: Super_admin/Services
@@ -1308,6 +1312,48 @@ components:
                   type: number
                 reviewCount:
                   type: integer
+
+    ClientProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+        emailVerified:
+          type: boolean
+        phoneVerified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        client:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+            profileImageUrl:
+              type: string
+              format: uri
+              nullable: true
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
 
     BranchAdminApplyRequestJson:
       type: object
@@ -2972,73 +3018,114 @@ components:
         error: false
         message: Profile retrieved successfully.
         data:
-          user:
+          id: 7
+          name: Mazen Tamer
+          email: mazen.tamer@booklyx.com
+          phone: "01000000021"
+          role: staff
+          status: ACTIVE
+          createdAt: 2026-04-01T10:00:00.000Z
+          updatedAt: 2026-05-01T10:00:00.000Z
+          staff:
             id: 7
-            name: Mazen Tamer
-            email: mazen.tamer@booklyx.com
-            phone: "01000000021"
-            role: staff
-            status: ACTIVE
+            profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
+            staffRole: BARBER
+            age: 28
+            commissionPercentage: 15
+            isActive: true
             createdAt: 2026-04-01T10:00:00.000Z
             updatedAt: 2026-05-01T10:00:00.000Z
-            staff:
-              id: 7
-              profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
-              staffRole: BARBER
-              age: 28
-              commissionPercentage: 15
-              isActive: true
-              createdAt: 2026-04-01T10:00:00.000Z
-              updatedAt: 2026-05-01T10:00:00.000Z
-              branch:
-                id: 1
-                businessName: Hassan Beauty Salon
-                category: SPA
-              professionalProfile:
-                bio: Senior stylist focused on modern cuts and beard shaping.
-                experience: 6
-                licenseNumber: BARB-7845
-                specialization: BARBER
-                createdAt: 2026-04-02T10:00:00.000Z
-                updatedAt: 2026-05-02T10:00:00.000Z
-              certificates:
-                - id: 1
-                  title: Advanced Barber Certification
-                  issuer: International Barber Academy
-                  issueDate: 2025-01-10T00:00:00.000Z
-                  expiryDate: 2027-01-10T00:00:00.000Z
-                  fileUrl: https://cdn.booklyx.com/certificates/barber-cert.png
-                  verified: true
-                  createdAt: 2025-01-10T00:00:00.000Z
-              availabilities:
-                - id: 1
-                  dayOfWeek: 1
-                  startTime: "09:00"
-                  endTime: "17:00"
-                  status: AVAILABLE
-              services:
-                - id: 11
+            branch:
+              id: 1
+              businessName: Hassan Beauty Salon
+              category: SPA
+            professionalProfile:
+              bio: Senior stylist focused on modern cuts and beard shaping.
+              experience: 6
+              licenseNumber: BARB-7845
+              specialization: BARBER
+              createdAt: 2026-04-02T10:00:00.000Z
+              updatedAt: 2026-05-02T10:00:00.000Z
+            certificates:
+              - id: 1
+                title: Advanced Barber Certification
+                issuer: International Barber Academy
+                issueDate: 2025-01-10T00:00:00.000Z
+                expiryDate: 2027-01-10T00:00:00.000Z
+                fileUrl: https://cdn.booklyx.com/certificates/barber-cert.png
+                verified: true
+                createdAt: 2025-01-10T00:00:00.000Z
+            availabilities:
+              - id: 1
+                dayOfWeek: 1
+                startTime: "09:00"
+                endTime: "17:00"
+                status: AVAILABLE
+            services:
+              - id: 11
+                name: Haircut
+                description: Professional haircut with styling
+                price: 150
+                duration_minutes: 30
+                imageUrl: https://cdn.booklyx.com/services/haircut.png
+                status: APPROVED
+            reviews:
+              - id: 21
+                rating: 5
+                comment: Great attention to detail.
+                createdAt: 2026-04-20T12:00:00.000Z
+                reviewer:
+                  id: 2
+                  name: Abdo Khalil
+                  phone: "01000000001"
+                service:
+                  id: 11
                   name: Haircut
-                  description: Professional haircut with styling
-                  price: 150
-                  duration_minutes: 30
-                  imageUrl: https://cdn.booklyx.com/services/haircut.png
-                  status: APPROVED
-              reviews:
-                - id: 21
-                  rating: 5
-                  comment: Great attention to detail.
-                  createdAt: 2026-04-20T12:00:00.000Z
-                  reviewer:
-                    id: 2
-                    name: Abdo Khalil
-                    phone: "01000000001"
-                  service:
-                    id: 11
-                    name: Haircut
-                  appointmentId: 31
-              averageRating: 4.7
-              reviewCount: 34
+                appointmentId: 31
+            averageRating: 4.7
+            reviewCount: 34
+    ClientProfileResponse:
+      value:
+        status: 200
+        error: false
+        message: Profile retrieved successfully.
+        data:
+          id: 3
+          name: Abdo Khalil
+          email: abdo.khalil@booklyx.com
+          phone: "01000000001"
+          role: client
+          status: ACTIVE
+          emailVerified: true
+          phoneVerified: true
+          createdAt: 2026-04-09T10:15:00.000Z
+          updatedAt: 2026-05-01T10:15:00.000Z
+          client:
+            id: 1
+            profileImageUrl: https://cdn.booklyx.com/clients/abdo-avatar.png
+            createdAt: 2026-04-09T10:15:00.000Z
+            updatedAt: 2026-05-01T10:15:00.000Z
+    ClientProfileUpdatedResponse:
+      value:
+        status: 200
+        error: false
+        message: Profile updated successfully.
+        data:
+          id: 3
+          name: Abdo Khalil
+          email: abdo.khalil@booklyx.com
+          phone: "01000000001"
+          role: client
+          status: ACTIVE
+          emailVerified: true
+          phoneVerified: true
+          createdAt: 2026-04-09T10:15:00.000Z
+          updatedAt: 2026-05-01T10:15:00.000Z
+          client:
+            id: 1
+            profileImageUrl: https://cdn.booklyx.com/clients/abdo-avatar-new.png
+            createdAt: 2026-04-09T10:15:00.000Z
+            updatedAt: 2026-05-01T10:15:00.000Z
     StaffScheduleResponse:
       value:
         status: 200
@@ -3763,6 +3850,87 @@ paths:
         "400":
           $ref: "#/components/responses/BadRequest"
 
+  /client/profile:
+    get:
+      tags: [Client/Profile]
+      summary: Get client profile
+      description: Get authenticated client profile details.
+      operationId: getClientProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Client profile fetched successfully
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/ClientProfileResponse"
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ClientProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Client/Profile]
+      summary: Update client profile
+      description: Update authenticated client profile (name and profile image url only).
+      operationId: updateClientProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Abdo Khalil"
+                profileImageUrl:
+                  type: string
+                  format: uri
+                  nullable: true
+                  example: "https://cdn.booklyx.com/clients/abdo-avatar.png"
+      responses:
+        "200":
+          description: Client profile updated successfully
+          content:
+            application/json:
+              examples:
+                default:
+                  $ref: "#/components/examples/ClientProfileUpdatedResponse"
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ClientProfile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /client/home/dashboard:
     get:
       tags: [Client/Home]
@@ -3959,7 +4127,7 @@ paths:
 
   "/client/branches/{id}/services":
     get:
-      tags: [Client/Discovery]
+      tags: [Client/Services]
       summary: List branch services
       description: Get active services catalog under this branch.
       operationId: getClientBranchesByIdServices
@@ -4003,7 +4171,7 @@ paths:
 
   "/client/services/{id}/staff":
     get:
-      tags: [Client/Discovery]
+      tags: [Client/Services]
       summary: List staff by service
       description: Returns active staff members assigned to this service category.
       operationId: getClientServicesByIdStaff
@@ -4035,6 +4203,98 @@ paths:
                   - id: 7
                     name: "Mazen Tamer"
                     profileImageUrl: "https://cdn.booklyx.com/staff/mazen-tamer.png"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  "/client/services/{id}/offers":
+    get:
+      tags: [Client/Offers]
+      summary: List valid offers for a service
+      description: Returns valid offers for the specified service id, including discounts and dates.
+      operationId: getClientServicesByIdOffers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            example: 1
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Valid offers fetched successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - id
+                            - title
+                            - discountType
+                            - discountValue
+                            - startDate
+                            - endDate
+                            - usedCount
+                          properties:
+                            id:
+                              type: integer
+                            title:
+                              type: string
+                            description:
+                              type: string
+                              nullable: true
+                            imageUrl:
+                              type: string
+                              format: uri
+                              nullable: true
+                            discountType:
+                              type: string
+                              enum: [PERCENTAGE, FIXED]
+                            discountValue:
+                              type: number
+                            startDate:
+                              type: string
+                              format: date-time
+                            endDate:
+                              type: string
+                              format: date-time
+                            usageLimit:
+                              type: integer
+                              nullable: true
+                            usedCount:
+                              type: integer
+              example:
+                status: 200
+                error: false
+                message: "Service offers retrieved successfully."
+                data:
+                  - id: 7
+                    title: "Weekend Offer"
+                    description: "20 percent discount this weekend"
+                    imageUrl: "https://cdn.booklyx.com/offers/weekend-promo.png"
+                    discountType: "PERCENTAGE"
+                    discountValue: 20
+                    startDate: "2026-04-24T00:00:00.000Z"
+                    endDate: "2026-04-26T23:59:59.000Z"
+                    usageLimit: 100
+                    usedCount: 0
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -5959,7 +6219,7 @@ paths:
   /staff/profile:
     get:
       tags: [Staff/Profile]
-      summary: Get authenticated staff profile
+      summary: Get staff profile
       description: Get authenticated staff profile.
       operationId: getStaffProfile
       security:

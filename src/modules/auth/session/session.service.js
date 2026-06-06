@@ -4,16 +4,16 @@ import { BranchStatus, Role, UserStatus, VerificationType } from "../../../gener
 import prisma from "../../../lib/prisma.js";
 import { isPlatformAllowedForRole } from "../auth.permissions.js";
 import {
-    AuthValidationError,
-    BranchAdminNotApprovedError,
-    EmailNotVerifiedError,
-    InactiveUserError,
-    InvalidCredentialsError,
-    InvalidTokenError,
-    PhoneNotVerifiedError,
-    PlatformAccessDeniedError,
-    TokenExpiredError,
-    UserNotFound,
+  AuthValidationError,
+  BranchAdminNotApprovedError,
+  EmailNotVerifiedError,
+  InactiveUserError,
+  InvalidCredentialsError,
+  InvalidTokenError,
+  PhoneNotVerifiedError,
+  PlatformAccessDeniedError,
+  TokenExpiredError,
+  UserNotFound,
 } from "../errors.js";
 import * as helpers from "../helpers.js";
 
