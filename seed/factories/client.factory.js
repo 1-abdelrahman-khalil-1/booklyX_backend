@@ -9,6 +9,7 @@ const clientSchema = z.object({
   phone: z.string().regex(/^0\d{10}$/),
   role: z.literal(Role.client),
   status: z.nativeEnum(UserStatus),
+  profileImageUrl: z.string().url().optional(),
 });
 
 export function validateClientSeed(data) {

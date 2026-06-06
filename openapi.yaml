@@ -220,24 +220,24 @@ components:
 
     VerificationFlags:
       type: object
-      required: [emailVerified, phoneVerified]
+      required: [email_verified, phone_verified]
       properties:
-        emailVerified:
+        email_verified:
           type: boolean
           example: false
-        phoneVerified:
+        phone_verified:
           type: boolean
           example: true
 
     LoginForbiddenErrorData:
       type: object
       nullable: true
-      required: [emailVerified, phoneVerified]
+      required: [email_verified, phone_verified]
       properties:
-        emailVerified:
+        email_verified:
           type: boolean
           example: false
-        phoneVerified:
+        phone_verified:
           type: boolean
           example: true
 
@@ -275,10 +275,10 @@ components:
           enum: [ACTIVE, INACTIVE, SUSPENDED]
           default: ACTIVE
           example: ACTIVE
-        emailVerified:
+        email_verified:
           type: boolean
           example: true
-        phoneVerified:
+        phone_verified:
           type: boolean
           example: true
         staff:
@@ -288,23 +288,23 @@ components:
             id:
               type: integer
               example: 7
-            branchId:
+            branch_id:
               type: integer
               example: 1
-            profileImageUrl:
+            profile_image_url:
               type: string
               format: uri
               nullable: true
               example: https://cdn.booklyx.com/staff/mazen-tamer.png
-            staffRole:
+            staff_role:
               type: string
               enum: [DOCTOR, BARBER, SPA_SPECIALIST]
               default: BARBER
               example: BARBER
-            commissionPercentage:
+            commission_percentage:
               type: number
               example: 15
-            isActive:
+            is_active:
               type: boolean
               example: true
       example:
@@ -446,11 +446,11 @@ components:
     VerifyPasswordResetResponseData:
       type: object
       properties:
-        resetToken:
+        reset_token:
           type: string
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.password-reset-token
       example:
-        resetToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.password-reset-token
+        reset_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.password-reset-token
 
     ResetPasswordRequest:
       type: object
@@ -479,7 +479,7 @@ components:
 
     Pagination:
       type: object
-      required: [page, limit, total, totalPages]
+      required: [page, limit, total, total_pages]
       properties:
         page:
           type: integer
@@ -490,13 +490,13 @@ components:
         total:
           type: integer
           example: 1
-        totalPages:
+        total_pages:
           type: integer
           example: 1
 
     Review:
       type: object
-      required: [id, rating, createdAt, reviewer, service, staff]
+      required: [id, rating, created_at, reviewer, service, staff]
       properties:
         id:
           type: integer
@@ -511,7 +511,7 @@ components:
           type: string
           nullable: true
           example: Great experience
-        createdAt:
+        created_at:
           type: string
           format: date-time
           example: 2026-04-21T10:00:00.000Z
@@ -580,15 +580,15 @@ components:
       required:
         - id
         - title
-        - discountType
-        - discountValue
-        - startDate
-        - endDate
-        - isActive
-        - usedCount
-        - branchId
-        - createdAt
-        - updatedAt
+        - discount_type
+        - discount_value
+        - start_date
+        - end_date
+        - is_active
+        - used_count
+        - branch_id
+        - created_at
+        - updated_at
         - services
       properties:
         id:
@@ -607,39 +607,39 @@ components:
           format: uri
           nullable: true
           example: https://cdn.booklyx.com/offers/weekend-promo.png
-        discountType:
+        discount_type:
           type: string
           enum: [PERCENTAGE, FIXED]
           example: PERCENTAGE
-        discountValue:
+        discount_value:
           type: number
           example: 20
-        startDate:
+        start_date:
           type: string
           format: date-time
           example: 2026-04-24T00:00:00.000Z
-        endDate:
+        end_date:
           type: string
           format: date-time
           example: 2026-04-26T23:59:59.000Z
-        isActive:
+        is_active:
           type: boolean
           example: true
-        usageLimit:
+        usage_limit:
           type: integer
           nullable: true
           example: 100
-        usedCount:
+        used_count:
           type: integer
           example: 0
-        branchId:
+        branch_id:
           type: integer
           example: 1
-        createdAt:
+        created_at:
           type: string
           format: date-time
           example: 2026-04-20T09:00:00.000Z
-        updatedAt:
+        updated_at:
           type: string
           format: date-time
           example: 2026-04-20T09:00:00.000Z
@@ -650,7 +650,7 @@ components:
 
     StaffIncomeDailyStat:
       type: object
-      required: [date, earnings, serviceCount]
+      required: [date, earnings, service_count]
       properties:
         date:
           type: string
@@ -660,7 +660,7 @@ components:
         earnings:
           type: number
           example: 80
-        serviceCount:
+        service_count:
           type: integer
           example: 2
 
@@ -746,27 +746,27 @@ components:
           type: string
         price:
           type: number
-        maxStaff:
+        max_staff:
           type: integer
-        maxServices:
+        max_services:
           type: integer
-        loyaltyEnabled:
+        loyalty_enabled:
           type: boolean
-        offersEnabled:
+        offers_enabled:
           type: boolean
 
     ProfileBranchSettings:
       type: object
       properties:
-        allowCancellationBeforeHours:
+        allow_cancellation_before_hours:
           type: integer
 
     ProfileNotificationSettings:
       type: object
       properties:
-        bookingNotificationsEnabled:
+        booking_notifications_enabled:
           type: boolean
-        marketingNotificationsEnabled:
+        marketing_notifications_enabled:
           type: boolean
 
     BranchAvailability:
@@ -774,23 +774,23 @@ components:
       properties:
         id:
           type: integer
-        dayOfWeek:
+        day_of_week:
           type: integer
           minimum: 0
           maximum: 6
-        startTime:
+        start_time:
           type: string
           example: "09:00"
-        endTime:
+        end_time:
           type: string
           example: "17:00"
         status:
           type: string
-        createdAt:
+        created_at:
           type: string
           format: date-time
           nullable: true
-        updatedAt:
+        updated_at:
           type: string
           format: date-time
           nullable: true
@@ -805,16 +805,16 @@ components:
           nullable: true
         experience:
           type: integer
-        licenseNumber:
+        license_number:
           type: string
           nullable: true
         specialization:
           type: string
           nullable: true
-        createdAt:
+        created_at:
           type: string
           format: date-time
-        updatedAt:
+        updated_at:
           type: string
           format: date-time
 
@@ -827,19 +827,19 @@ components:
           type: string
         issuer:
           type: string
-        issueDate:
+        issue_date:
           type: string
           format: date-time
-        expiryDate:
+        expiry_date:
           type: string
           format: date-time
           nullable: true
-        fileUrl:
+        file_url:
           type: string
           nullable: true
         verified:
           type: boolean
-        createdAt:
+        created_at:
           type: string
           format: date-time
 
@@ -848,14 +848,14 @@ components:
       properties:
         id:
           type: integer
-        dayOfWeek:
+        day_of_week:
           type: integer
           minimum: 0
           maximum: 6
-        startTime:
+        start_time:
           type: string
           example: "09:00"
-        endTime:
+        end_time:
           type: string
           example: "17:00"
         status:
@@ -891,7 +891,7 @@ components:
         comment:
           type: string
           nullable: true
-        createdAt:
+        created_at:
           type: string
           format: date-time
           nullable: true
@@ -911,7 +911,7 @@ components:
               type: integer
             name:
               type: string
-        appointmentId:
+        appointment_id:
           type: integer
           nullable: true
 
@@ -925,7 +925,7 @@ components:
         comment:
           type: string
           nullable: true
-        createdAt:
+        created_at:
           type: string
           format: date-time
           nullable: true
@@ -951,7 +951,7 @@ components:
               type: integer
             name:
               type: string
-        appointmentId:
+        appointment_id:
           type: integer
           nullable: true
 
@@ -960,23 +960,23 @@ components:
       properties:
         id:
           type: integer
-        ownerName:
+        owner_name:
           type: string
         email:
           type: string
         phone:
           type: string
-        businessName:
+        business_name:
           type: string
         category:
           type: string
         description:
           type: string
           nullable: true
-        logoUrl:
+        logo_url:
           type: string
           nullable: true
-        operatingHours:
+        operating_hours:
           type: string
           nullable: true
         address:
@@ -987,31 +987,31 @@ components:
           type: string
         status:
           type: string
-        isSubscriptionActive:
+        is_subscription_active:
           type: boolean
-        subscriptionStartedAt:
+        subscription_started_at:
           type: string
           format: date-time
           nullable: true
-        emailVerified:
+        email_verified:
           type: boolean
-        phoneVerified:
+        phone_verified:
           type: boolean
-        createdAt:
+        created_at:
           type: string
           format: date-time
-        updatedAt:
+        updated_at:
           type: string
           format: date-time
         plan:
           allOf:
             - $ref: "#/components/schemas/ProfilePlan"
           nullable: true
-        bookingSettings:
+        booking_settings:
           $ref: "#/components/schemas/ProfileBranchSettings"
-        notificationSettings:
+        notification_settings:
           $ref: "#/components/schemas/ProfileNotificationSettings"
-        branchAvailability:
+        branch_availability:
           type: array
           items:
             $ref: "#/components/schemas/BranchAvailability"
@@ -1027,20 +1027,20 @@ components:
       properties:
         id:
           type: integer
-        ownerName:
+        owner_name:
           type: string
         email:
           type: string
         phone:
           type: string
-        businessName:
+        business_name:
           type: string
         category:
           type: string
-        logoUrl:
+        logo_url:
           type: string
           nullable: true
-        operatingHours:
+        operating_hours:
           type: string
           nullable: true
         address:
@@ -1051,7 +1051,7 @@ components:
           type: string
         status:
           type: string
-        updatedAt:
+        updated_at:
           type: string
           format: date-time
 
@@ -1063,14 +1063,14 @@ components:
           properties:
             id:
               type: integer
-            businessName:
+            business_name:
               type: string
             category:
               type: string
             description:
               type: string
               nullable: true
-            logoUrl:
+            logo_url:
               type: string
               nullable: true
             city:
@@ -1092,9 +1092,9 @@ components:
                   allOf:
                     - $ref: "#/components/schemas/ProfilePlan"
                   nullable: true
-                isSubscriptionActive:
+                is_subscription_active:
                   type: boolean
-                subscriptionStartedAt:
+                subscription_started_at:
                   type: string
                   format: date-time
                   nullable: true
@@ -1103,25 +1103,25 @@ components:
               format: float
             total_reviews:
               type: integer
-            bookingSettings:
+            booking_settings:
               $ref: "#/components/schemas/ProfileBranchSettings"
-            notificationSettings:
+            notification_settings:
               $ref: "#/components/schemas/ProfileNotificationSettings"
-            branchAvailability:
+            branch_availability:
               type: array
               items:
                 type: object
                 properties:
                   id:
                     type: integer
-                  dayOfWeek:
+                  day_of_week:
                     type: integer
                     minimum: 0
                     maximum: 6
-                  startTime:
+                  start_time:
                     type: string
                     example: "09:00"
-                  endTime:
+                  end_time:
                     type: string
                     example: "17:00"
                   status:
@@ -1149,10 +1149,10 @@ components:
               type: string
             status:
               type: string
-            createdAt:
+            created_at:
               type: string
               format: date-time
-            updatedAt:
+            updated_at:
               type: string
               format: date-time
             staff:
@@ -1160,22 +1160,22 @@ components:
               properties:
                 id:
                   type: integer
-                profileImageUrl:
+                profile_image_url:
                   type: string
                   nullable: true
-                staffRole:
+                staff_role:
                   type: string
                   enum: [DOCTOR, BARBER, SPA_SPECIALIST]
                 age:
                   type: integer
-                commissionPercentage:
+                commission_percentage:
                   type: number
-                isActive:
+                is_active:
                   type: boolean
-                createdAt:
+                created_at:
                   type: string
                   format: date-time
-                updatedAt:
+                updated_at:
                   type: string
                   format: date-time
                 branch:
@@ -1183,11 +1183,11 @@ components:
                   properties:
                     id:
                       type: integer
-                    businessName:
+                    business_name:
                       type: string
                     category:
                       type: string
-                professionalProfile:
+                professional_profile:
                   allOf:
                     - $ref: "#/components/schemas/StaffProfessionalProfile"
                   nullable: true
@@ -1207,9 +1207,9 @@ components:
                   type: array
                   items:
                     $ref: "#/components/schemas/StaffReview"
-                averageRating:
+                average_rating:
                   type: number
-                reviewCount:
+                review_count:
                   type: integer
 
     StaffPublicProfile:
@@ -1231,12 +1231,12 @@ components:
               type: integer
             name:
               type: string
-            profileImageUrl:
+            profile_image_url:
               type: string
               nullable: true
-            staffRole:
+            staff_role:
               type: string
-            isActive:
+            is_active:
               type: boolean
 
     AdminUserProfile:
@@ -1257,14 +1257,14 @@ components:
               type: string
             status:
               type: string
-            emailVerified:
+            email_verified:
               type: boolean
-            phoneVerified:
+            phone_verified:
               type: boolean
-            createdAt:
+            created_at:
               type: string
               format: date-time
-            updatedAt:
+            updated_at:
               type: string
               format: date-time
             branchAdmin:
@@ -1273,13 +1273,13 @@ components:
               properties:
                 id:
                   type: integer
-                businessName:
+                business_name:
                   type: string
                 status:
                   type: string
-                isSubscriptionActive:
+                is_subscription_active:
                   type: boolean
-                subscriptionStartedAt:
+                subscription_started_at:
                   type: string
                   format: date-time
                   nullable: true
@@ -1293,25 +1293,48 @@ components:
               properties:
                 id:
                   type: integer
-                branchId:
+                branch_id:
                   type: integer
-                profileImageUrl:
+                profile_image_url:
                   type: string
                   nullable: true
                 age:
                   type: integer
-                staffRole:
+                staff_role:
                   type: string
-                commissionPercentage:
+                commission_percentage:
                   type: number
-                professionalProfile:
+                professional_profile:
                   allOf:
                     - $ref: "#/components/schemas/StaffProfessionalProfile"
                   nullable: true
-                averageRating:
+                average_rating:
                   type: number
-                reviewCount:
+                review_count:
                   type: integer
+
+    ClientProfileUpdateRequestJson:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Abdo Khalil"
+        profileImageUrl:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://cdn.booklyx.com/clients/abdo-avatar.png"
+
+    ClientProfileUpdateRequestMultipart:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Abdo Khalil"
+        profile_image:
+          type: string
+          format: binary
+          description: Upload a new profile image.
 
     ClientProfile:
       type: object
@@ -1328,14 +1351,14 @@ components:
           type: string
         status:
           type: string
-        emailVerified:
+        email_verified:
           type: boolean
-        phoneVerified:
+        phone_verified:
           type: boolean
-        createdAt:
+        created_at:
           type: string
           format: date-time
-        updatedAt:
+        updated_at:
           type: string
           format: date-time
         client:
@@ -1344,14 +1367,14 @@ components:
           properties:
             id:
               type: integer
-            profileImageUrl:
+            profile_image_url:
               type: string
               format: uri
               nullable: true
-            createdAt:
+            created_at:
               type: string
               format: date-time
-            updatedAt:
+            updated_at:
               type: string
               format: date-time
 
@@ -1661,11 +1684,6 @@ components:
           enum: [DOCTOR, BARBER, SPA_SPECIALIST]
           default: BARBER
           example: BARBER
-        profileImageUrl:
-          type: string
-          format: uri
-          description: Optional. If not uploading `profile_image`, provide an existing public URL.
-          example: https://cdn.booklyx.com/staff/mazen-tamer.png
         profile_image:
           type: string
           format: binary
@@ -1753,12 +1771,6 @@ components:
           type: string
           enum: [DOCTOR, BARBER, SPA_SPECIALIST]
           example: BARBER
-        profileImageUrl:
-          type: string
-          format: uri
-          nullable: true
-          description: Optional. If not uploading `profile_image`, provide an existing public URL.
-          example: https://cdn.booklyx.com/staff/mazen-tamer-v2.png
         profile_image:
           type: string
           format: binary
@@ -1794,14 +1806,14 @@ components:
         name:
           type: string
           example: Hair Care
-        branchId:
+        branch_id:
           type: integer
           example: 1
-        createdAt:
+        created_at:
           type: string
           format: date-time
           example: 2026-04-09T10:00:00.000Z
-        updatedAt:
+        updated_at:
           type: string
           format: date-time
           example: 2026-04-09T10:00:00.000Z
@@ -1874,11 +1886,6 @@ components:
         categoryName:
           type: string
           example: Hair Care
-        imageUrl:
-          type: string
-          format: uri
-          description: Optional. If not uploading `image`, provide an existing public URL.
-          example: https://cdn.booklyx.com/services/haircut.png
         image:
           type: string
           format: binary
@@ -1958,11 +1965,6 @@ components:
         categoryName:
           type: string
           example: Hair Care
-        imageUrl:
-          type: string
-          format: uri
-          description: Optional. If not uploading `image`, provide an existing public URL.
-          example: https://cdn.booklyx.com/services/premium-haircut.png
         image:
           type: string
           format: binary
@@ -1979,7 +1981,7 @@ components:
         id:
           type: integer
           example: 1
-        branchId:
+        branch_id:
           type: integer
           example: 1
         serviceCategoryId:
@@ -2011,11 +2013,11 @@ components:
           type: string
           nullable: true
           example: null
-        createdAt:
+        created_at:
           type: string
           format: date-time
           example: 2026-04-09T10:15:00.000Z
-        updatedAt:
+        updated_at:
           type: string
           format: date-time
           example: 2026-04-09T10:15:00.000Z
@@ -2030,13 +2032,13 @@ components:
             id:
               type: integer
               example: 1
-            businessName:
+            business_name:
               type: string
               example: Hassan Beauty Salon
-            ownerName:
+            owner_name:
               type: string
               example: Mahmoud Ibrahim
-            userId:
+            user_id:
               type: integer
               example: 5
             status:
@@ -2092,11 +2094,11 @@ components:
             ]
           default: TAX_CERTIFICATE
           example: COMMERCIAL_REGISTER
-        fileUrl:
+        file_url:
           type: string
           format: uri
           example: https://res.cloudinary.com/demo/image/upload/v1/booklyx/documents/commercial-register.jpg
-        createdAt:
+        created_at:
           type: string
           format: date-time
           example: 2026-04-09T09:50:00.000Z
@@ -2122,7 +2124,7 @@ components:
         attempts:
           type: integer
           example: 1
-        createdAt:
+        created_at:
           type: string
           format: date-time
           example: 2026-04-09T10:00:00.000Z
@@ -2133,14 +2135,14 @@ components:
         id:
           type: integer
           example: 1
-        userId:
+        user_id:
           type: integer
           nullable: true
           example: 5
-        ownerName:
+        owner_name:
           type: string
           example: Mahmoud Ibrahim
-        businessName:
+        business_name:
           type: string
           example: Hassan Beauty Salon
         email:
@@ -2165,7 +2167,7 @@ components:
         taxId:
           type: string
           example: TAX-2026-001
-        logoUrl:
+        logo_url:
           type: string
           nullable: true
           example: https://res.cloudinary.com/demo/image/upload/v1/booklyx/documents/glow-logo.png
@@ -2205,21 +2207,21 @@ components:
           enum: [PENDING_VERIFICATION, PENDING_APPROVAL, APPROVED, REJECTED]
           default: PENDING_VERIFICATION
           example: APPROVED
-        emailVerified:
+        email_verified:
           type: boolean
           example: true
-        phoneVerified:
+        phone_verified:
           type: boolean
           example: true
         rejectionReason:
           type: string
           nullable: true
           example: null
-        createdAt:
+        created_at:
           type: string
           format: date-time
           example: 2026-04-09T09:45:00.000Z
-        updatedAt:
+        updated_at:
           type: string
           format: date-time
           example: 2026-04-09T10:20:00.000Z
@@ -2233,9 +2235,9 @@ components:
             $ref: "#/components/schemas/BranchVerificationCodeSummary"
       example:
         id: 1
-        userId: 5
-        ownerName: Mahmoud Ibrahim
-        businessName: Hassan Beauty Salon
+        user_id: 5
+        owner_name: Mahmoud Ibrahim
+        business_name: Hassan Beauty Salon
         email: mahmoud.ibrahim@booklyx.com
         phone: "01000000011"
         category: SPA
@@ -2248,11 +2250,11 @@ components:
         latitude: 30.0626
         longitude: 31.3368
         status: APPROVED
-        emailVerified: true
-        phoneVerified: true
+        email_verified: true
+        phone_verified: true
         rejectionReason: null
-        createdAt: 2026-04-09T09:45:00.000Z
-        updatedAt: 2026-04-09T10:20:00.000Z
+        created_at: 2026-04-09T09:45:00.000Z
+        updated_at: 2026-04-09T10:20:00.000Z
 
   examples:
     BranchAvailabilityResponse:
@@ -2264,12 +2266,12 @@ components:
           "data":
             {
               "id": 1,
-              "dayOfWeek": 1,
-              "startTime": "09:00",
-              "endTime": "17:00",
+              "day_of_week": 1,
+              "start_time": "09:00",
+              "end_time": "17:00",
               "status": "AVAILABLE",
-              "createdAt": "2026-05-29T20:20:00.000Z",
-              "updatedAt": "2026-05-29T20:20:00.000Z",
+              "created_at": "2026-05-29T20:20:00.000Z",
+              "updated_at": "2026-05-29T20:20:00.000Z",
             },
         }
     BookingSettingsResponse:
@@ -2281,12 +2283,12 @@ components:
           "data":
             {
               "id": 1,
-              "branchId": 1,
+              "branch_id": 1,
               "slotIntervalMinutes": 30,
               "leadTimeHours": 2,
               "cancelationPolicyHours": 24,
-              "createdAt": "2026-05-29T20:20:00.000Z",
-              "updatedAt": "2026-05-29T20:20:00.000Z",
+              "created_at": "2026-05-29T20:20:00.000Z",
+              "updated_at": "2026-05-29T20:20:00.000Z",
             },
         }
     NotificationSettingsResponse:
@@ -2298,12 +2300,12 @@ components:
           "data":
             {
               "id": 1,
-              "userId": 5,
+              "user_id": 5,
               "emailEnabled": true,
               "smsEnabled": false,
               "pushEnabled": true,
-              "createdAt": "2026-05-29T20:20:00.000Z",
-              "updatedAt": "2026-05-29T20:20:00.000Z",
+              "created_at": "2026-05-29T20:20:00.000Z",
+              "updated_at": "2026-05-29T20:20:00.000Z",
             },
         }
     AdminServicesDetailsResponse:
@@ -2344,8 +2346,8 @@ components:
           "message": "Platform stats retrieved successfully.",
           "data":
             {
-              "totalActiveBusinesses": 24,
-              "totalSubscriptionRevenue": 14500.5,
+              "total_active_businesses": 24,
+              "total_subscription_revenue": 14500.5,
             },
         }
     AdminAnalyticsRecentActivitiesResponse:
@@ -2384,10 +2386,10 @@ components:
                 "currency": "EGP",
                 "status": "COMPLETED",
                 "provider": "STRIPE",
-                "paymentMethod": "CARD",
+                "payment_method": "CARD",
                 "transactionId": "ch_3Mv8Y2LkdIwHu7ix1a9s",
-                "bookingId": 12,
-                "createdAt": "2026-04-20T14:30:00.000Z",
+                "booking_id": 12,
+                "created_at": "2026-04-20T14:30:00.000Z",
               },
             ],
         }
@@ -2404,10 +2406,10 @@ components:
               "currency": "EGP",
               "status": "COMPLETED",
               "provider": "STRIPE",
-              "paymentMethod": "CARD",
+              "payment_method": "CARD",
               "transactionId": "ch_3Mv8Y2LkdIwHu7ix1a9s",
-              "bookingId": 12,
-              "createdAt": "2026-04-20T14:30:00.000Z",
+              "booking_id": 12,
+              "created_at": "2026-04-20T14:30:00.000Z",
             },
         }
     AdminPaymentRefundResponse:
@@ -2427,11 +2429,11 @@ components:
           "data":
             {
               "id": 12,
-              "branchId": 1,
-              "planId": 2,
+              "branch_id": 1,
+              "plan_id": 2,
               "status": "ACTIVE",
-              "startDate": "2026-05-29T20:20:00.000Z",
-              "endDate": "2026-06-29T20:20:00.000Z",
+              "start_date": "2026-05-29T20:20:00.000Z",
+              "end_date": "2026-06-29T20:20:00.000Z",
             },
         }
     BranchSubscriptionRenewResponse:
@@ -2443,11 +2445,11 @@ components:
           "data":
             {
               "id": 12,
-              "branchId": 1,
-              "planId": 2,
+              "branch_id": 1,
+              "plan_id": 2,
               "status": "ACTIVE",
-              "startDate": "2026-06-29T20:20:00.000Z",
-              "endDate": "2026-07-29T20:20:00.000Z",
+              "start_date": "2026-06-29T20:20:00.000Z",
+              "end_date": "2026-07-29T20:20:00.000Z",
             },
         }
     BranchSubscriptionDetailsResponse:
@@ -2459,11 +2461,11 @@ components:
           "data":
             {
               "id": 12,
-              "branchId": 1,
-              "planId": 2,
+              "branch_id": 1,
+              "plan_id": 2,
               "status": "ACTIVE",
-              "startDate": "2026-05-29T20:20:00.000Z",
-              "endDate": "2026-06-29T20:20:00.000Z",
+              "start_date": "2026-05-29T20:20:00.000Z",
+              "end_date": "2026-06-29T20:20:00.000Z",
               "plan":
                 {
                   "id": 2,
@@ -2485,11 +2487,11 @@ components:
           "data":
             {
               "id": 12,
-              "branchId": 1,
-              "planId": 2,
+              "branch_id": 1,
+              "plan_id": 2,
               "status": "CANCELLED",
-              "startDate": "2026-05-29T20:20:00.000Z",
-              "endDate": "2026-06-29T20:20:00.000Z",
+              "start_date": "2026-05-29T20:20:00.000Z",
+              "end_date": "2026-06-29T20:20:00.000Z",
             },
         }
     BranchAppointmentDetailsResponse:
@@ -2501,12 +2503,12 @@ components:
           "data":
             {
               "id": 15,
-              "scheduledAt": "2026-06-01T14:30:00.000Z",
+              "scheduled_at": "2026-06-01T14:30:00.000Z",
               "durationMinutes": 45,
               "notes": "Prefer quiet service",
               "status": "CONFIRMED",
               "price": 250,
-              "branchId": 1,
+              "branch_id": 1,
               "client":
                 {
                   "id": 3,
@@ -2555,15 +2557,15 @@ components:
           "data":
             [
               {
-                "staffId": 7,
+                "staff_id": 7,
                 "staffName": "Mazen Tamer",
-                "totalEarnings": 4500,
+                "total_earnings": 4500,
                 "commissionEarned": 675,
               },
               {
-                "staffId": 8,
+                "staff_id": 8,
                 "staffName": "Amr Khaled",
-                "totalEarnings": 3200,
+                "total_earnings": 3200,
                 "commissionEarned": 480,
               },
             ],
@@ -2595,7 +2597,7 @@ components:
                 "id": 15,
                 "clientName": "Abdo Khalil",
                 "serviceName": "Swedish Massage",
-                "scheduledAt": "2026-05-29T14:30:00.000Z",
+                "scheduled_at": "2026-05-29T14:30:00.000Z",
                 "price": 250,
                 "status": "CONFIRMED",
               },
@@ -2610,13 +2612,13 @@ components:
           "data":
             [
               {
-                "serviceId": 1,
+                "service_id": 1,
                 "name": "Haircut",
                 "bookingCount": 42,
                 "revenue": 6300,
               },
               {
-                "serviceId": 2,
+                "service_id": 2,
                 "name": "Swedish Massage",
                 "bookingCount": 28,
                 "revenue": 7000,
@@ -2636,8 +2638,8 @@ components:
                 "amount": 250,
                 "status": "COMPLETED",
                 "clientName": "Abdo Khalil",
-                "paymentMethod": "CARD",
-                "createdAt": "2026-05-29T14:30:00.000Z",
+                "payment_method": "CARD",
+                "created_at": "2026-05-29T14:30:00.000Z",
               },
             ],
         }
@@ -2668,9 +2670,9 @@ components:
                 "amount": 250,
                 "currency": "EGP",
                 "status": "COMPLETED",
-                "paymentMethod": "CARD",
-                "bookingId": 12,
-                "createdAt": "2026-05-29T14:30:00.000Z",
+                "payment_method": "CARD",
+                "booking_id": 12,
+                "created_at": "2026-05-29T14:30:00.000Z",
               },
             ],
         }
@@ -2682,7 +2684,7 @@ components:
           "message": "Report generated successfully.",
           "data":
             {
-              "reportUrl": "https://cdn.booklyx.com/reports/report-2026-05-29.csv",
+              "report_url": "https://cdn.booklyx.com/reports/report-2026-05-29.csv",
             },
         }
     BranchServiceDetailsResponse:
@@ -2718,10 +2720,10 @@ components:
               "branch":
                 {
                   "id": 1,
-                  "businessName": "Hassan Beauty Salon",
+                  "business_name": "Hassan Beauty Salon",
                   "category": "SPA",
                   "description": "Premium beauty and skincare services.",
-                  "logoUrl": "https://cdn.booklyx.com/branch/logo.png",
+                  "logo_url": "https://cdn.booklyx.com/branch/logo.png",
                   "city": "Cairo",
                   "district": "Nasr City",
                   "address": "12 Makram Ebeid Street",
@@ -2731,10 +2733,10 @@ components:
                       "id": 2,
                       "name": "Professional",
                       "price": 399,
-                      "maxStaff": 10,
-                      "maxServices": 50,
-                      "loyaltyEnabled": true,
-                      "offersEnabled": true,
+                      "max_staff": 10,
+                      "max_services": 50,
+                      "loyalty_enabled": true,
+                      "offers_enabled": true,
                     },
                   "currentSubscription":
                     {
@@ -2743,29 +2745,29 @@ components:
                           "id": 2,
                           "name": "Professional",
                           "price": 399,
-                          "maxStaff": 10,
-                          "maxServices": 50,
-                          "loyaltyEnabled": true,
-                          "offersEnabled": true,
+                          "max_staff": 10,
+                          "max_services": 50,
+                          "loyalty_enabled": true,
+                          "offers_enabled": true,
                         },
-                      "isSubscriptionActive": true,
-                      "subscriptionStartedAt": "2026-05-01T10:00:00Z",
+                      "is_subscription_active": true,
+                      "subscription_started_at": "2026-05-01T10:00:00Z",
                     },
                   "average_rating": 4.8,
                   "total_reviews": 24,
-                  "bookingSettings": { "allowCancellationBeforeHours": 24 },
-                  "notificationSettings":
+                  "booking_settings": { "allow_cancellation_before_hours": 24 },
+                  "notification_settings":
                     {
-                      "bookingNotificationsEnabled": true,
-                      "marketingNotificationsEnabled": false,
+                      "booking_notifications_enabled": true,
+                      "marketing_notifications_enabled": false,
                     },
-                  "branchAvailability":
+                  "branch_availability":
                     [
                       {
                         "id": 1,
-                        "dayOfWeek": 1,
-                        "startTime": "09:00",
-                        "endTime": "17:00",
+                        "day_of_week": 1,
+                        "start_time": "09:00",
+                        "end_time": "17:00",
                         "status": "OPEN",
                       },
                     ],
@@ -2776,12 +2778,12 @@ components:
                     "id": 15,
                     "rating": 5,
                     "comment": "Amazing experience!",
-                    "createdAt": "2026-05-29T14:30:00.000Z",
+                    "created_at": "2026-05-29T14:30:00.000Z",
                     "reviewer":
                       { "name": "Abdo Khalil", "phone": "01000000001" },
                     "service": { "id": 2, "name": "Swedish Massage" },
                     "staff": { "id": 7, "name": "Mazen Tamer" },
-                    "appointmentId": 12,
+                    "appointment_id": 12,
                   },
                 ],
             },
@@ -2795,9 +2797,9 @@ components:
           "data":
             {
               "id": 1,
-              "userId": 5,
-              "ownerName": "Mahmoud Ibrahim",
-              "businessName": "Hassan Beauty Salon",
+              "user_id": 5,
+              "owner_name": "Mahmoud Ibrahim",
+              "business_name": "Hassan Beauty Salon",
               "email": "mahmoud.ibrahim@booklyx.com",
               "category": "SPA",
               "description": "Premium beauty and skincare services.",
@@ -2809,10 +2811,10 @@ components:
               "latitude": 30.0626,
               "longitude": 31.3368,
               "status": "PENDING_APPROVAL",
-              "emailVerified": true,
-              "phoneVerified": true,
-              "createdAt": "2026-04-09T09:45:00.000Z",
-              "updatedAt": "2026-04-09T10:20:00.000Z",
+              "email_verified": true,
+              "phone_verified": true,
+              "created_at": "2026-04-09T09:45:00.000Z",
+              "updated_at": "2026-04-09T10:20:00.000Z",
             },
         }
 
@@ -2899,19 +2901,19 @@ components:
         code: "333333"
     ResetPasswordRequest:
       value:
-        resetToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.password-reset-token
-        newPassword: "NewPass123"
+        reset_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.password-reset-token
+        new_password: "NewPass123"
     RefreshTokenRequest:
       value:
-        refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
+        refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.client-refresh-token
     BranchAdminApplyRequest:
       value:
-        planId: 1
-        ownerName: Mahmoud Ibrahim
+        plan_id: 1
+        owner_name: Mahmoud Ibrahim
         email: mahmoud.ibrahim@booklyx.com
         phone: "01000000011"
         password: "12345678"
-        businessName: Hassan Beauty Salon
+        business_name: Hassan Beauty Salon
         category: SPA
         description: Premium beauty and skincare services.
         commercialRegisterNumber: CR-2026-001
@@ -2921,7 +2923,7 @@ components:
         address: 12 Makram Ebeid Street
         latitude: 30.0626
         longitude: 31.3368
-        logoUrl: https://cdn.booklyx.com/branches/hassan-beauty-salon-logo.png
+        logo_url: https://cdn.booklyx.com/branches/hassan-beauty-salon-logo.png
     BranchAdminResendRequest:
       value:
         email: mahmoud.ibrahim@booklyx.com
@@ -2933,22 +2935,22 @@ components:
         phone: "01000000021"
         password: "12345678"
         age: 28
-        startDate: 2026-03-01T00:00:00.000Z
-        staffRole: BARBER
-        profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
-        commissionPercentage: 15
-        serviceIds: [1, 2]
+        start_date: 2026-03-01T00:00:00.000Z
+        staff_role: BARBER
+        profile_image_url: https://cdn.booklyx.com/staff/mazen-tamer.png
+        commission_percentage: 15
+        service_ids: [1, 2]
     UpdateStaffRequest:
       value:
         name: Mazen Tamer Updated
         email: mazen.updated@booklyx.com
         phone: "01000000031"
         age: 29
-        startDate: 2026-04-01T00:00:00.000Z
-        staffRole: BARBER
-        profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer-v2.png
-        commissionPercentage: 20
-        serviceIds: [2, 3]
+        start_date: 2026-04-01T00:00:00.000Z
+        staff_role: BARBER
+        profile_image_url: https://cdn.booklyx.com/staff/mazen-tamer-v2.png
+        commission_percentage: 20
+        service_ids: [2, 3]
     AddServiceCategoryRequest:
       value:
         name: Hair Care
@@ -2958,7 +2960,7 @@ components:
         description: Professional haircut with styling
         price: 150
         durationMinutes: 30
-        categoryName: Hair Care
+        category_name: Hair Care
         imageUrl: https://cdn.booklyx.com/services/haircut.png
     UpdateServiceRequest:
       value:
@@ -2967,7 +2969,7 @@ components:
         description: Professional haircut with wash and styling
         price: 180
         durationMinutes: 40
-        categoryId: 1
+        category_id: 1
         imageUrl: https://cdn.booklyx.com/services/premium-haircut.png
     RejectReasonRequest:
       value:
@@ -2979,17 +2981,17 @@ components:
           - https://cdn.booklyx.com/executions/result-1.jpg
     StaffAddServiceRequest:
       value:
-        serviceId: 1
+        service_id: 1
     StaffCreateAvailabilityRequest:
       value:
-        dayOfWeek: 1
-        startTime: "09:00"
-        endTime: "17:00"
+        day_of_week: 1
+        start_time: "09:00"
+        end_time: "17:00"
     StaffUpdateAvailabilityRequest:
       value:
-        dayOfWeek: 2
-        startTime: "10:00"
-        endTime: "18:00"
+        day_of_week: 2
+        start_time: "10:00"
+        end_time: "18:00"
     VerifyEmailSuccessResponse:
       value:
         status: 200
@@ -3134,42 +3136,42 @@ components:
           phone: "01000000021"
           role: staff
           status: ACTIVE
-          createdAt: 2026-04-01T10:00:00.000Z
-          updatedAt: 2026-05-01T10:00:00.000Z
+          created_at: 2026-04-01T10:00:00.000Z
+          updated_at: 2026-05-01T10:00:00.000Z
           staff:
             id: 7
-            profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
-            staffRole: BARBER
+            profile_image_url: https://cdn.booklyx.com/staff/mazen-tamer.png
+            staff_role: BARBER
             age: 28
-            commissionPercentage: 15
-            isActive: true
-            createdAt: 2026-04-01T10:00:00.000Z
-            updatedAt: 2026-05-01T10:00:00.000Z
+            commission_percentage: 15
+            is_active: true
+            created_at: 2026-04-01T10:00:00.000Z
+            updated_at: 2026-05-01T10:00:00.000Z
             branch:
               id: 1
-              businessName: Hassan Beauty Salon
+              business_name: Hassan Beauty Salon
               category: SPA
-            professionalProfile:
+            professional_profile:
               bio: Senior stylist focused on modern cuts and beard shaping.
               experience: 6
-              licenseNumber: BARB-7845
+              license_number: BARB-7845
               specialization: BARBER
-              createdAt: 2026-04-02T10:00:00.000Z
-              updatedAt: 2026-05-02T10:00:00.000Z
+              created_at: 2026-04-02T10:00:00.000Z
+              updated_at: 2026-05-02T10:00:00.000Z
             certificates:
               - id: 1
                 title: Advanced Barber Certification
                 issuer: International Barber Academy
-                issueDate: 2025-01-10T00:00:00.000Z
-                expiryDate: 2027-01-10T00:00:00.000Z
-                fileUrl: https://cdn.booklyx.com/certificates/barber-cert.png
+                issue_date: 2025-01-10T00:00:00.000Z
+                expiry_date: 2027-01-10T00:00:00.000Z
+                file_url: https://cdn.booklyx.com/certificates/barber-cert.png
                 verified: true
-                createdAt: 2025-01-10T00:00:00.000Z
+                created_at: 2025-01-10T00:00:00.000Z
             availabilities:
               - id: 1
-                dayOfWeek: 1
-                startTime: "09:00"
-                endTime: "17:00"
+                day_of_week: 1
+                start_time: "09:00"
+                end_time: "17:00"
                 status: AVAILABLE
             services:
               - id: 11
@@ -3183,7 +3185,7 @@ components:
               - id: 21
                 rating: 5
                 comment: Great attention to detail.
-                createdAt: 2026-04-20T12:00:00.000Z
+                created_at: 2026-04-20T12:00:00.000Z
                 reviewer:
                   id: 2
                   name: Abdo Khalil
@@ -3191,9 +3193,9 @@ components:
                 service:
                   id: 11
                   name: Haircut
-                appointmentId: 31
-            averageRating: 4.7
-            reviewCount: 34
+                appointment_id: 31
+            average_rating: 4.7
+            review_count: 34
     ClientProfileResponse:
       value:
         status: 200
@@ -3206,15 +3208,15 @@ components:
           phone: "01000000001"
           role: client
           status: ACTIVE
-          emailVerified: true
-          phoneVerified: true
-          createdAt: 2026-04-09T10:15:00.000Z
-          updatedAt: 2026-05-01T10:15:00.000Z
+          email_verified: true
+          phone_verified: true
+          created_at: 2026-04-09T10:15:00.000Z
+          updated_at: 2026-05-01T10:15:00.000Z
           client:
             id: 1
-            profileImageUrl: https://cdn.booklyx.com/clients/abdo-avatar.png
-            createdAt: 2026-04-09T10:15:00.000Z
-            updatedAt: 2026-05-01T10:15:00.000Z
+            profile_image_url: https://cdn.booklyx.com/clients/abdo-avatar.png
+            created_at: 2026-04-09T10:15:00.000Z
+            updated_at: 2026-05-01T10:15:00.000Z
     ClientProfileUpdatedResponse:
       value:
         status: 200
@@ -3227,15 +3229,15 @@ components:
           phone: "01000000001"
           role: client
           status: ACTIVE
-          emailVerified: true
-          phoneVerified: true
-          createdAt: 2026-04-09T10:15:00.000Z
-          updatedAt: 2026-05-01T10:15:00.000Z
+          email_verified: true
+          phone_verified: true
+          created_at: 2026-04-09T10:15:00.000Z
+          updated_at: 2026-05-01T10:15:00.000Z
           client:
             id: 1
-            profileImageUrl: https://cdn.booklyx.com/clients/abdo-avatar-new.png
-            createdAt: 2026-04-09T10:15:00.000Z
-            updatedAt: 2026-05-01T10:15:00.000Z
+            profile_image_url: https://cdn.booklyx.com/clients/abdo-avatar-new.png
+            created_at: 2026-04-09T10:15:00.000Z
+            updated_at: 2026-05-01T10:15:00.000Z
     StaffScheduleResponse:
       value:
         status: 200
@@ -3313,22 +3315,22 @@ components:
         error: false
         message: Income statistics retrieved successfully.
         data:
-          totalEarnings: 560
-          serviceCount: 14
+          total_earnings: 560
+          service_count: 14
           range: weekly
-          dailyStats:
+          daily_stats:
             - date: 2026-04-15
               earnings: 80
-              serviceCount: 2
+              service_count: 2
             - date: 2026-04-16
               earnings: 120
-              serviceCount: 3
+              service_count: 3
             - date: 2026-04-17
               earnings: 200
-              serviceCount: 5
+              service_count: 5
             - date: 2026-04-20
               earnings: 160
-              serviceCount: 4
+              service_count: 4
     StaffServicesResponse:
       value:
         status: 200
@@ -3353,7 +3355,7 @@ components:
         error: false
         message: Service added to your profile successfully.
         data:
-          serviceId: 1
+          service_id: 1
     StaffAvailabilityListResponse:
       value:
         status: 200
@@ -3361,12 +3363,12 @@ components:
         message: Availability slots retrieved successfully.
         data:
           - id: 1
-            dayOfWeek: 1
-            startTime: "09:00"
-            endTime: "17:00"
+            day_of_week: 1
+            start_time: "09:00"
+            end_time: "17:00"
           - id: 2
-            dayOfWeek: 3
-            startTime: "10:00"
+            day_of_week: 3
+            start_time: "10:00"
     StaffAvailabilityCreatedResponse:
       value:
         status: 201
@@ -3374,9 +3376,9 @@ components:
         message: Availability slot created successfully.
         data:
           id: 3
-          dayOfWeek: 5
-          startTime: "12:00"
-          endTime: "20:00"
+          day_of_week: 5
+          start_time: "12:00"
+          end_time: "20:00"
     StaffAvailabilityUpdatedResponse:
       value:
         status: 200
@@ -3384,9 +3386,9 @@ components:
         message: Availability slot updated successfully.
         data:
           id: 3
-          dayOfWeek: 5
-          startTime: "13:00"
-          endTime: "21:00"
+          day_of_week: 5
+          start_time: "13:00"
+          end_time: "21:00"
     StaffAvailabilityDeletedResponse:
       value:
         status: 200
@@ -3401,13 +3403,13 @@ components:
         message: Available slots retrieved successfully.
         data:
           date: 2026-04-25
-          serviceId: 1
+          service_id: 1
           available: true
           slots:
-            - startTime: 2026-04-25T09:00:00.000Z
-              endTime: 2026-04-25T09:30:00.000Z
-            - startTime: 2026-04-25T09:30:00.000Z
-              endTime: 2026-04-25T10:00:00.000Z
+            - start_time: 2026-04-25T09:00:00.000Z
+              end_time: 2026-04-25T09:30:00.000Z
+            - start_time: 2026-04-25T09:30:00.000Z
+              end_time: 2026-04-25T10:00:00.000Z
     RegisterSuccessResponse:
       value:
         status: 201
@@ -3510,7 +3512,7 @@ components:
         error: false
         message: Code verified. You can now reset your password.
         data:
-          resetToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.password-reset-token
+          reset_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.password-reset-token
     RefreshSuccessResponse:
       value:
         status: 200
@@ -3731,9 +3733,9 @@ components:
         message: Branches retrieved successfully.
         data:
           - id: 1
-            userId: 5
-            ownerName: Mahmoud Ibrahim
-            businessName: Hassan Beauty Salon
+            user_id: 5
+            owner_name: Mahmoud Ibrahim
+            business_name: Hassan Beauty Salon
             email: mahmoud.ibrahim@booklyx.com
             category: SPA
             description: Premium beauty and skincare services.
@@ -3757,9 +3759,9 @@ components:
         message: Branch retrieved successfully.
         data:
           id: 1
-          userId: 5
-          ownerName: Mahmoud Ibrahim
-          businessName: Hassan Beauty Salon
+          user_id: 5
+          owner_name: Mahmoud Ibrahim
+          business_name: Hassan Beauty Salon
           email: mahmoud.ibrahim@booklyx.com
           phone: "01000000011"
           category: SPA
@@ -3780,7 +3782,7 @@ components:
           documents:
             - id: 1
               type: COMMERCIAL_REGISTER
-              fileUrl: https://res.cloudinary.com/demo/image/upload/v1/booklyx/documents/commercial-register.png
+              file_url: https://res.cloudinary.com/demo/image/upload/v1/booklyx/documents/commercial-register.png
               created_at: 2026-04-09T09:50:00.000Z
           verificationCodes:
             - id: 12
@@ -4005,18 +4007,12 @@ paths:
       requestBody:
         required: true
         content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ClientProfileUpdateRequestMultipart"
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  example: "Abdo Khalil"
-                profileImageUrl:
-                  type: string
-                  format: uri
-                  nullable: true
-                  example: "https://cdn.booklyx.com/clients/abdo-avatar.png"
+              $ref: "#/components/schemas/ClientProfileUpdateRequestJson"
       responses:
         "200":
           description: Client profile updated successfully
@@ -4101,12 +4097,12 @@ paths:
                   offers:
                     - id: 7
                       title: "Weekend Offer"
-                      discountValue: 20
-                      discountType: "PERCENTAGE"
+                      discount_value: 20
+                      discount_type: "PERCENTAGE"
                   nearbyBranches:
                     - id: 1
-                      businessName: "Hassan Beauty Salon"
-                      logoUrl: "https://cdn.booklyx.com/branch/logo.png"
+                      business_name: "Hassan Beauty Salon"
+                      logo_url: "https://cdn.booklyx.com/branch/logo.png"
                       distance: 2.5
         "400":
           $ref: "#/components/responses/BadRequest"
@@ -4174,9 +4170,9 @@ paths:
                 message: "Search completed successfully."
                 data:
                   - id: 1
-                    businessName: "Hassan Beauty Salon"
+                    business_name: "Hassan Beauty Salon"
                     category: "SPA"
-                    logoUrl: "https://cdn.booklyx.com/branch/logo.png"
+                    logo_url: "https://cdn.booklyx.com/branch/logo.png"
                     latitude: 30.0626
                     longitude: 31.3368
                     distance: 1.8
@@ -4220,10 +4216,10 @@ paths:
                 message: "Branch profile retrieved successfully."
                 data:
                   id: 1
-                  businessName: "Hassan Beauty Salon"
+                  business_name: "Hassan Beauty Salon"
                   category: "SPA"
                   description: "Premium beauty and skincare services."
-                  logoUrl: "https://cdn.booklyx.com/branch/logo.png"
+                  logo_url: "https://cdn.booklyx.com/branch/logo.png"
                   address: "12 Makram Ebeid Street"
                   rating: 4.8
         "400":
@@ -4312,7 +4308,7 @@ paths:
                 data:
                   - id: 7
                     name: "Mazen Tamer"
-                    profileImageUrl: "https://cdn.booklyx.com/staff/mazen-tamer.png"
+                    profile_image_url: "https://cdn.booklyx.com/staff/mazen-tamer.png"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4357,11 +4353,11 @@ paths:
                           required:
                             - id
                             - title
-                            - discountType
-                            - discountValue
-                            - startDate
-                            - endDate
-                            - usedCount
+                            - discount_type
+                            - discount_value
+                            - start_date
+                            - end_date
+                            - used_count
                           properties:
                             id:
                               type: integer
@@ -4374,21 +4370,21 @@ paths:
                               type: string
                               format: uri
                               nullable: true
-                            discountType:
+                            discount_type:
                               type: string
                               enum: [PERCENTAGE, FIXED]
-                            discountValue:
+                            discount_value:
                               type: number
-                            startDate:
+                            start_date:
                               type: string
                               format: date-time
-                            endDate:
+                            end_date:
                               type: string
                               format: date-time
-                            usageLimit:
+                            usage_limit:
                               type: integer
                               nullable: true
-                            usedCount:
+                            used_count:
                               type: integer
               example:
                 status: 200
@@ -4399,12 +4395,12 @@ paths:
                     title: "Weekend Offer"
                     description: "20 percent discount this weekend"
                     imageUrl: "https://cdn.booklyx.com/offers/weekend-promo.png"
-                    discountType: "PERCENTAGE"
-                    discountValue: 20
-                    startDate: "2026-04-24T00:00:00.000Z"
-                    endDate: "2026-04-26T23:59:59.000Z"
-                    usageLimit: 100
-                    usedCount: 0
+                    discount_type: "PERCENTAGE"
+                    discount_value: 20
+                    start_date: "2026-04-24T00:00:00.000Z"
+                    end_date: "2026-04-26T23:59:59.000Z"
+                    usage_limit: 100
+                    used_count: 0
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4447,7 +4443,7 @@ paths:
                 data:
                   id: 7
                   name: "Mazen Tamer"
-                  profileImageUrl: "https://cdn.booklyx.com/staff/mazen-tamer.png"
+                  profile_image_url: "https://cdn.booklyx.com/staff/mazen-tamer.png"
                   rating: 4.9
         "400":
           $ref: "#/components/responses/BadRequest"
@@ -4474,7 +4470,7 @@ paths:
             type: integer
             minimum: 1
             example: 7
-        - name: serviceId
+        - name: service_id
           in: query
           required: true
           schema:
@@ -4525,7 +4521,7 @@ paths:
             type: integer
             minimum: 1
             example: 7
-        - name: serviceId
+        - name: service_id
           in: query
           required: true
           schema:
@@ -4612,7 +4608,7 @@ paths:
                   appointment:
                     id: 15
                     status: "PENDING"
-                    scheduledAt: "2026-06-01T10:00:00.000Z"
+                    scheduled_at: "2026-06-01T10:00:00.000Z"
                     service:
                       name: "Haircut"
                       price: 300.00
@@ -4623,9 +4619,9 @@ paths:
                     id: 1
                     status: "PENDING"
                     amount: 240
-                    originalAmount: 300
-                    discountAmount: 60
-                    appliedOfferId: 7
+                    original_amount: 300
+                    discount_amount: 60
+                    applied_offer_id: 7
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4682,10 +4678,10 @@ paths:
                     id: 1
                     status: "PAID"
                     amount: 240
-                    originalAmount: 300
-                    discountAmount: 60
-                    appliedOfferId: 7
-                    paidAt: "2026-06-01T10:15:00.000Z"
+                    original_amount: 300
+                    discount_amount: 60
+                    applied_offer_id: 7
+                    paid_at: "2026-06-01T10:15:00.000Z"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4728,7 +4724,7 @@ paths:
                 data:
                   - id: 15
                     status: "CONFIRMED"
-                    scheduledAt: "2026-06-01T10:00:00.000Z"
+                    scheduled_at: "2026-06-01T10:00:00.000Z"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -4767,7 +4763,7 @@ paths:
                 data:
                   id: 15
                   status: "CONFIRMED"
-                  scheduledAt: "2026-06-01T10:00:00.000Z"
+                  scheduled_at: "2026-06-01T10:00:00.000Z"
                   price: 150.00
                   service:
                     id: 1
@@ -5018,12 +5014,12 @@ paths:
                 data:
                   branches:
                     - id: 1
-                      businessName: "Hassan Beauty Salon"
-                      logoUrl: "https://cdn.booklyx.com/branch/logo.png"
+                      business_name: "Hassan Beauty Salon"
+                      logo_url: "https://cdn.booklyx.com/branch/logo.png"
                   staff:
                     - id: 7
                       name: "Mazen Tamer"
-                      profileImageUrl: "https://cdn.booklyx.com/staff/mazen-tamer.png"
+                      profile_image_url: "https://cdn.booklyx.com/staff/mazen-tamer.png"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -5405,8 +5401,8 @@ paths:
       tags: [Auth/Session]
       summary: Logout
       description: |
-        Revoke the current refresh token. APP clients send `refreshToken` in the body.
-        WEB clients can rely on the `refreshToken` cookie, which is cleared by the server.
+        Revoke the current refresh token. APP clients send `refresh_token` in the body.
+        WEB clients can rely on the `refresh_token` cookie, which is cleared by the server.
       operationId: postAuthLogout
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
@@ -5658,18 +5654,18 @@ paths:
                     message: Profile updated successfully
                     data:
                       id: 1
-                      ownerName: Updated Branch Name
+                      owner_name: Updated Branch Name
                       email: branch@example.com
                       phone: "01000000022"
-                      businessName: Prime Salon
+                      business_name: Prime Salon
                       category: SALON
-                      logoUrl: https://cdn.booklyx.com/branch/logo.png
-                      operatingHours: 09:00-22:00
+                      logo_url: https://cdn.booklyx.com/branch/logo.png
+                      operating_hours: 09:00-22:00
                       address: New address
                       city: Cairo
                       district: Nasr City
                       status: APPROVED
-                      updatedAt: 2026-05-27T12:00:00.000Z
+                      updated_at: 2026-05-27T12:00:00.000Z
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -5709,45 +5705,45 @@ paths:
                     data:
                       user:
                         id: 1
-                        ownerName: Prime Salon
+                        owner_name: Prime Salon
                         email: branch@example.com
                         phone: "01000000022"
-                        businessName: Prime Salon
+                        business_name: Prime Salon
                         category: SPA
                         description: Premium beauty and skincare services.
-                        logoUrl: https://res.cloudinary.com/booklyx/image/upload/v123/booklyx/images/logo.png
-                        operatingHours: "09:00-22:00"
+                        logo_url: https://res.cloudinary.com/booklyx/image/upload/v123/booklyx/images/logo.png
+                        operating_hours: "09:00-22:00"
                         address: 12 Makram Ebeid Street
                         city: Cairo
                         district: Nasr City
                         status: APPROVED
-                        isSubscriptionActive: true
-                        subscriptionStartedAt: 2026-05-25T12:00:00.000Z
-                        emailVerified: true
-                        phoneVerified: true
-                        createdAt: 2026-04-09T10:15:00.000Z
-                        updatedAt: 2026-05-25T12:00:00.000Z
+                        is_subscription_active: true
+                        subscription_started_at: 2026-05-25T12:00:00.000Z
+                        email_verified: true
+                        phone_verified: true
+                        created_at: 2026-04-09T10:15:00.000Z
+                        updated_at: 2026-05-25T12:00:00.000Z
                         plan:
                           id: 1
                           name: Basic Plan
                           price: 199
-                          maxStaff: 5
-                          maxServices: 10
-                          loyaltyEnabled: true
-                          offersEnabled: true
-                        bookingSettings:
-                          allowCancellationBeforeHours: 4
-                        notificationSettings:
-                          bookingNotificationsEnabled: true
-                          marketingNotificationsEnabled: false
-                        branchAvailability:
+                          max_staff: 5
+                          max_services: 10
+                          loyalty_enabled: true
+                          offers_enabled: true
+                        booking_settings:
+                          allow_cancellation_before_hours: 4
+                        notification_settings:
+                          booking_notifications_enabled: true
+                          marketing_notifications_enabled: false
+                        branch_availability:
                           - id: 11
-                            dayOfWeek: 0
-                            startTime: "09:00"
-                            endTime: "17:00"
+                            day_of_week: 0
+                            start_time: "09:00"
+                            end_time: "17:00"
                             status: AVAILABLE
-                            createdAt: 2026-05-25T12:00:00.000Z
-                            updatedAt: 2026-05-25T12:00:00.000Z
+                            created_at: 2026-05-25T12:00:00.000Z
+                            updated_at: 2026-05-25T12:00:00.000Z
 
   /branch-admin/availability:
     put:
@@ -6621,13 +6617,13 @@ paths:
                       data:
                         type: object
                         properties:
-                          totalEarnings:
+                          total_earnings:
                             type: number
-                          serviceCount:
+                          service_count:
                             type: integer
                           range:
                             type: string
-                          dailyStats:
+                          daily_stats:
                             type: array
                             items:
                               $ref: "#/components/schemas/StaffIncomeDailyStat"
@@ -6746,7 +6742,7 @@ paths:
     post:
       tags: [Staff/Availability]
       summary: Create a staff availability slot
-      description: Create a staff availability slot. `dayOfWeek` uses JavaScript/dayjs numbering where `0 = Sunday`, `1 = Monday`, `2 = Tuesday`, `3 = Wednesday`, `4 = Thursday`, `5 = Friday`, and `6 = Saturday`.
+      description: Create a staff availability slot. `day_of_week` uses JavaScript/dayjs numbering where `0 = Sunday`, `1 = Monday`, `2 = Tuesday`, `3 = Wednesday`, `4 = Thursday`, `5 = Friday`, and `6 = Saturday`.
       operationId: postStaffAvailability
       security:
         - bearerAuth: []
@@ -6794,7 +6790,7 @@ paths:
     put:
       tags: [Staff/Availability]
       summary: Update a staff availability slot
-      description: Update a staff availability slot. `dayOfWeek` uses JavaScript/dayjs numbering where `0 = Sunday`, `1 = Monday`, `2 = Tuesday`, `3 = Wednesday`, `4 = Thursday`, `5 = Friday`, and `6 = Saturday`.
+      description: Update a staff availability slot. `day_of_week` uses JavaScript/dayjs numbering where `0 = Sunday`, `1 = Monday`, `2 = Tuesday`, `3 = Wednesday`, `4 = Thursday`, `5 = Friday`, and `6 = Saturday`.
       operationId: updateStaffAvailability
       security:
         - bearerAuth: []
@@ -6894,7 +6890,7 @@ paths:
           schema:
             type: string
             format: date
-        - name: serviceId
+        - name: service_id
           in: query
           required: true
           schema:
@@ -6918,7 +6914,7 @@ paths:
                         properties:
                           date:
                             type: string
-                          serviceId:
+                          service_id:
                             type: integer
                           available:
                             type: boolean
@@ -7144,11 +7140,11 @@ paths:
                               type: string
                             status:
                               type: string
-                            paymentMethod:
+                            payment_method:
                               type: string
-                            bookingId:
+                            booking_id:
                               type: integer
-                            createdAt:
+                            created_at:
                               type: string
         "401":
           $ref: "#/components/responses/Unauthorized"
@@ -7222,7 +7218,7 @@ paths:
                       data:
                         type: object
                         properties:
-                          reportUrl:
+                          report_url:
                             type: string
         "401":
           $ref: "#/components/responses/Unauthorized"
@@ -7438,41 +7434,41 @@ paths:
                         phone: "01000000030"
                         role: super_admin
                         status: ACTIVE
-                        emailVerified: true
-                        phoneVerified: true
-                        createdAt: "2026-04-09T10:15:00.000Z"
-                        updatedAt: "2026-04-09T10:15:00.000Z"
+                        email_verified: true
+                        phone_verified: true
+                        created_at: "2026-04-09T10:15:00.000Z"
+                        updated_at: "2026-04-09T10:15:00.000Z"
                         branchAdmin:
                           id: 1
-                          businessName: Prime Salon
+                          business_name: Prime Salon
                           status: APPROVED
-                          isSubscriptionActive: true
-                          subscriptionStartedAt: "2026-05-25T12:00:00.000Z"
+                          is_subscription_active: true
+                          subscription_started_at: "2026-05-25T12:00:00.000Z"
                           plan:
                             id: 1
                             name: Basic Plan
                             price: 199
-                            maxStaff: 5
-                            maxServices: 10
-                            loyaltyEnabled: true
-                            offersEnabled: true
+                            max_staff: 5
+                            max_services: 10
+                            loyalty_enabled: true
+                            offers_enabled: true
                         staff:
                           id: 7
-                          branchId: 1
-                          profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
+                          branch_id: 1
+                          profile_image_url: https://cdn.booklyx.com/staff/mazen-tamer.png
                           age: 28
-                          staffRole: BARBER
-                          commissionPercentage: 15
-                          professionalProfile:
+                          staff_role: BARBER
+                          commission_percentage: 15
+                          professional_profile:
                             id: 3
                             bio: Senior stylist focused on modern cuts and beard shaping.
                             experience: 6
-                            licenseNumber: BARB-7845
+                            license_number: BARB-7845
                             specialization: BARBER
-                            createdAt: "2026-04-02T10:00:00.000Z"
-                            updatedAt: "2026-05-02T10:00:00.000Z"
-                          averageRating: 4.7
-                          reviewCount: 34
+                            created_at: "2026-04-02T10:00:00.000Z"
+                            updated_at: "2026-05-02T10:00:00.000Z"
+                          average_rating: 4.7
+                          review_count: 34
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -7592,9 +7588,9 @@ paths:
                       data:
                         type: object
                         properties:
-                          totalActiveBusinesses:
+                          total_active_businesses:
                             type: integer
-                          totalSubscriptionRevenue:
+                          total_subscription_revenue:
                             type: number
         "401":
           $ref: "#/components/responses/Unauthorized"
@@ -7916,7 +7912,7 @@ paths:
           required: false
           schema:
             type: string
-        - name: staffId
+        - name: staff_id
           in: query
           required: false
           schema:
@@ -8310,11 +8306,6 @@ paths:
                   format: binary
                   nullable: true
                   description: "Image file upload (e.g. PNG/JPG)"
-                imageUrl:
-                  type: string
-                  format: uri
-                  nullable: true
-                  example: https://cdn.booklyx.com/offers/weekend-promo.png
                 discountType:
                   type: string
                   enum: [PERCENTAGE, FIXED]
@@ -8374,16 +8365,16 @@ paths:
                       id: 7f6d2f79-34f7-4f01-b9fb-6f8d71f618f9
                       title: Weekend Offer
                       description: 20 percent discount this weekend
-                      discountType: PERCENTAGE
-                      discountValue: 20
-                      startDate: 2026-04-24T00:00:00.000Z
-                      endDate: 2026-04-26T23:59:59.000Z
-                      isActive: true
-                      usageLimit: 100
-                      usedCount: 0
-                      branchId: 1
-                      createdAt: 2026-04-20T09:00:00.000Z
-                      updatedAt: 2026-04-20T09:00:00.000Z
+                      discount_type: PERCENTAGE
+                      discount_value: 20
+                      start_date: 2026-04-24T00:00:00.000Z
+                      end_date: 2026-04-26T23:59:59.000Z
+                      is_active: true
+                      usage_limit: 100
+                      used_count: 0
+                      branch_id: 1
+                      created_at: 2026-04-20T09:00:00.000Z
+                      updated_at: 2026-04-20T09:00:00.000Z
                       services:
                         - id: 1
                           name: Haircut
@@ -8430,16 +8421,16 @@ paths:
                       - id: 7f6d2f79-34f7-4f01-b9fb-6f8d71f618f9
                         title: Weekend Offer
                         description: 20 percent discount this weekend
-                        discountType: PERCENTAGE
-                        discountValue: 20
-                        startDate: 2026-04-24T00:00:00.000Z
-                        endDate: 2026-04-26T23:59:59.000Z
-                        isActive: true
-                        usageLimit: 100
-                        usedCount: 0
-                        branchId: 1
-                        createdAt: 2026-04-20T09:00:00.000Z
-                        updatedAt: 2026-04-20T09:00:00.000Z
+                        discount_type: PERCENTAGE
+                        discount_value: 20
+                        start_date: 2026-04-24T00:00:00.000Z
+                        end_date: 2026-04-26T23:59:59.000Z
+                        is_active: true
+                        usage_limit: 100
+                        used_count: 0
+                        branch_id: 1
+                        created_at: 2026-04-20T09:00:00.000Z
+                        updated_at: 2026-04-20T09:00:00.000Z
                         services:
                           - id: 1
                             name: Haircut
@@ -8486,11 +8477,6 @@ paths:
                   format: binary
                   nullable: true
                   description: "New image file upload"
-                imageUrl:
-                  type: string
-                  format: uri
-                  nullable: true
-                  example: https://cdn.booklyx.com/offers/weekend-promo-updated.png
                 discountType:
                   type: string
                   enum: [PERCENTAGE, FIXED]
@@ -8548,16 +8534,16 @@ paths:
                       id: 7
                       title: Updated Weekend Offer
                       description: 20 percent discount this weekend
-                      discountType: PERCENTAGE
-                      discountValue: 25
-                      startDate: 2026-04-24T00:00:00.000Z
-                      endDate: 2026-04-26T23:59:59.000Z
-                      isActive: true
-                      usageLimit: 100
-                      usedCount: 0
-                      branchId: 1
-                      createdAt: 2026-04-20T09:00:00.000Z
-                      updatedAt: 2026-04-20T10:00:00.000Z
+                      discount_type: PERCENTAGE
+                      discount_value: 25
+                      start_date: 2026-04-24T00:00:00.000Z
+                      end_date: 2026-04-26T23:59:59.000Z
+                      is_active: true
+                      usage_limit: 100
+                      used_count: 0
+                      branch_id: 1
+                      created_at: 2026-04-20T09:00:00.000Z
+                      updated_at: 2026-04-20T10:00:00.000Z
                       services:
                         - id: 1
                           name: Haircut
@@ -8642,7 +8628,7 @@ paths:
                     message: Offer toggled
                     data:
                       id: 7
-                      isActive: false
+                      is_active: false
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -8661,13 +8647,13 @@ paths:
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeader"
-        - name: serviceId
+        - name: service_id
           in: query
           required: false
           schema:
             type: integer
             minimum: 1
-        - name: staffId
+        - name: staff_id
           in: query
           required: false
           schema:
@@ -8746,7 +8732,7 @@ paths:
                         - id: 2f5100e4-6400-4db4-9172-7abdc18b0f88
                           rating: 5
                           comment: Great experience
-                          createdAt: 2026-04-21T10:00:00.000Z
+                          created_at: 2026-04-21T10:00:00.000Z
                           reviewer:
                             id: 3
                             name: Abdo Khalil
@@ -8763,7 +8749,7 @@ paths:
                         page: 1
                         limit: 20
                         total: 1
-                        totalPages: 1
+                        total_pages: 1
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -8842,13 +8828,13 @@ paths:
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeader"
-        - name: serviceId
+        - name: service_id
           in: query
           required: false
           schema:
             type: integer
             minimum: 1
-        - name: staffId
+        - name: staff_id
           in: query
           required: false
           schema:
@@ -8927,7 +8913,7 @@ paths:
                         - id: 5f61524e-158d-45bc-8a30-36a7fd03a2e1
                           rating: 4
                           comment: Nice service
-                          createdAt: 2026-04-22T09:30:00.000Z
+                          created_at: 2026-04-22T09:30:00.000Z
                           reviewer:
                             id: 3
                             name: Abdo Khalil
@@ -8944,7 +8930,7 @@ paths:
                         page: 1
                         limit: 20
                         total: 1
-                        totalPages: 1
+                        total_pages: 1
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":

@@ -66,8 +66,13 @@ export async function seedUsers() {
 
     await prisma.client.upsert({
       where: { userId: seededUser.id },
-      update: {},
-      create: { userId: seededUser.id },
+      update: {
+        profileImageUrl: user.profileImageUrl,
+      },
+      create: { 
+        userId: seededUser.id,
+        profileImageUrl: user.profileImageUrl,
+      },
     });
   }
 

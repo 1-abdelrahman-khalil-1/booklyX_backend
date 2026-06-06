@@ -20,6 +20,10 @@ export function getStaffProfileImage(role, index = 0) {
   }
 }
 
+export function getClientProfileImage(index = 0) {
+  return ASSETS.profileImages.clients[index % ASSETS.profileImages.clients.length];
+}
+
 export function getBranchDocumentUrl() {
   return pickRandom(ASSETS.certificates);
 }

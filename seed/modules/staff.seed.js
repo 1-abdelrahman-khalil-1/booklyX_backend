@@ -6,11 +6,14 @@ import { pickRandom } from "../helpers/random.js";
 import { ASSETS } from "../config/assets.js";
 import {
   AvailabilityStatus,
+  BranchStatus,
   Role,
   ServiceApprovalStatus,
   UserStatus,
 } from "../../src/generated/prisma/client.js";
-import { getSeedStaff } from "../generators/staff.generator.js";
+import { getSeedStaff, getSeedInitialStaffUsers } from "../generators/staff.generator.js";
+import { STAFF_ROLE_POOL } from "../config/constants.js";
+import { getStaffProfileImage } from "../helpers/random.js";
 
 function buildStaffAvailability(staffSeeds) {
   return staffSeeds.flatMap((staff, index) => [
@@ -53,7 +56,33 @@ function buildStaffCertificates(staffSeeds) {
 }
 
 export async function seedStaff(branchSubmissions, staffSeeds = null) {
-  const resolvedStaffSeeds = staffSeeds ?? getSeedStaff(branchSubmissions);
+  const approvedBranchEmails = branchSubmissions
+    .filter((branch) => branch.status === BranchStatus.APPROVED)
+    .map((branch) => branch.email);
+
+  if (approvedBranchEmails.length === 0) {
+    throw new Error("No approved branches available to assign staff.");
+  }
+
+  const initialStaffUsers = getSeedInitialStaffUsers();
+  const mappedInitialStaff = initialStaffUsers.map((staff, index) => {
+    const staffRole = STAFF_ROLE_POOL[index % STAFF_ROLE_POOL.length];
+    const branchEmail = approvedBranchEmails[index % approvedBranchEmails.length];
+
+    return {
+      ...staff,
+      startDateOffsetDays: 30 + index,
+      profileImageUrl: getStaffProfileImage(staffRole, index + 10),
+      staffRole,
+      commissionPercentage: 20,
+      branchEmail,
+    };
+  });
+
+  const resolvedStaffSeeds = [
+    ...mappedInitialStaff,
+    ...(staffSeeds ?? getSeedStaff(branchSubmissions)),
+  ];
 
   for (const staffData of resolvedStaffSeeds) {
     const staffPasswordHash = await hashPassword(staffData.password);

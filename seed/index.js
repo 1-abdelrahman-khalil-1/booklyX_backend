@@ -87,10 +87,7 @@ async function main() {
   const appointmentSpinner = createSpinner("Seeding appointments");
   const { reviewTargets } = await seedAppointments(
     seedClients.map((user) => user.email),
-    [
-      ...seedInitialStaffUsers.map((staff) => staff.email),
-      ...seededStaff.map((staff) => staff.email),
-    ],
+    seededStaff.map((staff) => staff.email),
   );
   appointmentSpinner.succeed("Appointments seeded successfully");
 

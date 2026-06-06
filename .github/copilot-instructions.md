@@ -606,24 +606,25 @@ export default moduleRouter;
 
 ---
 
-## 17. File Upload Pattern
+## 17. File Upload Pattern (Multipart/Form-Data)
 
 Files are **NEVER** stored in database as raw file objects. Follow this pattern:
 
-1. **Controller receives file** → upload middleware (`multer`) handles it
-2. **Controller converts file to URL** → use helper functions to build file URL
-3. **Controller validates URL** → include URL in validation schema (as string URL)
-4. **Service receives URL** → stores the URL in database (string field, not file)
-5. **Schema** → attachments/images are arrays of URLs or single URL strings
+1. **Request format** → Endpoints accepting files MUST use `multipart/form-data`.
+2. **Controller receives file** → upload middleware (`multer`, e.g., `imageOnlyUpload`) handles it. Use `snake_case` names for file fields (e.g., `profile_image`, `logo`, `image`).
+3. **Controller converts file to URL** → use helper functions (like `buildProfilePayload`) to extract the file URL. If a file is NOT uploaded during an update, the helper leaves the URL as `undefined`, and Prisma automatically retains the old image. The frontend does NOT need to send the old URL back.
+4. **Controller validates URL** → include URL in validation schema (as an optional string URL).
+5. **Service receives URL** → stores the URL in database (string field, not file).
+6. **OpenAPI Schema (`openapi.yaml`)** → Define request content as `multipart/form-data`. Use `format: binary` for file fields. **Do NOT** include URL fallback fields (like `profileImageUrl` or `imageUrl`) in the `multipart/form-data` schema to avoid frontend confusion; if no file is sent, the old image is kept automatically.
 
 ✅ **Example Flow**:
 
-- Request: `POST /service` with `FormData { files: [file1, file2], title: "..." }`
-- Middleware: `multer` uploads files → stored in `uploads/` folder
-- Controller: Builds URLs → `["http://api.com/files/public/abc123.jpg", ...]`
-- Validation: Confirms they're valid URLs
-- Service: Stores `attachments: ["http://api.com/files/public/abc123.jpg", ...]` in DB
-- Response: Returns record with URL strings (client fetches images from URLs)
+- Request: `POST /service` with `FormData { image: (binary file), title: "..." }`
+- Middleware: `multer` uploads files → stored in Cloudinary/uploads
+- Controller: Extracts URL using helper → `https://cdn.booklyx.com/image.jpg`
+- Validation: Confirms it's a valid URL (if provided)
+- Service: Stores `imageUrl: "https://cdn.booklyx.com/image.jpg"` in DB
+- Response: Returns record with URL strings
 
 ## 18. Implementation Checklist (Quick)
 

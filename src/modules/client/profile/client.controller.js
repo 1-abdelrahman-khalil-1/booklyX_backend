@@ -3,6 +3,7 @@ import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { successResponse } from "../../../utils/response.js";
 import { getProfile, updateProfile } from "./profile.service.js";
 import { updateClientProfileSchema, validateClientInput } from "../client.validation.js";
+import { buildClientProfilePayload } from "../helpers.js";
 
 export const getClientProfileHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
@@ -14,7 +15,8 @@ export const getClientProfileHandler = asyncHandler(async (req, res) => {
 export const updateClientProfileHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const userId = req.user.sub;
-  const validatedData = validateClientInput(updateClientProfileSchema, req.body);
+  const payload = buildClientProfilePayload(req);
+  const validatedData = validateClientInput(updateClientProfileSchema, payload);
   const result = await updateProfile(userId, validatedData);
   successResponse(res, 200, t(tr.PROFILE_UPDATED_SUCCESSFULLY, lang), result);
 });

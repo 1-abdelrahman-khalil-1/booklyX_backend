@@ -3,6 +3,7 @@ import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { successResponse } from "../../../utils/response.js";
 import { updateBookingSettingsSchema, updateBranchAdminProfileSchema, updateBranchAvailabilitySchema, updateNotificationSettingsSchema, validateBranchAdminInput } from "../branch_admin.validation.js";
 import { getBranchAdminProfile, updateBookingSettings, updateBranchAdminProfile, updateBranchAvailability, updateNotificationSettings } from "./profile.service.js";
+import { buildProfilePayload } from "../helpers.js";
 
 export const getBranchAdminProfileHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
@@ -12,7 +13,8 @@ export const getBranchAdminProfileHandler = asyncHandler(async (req, res) => {
 
 export const updateBranchAdminProfileHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const data = validateBranchAdminInput(updateBranchAdminProfileSchema, req.body);
+  const payload = buildProfilePayload(req);
+  const data = validateBranchAdminInput(updateBranchAdminProfileSchema, payload);
   const result = await updateBranchAdminProfile(data, req.user.sub);
   successResponse(res, 200, t(tr.PROFILE_UPDATED_SUCCESSFULLY, lang), result);
 });

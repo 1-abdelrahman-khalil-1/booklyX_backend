@@ -12,3 +12,12 @@ export async function getClientByUserId(userId) {
   }
   return client;
 }
+
+export function buildClientProfilePayload(req) {
+  const payload = { ...req.body };
+  if (req.files && req.files.profile_image && req.files.profile_image.length > 0) {
+    // Cloudinary stores the URL in the 'path' property
+    payload.profileImageUrl = req.files.profile_image[0].path;
+  }
+  return payload;
+}

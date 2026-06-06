@@ -239,39 +239,39 @@ export function mapBranchPublicProfile(branch, reviews = []) {
   };
 }
 
-export function mapStaffProfile(staff) {
+export function mapStaffProfile(user) {
+  if (!user) return null;
   return {
-    id: staff.user.id,
-    name: staff.user.name,
-    email: staff.user.email,
-    phone: staff.user.phone,
-    role: staff.user.role,
-    status: staff.user.status,
-    createdAt: toIsoString(staff.user.createdAt),
-    updatedAt: toIsoString(staff.user.updatedAt),
-    staff: {
-      id: staff.id,
-      profileImageUrl: staff.profileImageUrl,
-      staffRole: staff.staffRole,
-      age: staff.age,
-      commissionPercentage: staff.commissionPercentage,
-      isActive: staff.isActive,
-      createdAt: toIsoString(staff.createdAt),
-      updatedAt: toIsoString(staff.updatedAt),
-      branch: {
-        id: staff.branch.id,
-        businessName: staff.branch.businessName,
-        category: staff.branch.category,
-      },
-      professionalProfile: mapStaffProfessionalProfile(staff.professionalProfile),
-      certificates: (staff.certificates || []).map(mapStaffCertificate),
-      availabilities: (staff.availabilities || []).map(mapStaffAvailability),
-      services: (staff.services || []).map(mapStaffServiceLink),
-      reviews: (staff.reviews || []).map(mapStaffReview),
-      averageRating: staff.averageRating,
-      reviewCount: staff.reviewCount,
-    },
-
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    status: user.status,
+    createdAt: toIsoString(user.createdAt),
+    updatedAt: toIsoString(user.updatedAt),
+    staff: user.staff ? {
+      id: user.staff.id,
+      profileImageUrl: user.staff.profileImageUrl,
+      staffRole: user.staff.staffRole,
+      age: user.staff.age,
+      commissionPercentage: user.staff.commissionPercentage,
+      isActive: user.staff.isActive,
+      createdAt: toIsoString(user.staff.createdAt),
+      updatedAt: toIsoString(user.staff.updatedAt),
+      branch: user.staff.branch ? {
+        id: user.staff.branch.id,
+        businessName: user.staff.branch.businessName,
+        category: user.staff.branch.category,
+      } : null,
+      professionalProfile: mapStaffProfessionalProfile(user.staff.professionalProfile),
+      certificates: (user.staff.certificates || []).map(mapStaffCertificate),
+      availabilities: (user.staff.availabilities || []).map(mapStaffAvailability),
+      services: (user.staff.services || []).map(mapStaffServiceLink),
+      reviews: (user.staff.reviews || []).map(mapStaffReview),
+      averageRating: user.staff.averageRating,
+      reviewCount: user.staff.reviewCount,
+    } : null,
   };
 }
 

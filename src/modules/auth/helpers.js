@@ -50,12 +50,12 @@ export async function consumeVerificationCode(userId, type, code, tx = prisma) {
 export async function issueAuthTokens(userId, role, platform, loginSequence, tx = prisma) {
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) throw new Error("JWT_SECRET is not set.");
-  const accessToken = jwt.sign({ sub: userId, role, platform }, jwtSecret, { expiresIn: "1h" });
+  const accessToken = jwt.sign({ sub: userId, role, platform }, jwtSecret, { expiresIn: "1d" });
   const prefixedAccessToken = `${loginSequence}|${accessToken}`;
   const refreshTokenString = crypto.randomBytes(40).toString("hex");
   const tokenHash = crypto.createHash("sha256").update(refreshTokenString).digest("hex");
   const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7);
+  expiresAt.setDate(expiresAt.getDate() + 30);
   await tx.refreshToken.create({ data: { userId, tokenHash, expiresAt, loginSequence } });
   return { token: prefixedAccessToken, refreshToken: refreshTokenString };
 }

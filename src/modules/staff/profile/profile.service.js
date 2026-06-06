@@ -4,116 +4,109 @@ import prisma from "../../../lib/prisma.js";
 import { StaffNotFoundError } from "../errors.js";
 
 export async function getStaffProfile(userId) {
-  const staff = await prisma.staff.findUnique({
-    where: { userId },
+  const staff = await prisma.user.findUnique({
+    where: { id: userId },
     select: {
       id: true,
-      profileImageUrl: true,
-      age: true,
-      staffRole: true,
-      commissionPercentage: true,
-      isActive: true,
-      averageRating: true,
-      reviewCount: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      status: true,
       createdAt: true,
       updatedAt: true,
-      user: {
+      staff: {
         select: {
           id: true,
-          name: true,
-          email: true,
-          phone: true,
-          role: true,
-          status: true,
+          profileImageUrl: true,
+          staffRole: true,
+          age: true,
+          commissionPercentage: true,
+          isActive: true,
           createdAt: true,
           updatedAt: true,
-        },
-      },
-      branch: {
-        select: {
-          id: true,
-          businessName: true,
-          category: true,
-        },
-      },
-      professionalProfile: {
-        select: {
-          id: true,
-          bio: true,
-          yearsOfExperience: true,
-          licenseNumber: true,
-          specialization: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      },
-      certificates: {
-        select: {
-          id: true,
-          title: true,
-          issuer: true,
-          issueDate: true,
-          expiryDate: true,
-          fileUrl: true,
-          verified: true,
-          createdAt: true,
-        },
-      },
-      availabilities: {
-        where: {
-          status: AvailabilityStatus.AVAILABLE,
-        },
-        select: {
-          id: true,
-          dayOfWeek: true,
-          startTime: true,
-          endTime: true,
-        },
-      },
-      services: {
-        select: {
-          service: {
+          branch: {
             select: {
               id: true,
-              name: true,
-              description: true,
-              price: true,
-              durationMinutes: true,
-              imageUrl: true,
+              businessName: true,
+              category: true,
             },
           },
-        },
-      },
-      reviews: {
-        where: {
-          isVisible: true,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-        select: {
-          id: true,
-          rating: true,
-          comment: true,
-          appointmentId: true,
-          createdAt: true,
-          client: {
+          professionalProfile: {
             select: {
-              user: {
+              id: true,
+              bio: true,
+              yearsOfExperience: true,
+              licenseNumber: true,
+              specialization: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
+          certificates: {
+            select: {
+              id: true,
+              title: true,
+              issuer: true,
+              issueDate: true,
+              expiryDate: true,
+              fileUrl: true,
+              verified: true,
+              createdAt: true,
+            },
+          },
+          availabilities: {
+            select: {
+              id: true,
+              dayOfWeek: true,
+              startTime: true,
+              endTime: true,
+              status: true,
+            },
+          },
+          services: {
+            select: {
+              service: {
                 select: {
                   id: true,
                   name: true,
-                  phone: true,
+                  description: true,
+                  price: true,
+                  durationMinutes: true,
+                  imageUrl: true,
+                  status: true,
                 },
               },
             },
           },
-          service: {
+          reviews: {
             select: {
               id: true,
-              name: true,
+              rating: true,
+              comment: true,
+              createdAt: true,
+              appointmentId: true,
+              client: {
+                select: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      phone: true,
+                    },
+                  },
+                },
+              },
+              service: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
+          averageRating: true,
+          reviewCount: true,
         },
       },
     },
@@ -123,5 +116,5 @@ export async function getStaffProfile(userId) {
     throw new StaffNotFoundError();
   }
 
-  return mapStaffProfile(staff);
+  return { user: mapStaffProfile(staff) };
 }
