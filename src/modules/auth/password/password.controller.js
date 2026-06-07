@@ -20,7 +20,7 @@ export const verifyPasswordResetHandler = asyncHandler(async (req, res) => {
 
 export const resetPasswordHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { resetToken, newPassword } = validateAuthInput(resetPasswordSchema, req.body);
-  await resetPassword(resetToken, newPassword);
+  const { reset_token, new_password } = validateAuthInput(resetPasswordSchema, req.body);
+  await resetPassword(reset_token, new_password);
   successResponse(res, 200, t(tr.PASSWORD_RESET_SUCCESS, lang));
 });

@@ -49,8 +49,8 @@ export const verifyPasswordResetSchema = z.object({
 });
 
 export const resetPasswordSchema = z.object({
-  resetToken: z.string({ error: tr.TOKEN_REQUIRED }),
-  newPassword: zPassword(),
+  reset_token: z.string({ error: tr.TOKEN_REQUIRED }),
+  new_password: zPassword(),
 });
 
 export const resendCodeSchema = z
