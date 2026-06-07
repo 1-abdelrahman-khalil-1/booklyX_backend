@@ -1134,83 +1134,80 @@ components:
     StaffProfile:
       type: object
       properties:
-        user:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        staff:
           type: object
           properties:
             id:
               type: integer
-            name:
+            profile_image_url:
               type: string
-            email:
+              nullable: true
+            staff_role:
               type: string
-            phone:
-              type: string
-            role:
-              type: string
-            status:
-              type: string
+              enum: [DOCTOR, BARBER, SPA_SPECIALIST]
+            age:
+              type: integer
+            commission_percentage:
+              type: number
+            is_active:
+              type: boolean
             created_at:
               type: string
               format: date-time
             updated_at:
               type: string
               format: date-time
-            staff:
+            branch:
               type: object
               properties:
                 id:
                   type: integer
-                profile_image_url:
+                business_name:
                   type: string
-                  nullable: true
-                staff_role:
+                category:
                   type: string
-                  enum: [DOCTOR, BARBER, SPA_SPECIALIST]
-                age:
-                  type: integer
-                commission_percentage:
-                  type: number
-                is_active:
-                  type: boolean
-                created_at:
-                  type: string
-                  format: date-time
-                updated_at:
-                  type: string
-                  format: date-time
-                branch:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    business_name:
-                      type: string
-                    category:
-                      type: string
-                professional_profile:
-                  allOf:
-                    - $ref: "#/components/schemas/StaffProfessionalProfile"
-                  nullable: true
-                certificates:
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/StaffCertificate"
-                availabilities:
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/StaffAvailability"
-                services:
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/StaffServiceLink"
-                reviews:
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/StaffReview"
-                average_rating:
-                  type: number
-                review_count:
-                  type: integer
+            professional_profile:
+              allOf:
+                - $ref: "#/components/schemas/StaffProfessionalProfile"
+              nullable: true
+            certificates:
+              type: array
+              items:
+                $ref: "#/components/schemas/StaffCertificate"
+            availabilities:
+              type: array
+              items:
+                $ref: "#/components/schemas/StaffAvailability"
+            services:
+              type: array
+              items:
+                $ref: "#/components/schemas/StaffServiceLink"
+            reviews:
+              type: array
+              items:
+                $ref: "#/components/schemas/StaffReview"
+            average_rating:
+              type: number
+            review_count:
+              type: integer
 
     StaffPublicProfile:
       type: object
@@ -1377,6 +1374,56 @@ components:
             updated_at:
               type: string
               format: date-time
+
+    DiscoveryBranch:
+      type: object
+      required:
+        - id
+        - name
+        - rating
+        - total_reviews
+        - profile_image
+        - top_service_categories
+        - location
+        - distance
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Hassan Beauty Salon"
+        rating:
+          type: number
+          example: 4.8
+        total_reviews:
+          type: integer
+          example: 24
+        profile_image:
+          type: string
+          nullable: true
+          format: uri
+          example: "https://cdn.booklyx.com/branch/logo.png"
+        top_service_categories:
+          type: array
+          items:
+            type: string
+          example: ["SPA"]
+        location:
+          type: object
+          required:
+            - lat
+            - lng
+          properties:
+            lat:
+              type: number
+              example: 30.0626
+            lng:
+              type: number
+              example: 31.3368
+        distance:
+          type: number
+          example: 1.8
 
     BranchAdminApplyRequestJson:
       type: object
@@ -3965,8 +4012,8 @@ paths:
   /client/profile:
     get:
       tags: [Client/Profile]
-      summary: Get client profile
-      description: Get authenticated client profile details.
+      summary: Profile
+      description: Client profile data.
       operationId: getClientProfile
       security:
         - bearerAuth: []
@@ -3996,8 +4043,8 @@ paths:
           $ref: "#/components/responses/NotFound"
     put:
       tags: [Client/Profile]
-      summary: Update client profile
-      description: Update authenticated client profile (name and profile image url only).
+      summary: Update profile
+      description: Update client profile name and profile image.
       operationId: updateClientProfile
       security:
         - bearerAuth: []
@@ -4040,7 +4087,7 @@ paths:
   /client/home/dashboard:
     get:
       tags: [Client/Home]
-      summary: Get client home feeds
+      summary: Home feeds
       description: Returns active offers, business categories list, and nearby providers (within 5km max radius).
       operationId: getClientHomeDashboard
       security:
@@ -4114,7 +4161,7 @@ paths:
   /client/discovery/search:
     get:
       tags: [Client/Discovery]
-      summary: Search branches on map
+      summary: Search branches
       description: Geolocation map search engine filtered strictly by category and ordered by distance and rating.
       operationId: getClientDiscoverySearch
       security:
@@ -4164,19 +4211,28 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/DiscoveryBranch"
               example:
                 status: 200
                 error: false
                 message: "Search completed successfully."
                 data:
                   - id: 1
-                    business_name: "Hassan Beauty Salon"
-                    category: "SPA"
-                    logo_url: "https://cdn.booklyx.com/branch/logo.png"
-                    latitude: 30.0626
-                    longitude: 31.3368
-                    distance: 1.8
+                    name: "Hassan Beauty Salon"
                     rating: 4.8
+                    total_reviews: 24
+                    profile_image: "https://cdn.booklyx.com/branch/logo.png"
+                    top_service_categories:
+                      - "SPA"
+                    location:
+                      lat: 30.0626
+                      lng: 31.3368
+                    distance: 1.8
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4187,7 +4243,7 @@ paths:
   "/client/branches/{id}/profile":
     get:
       tags: [Client/Discovery]
-      summary: Fetch public branch profile
+      summary: Branch profile
       description: Returns branch public profile data and reviews.
       operationId: getClientBranchesByIdProfile
       security:
@@ -4234,7 +4290,7 @@ paths:
   "/client/branches/{id}/services":
     get:
       tags: [Client/Services]
-      summary: List branch services
+      summary: Branch services
       description: Get active services catalog under this branch.
       operationId: getClientBranchesByIdServices
       security:
@@ -4278,7 +4334,7 @@ paths:
   "/client/services/{id}/staff":
     get:
       tags: [Client/Services]
-      summary: List staff by service
+      summary: Staff by service
       description: Returns active staff members assigned to this service category.
       operationId: getClientServicesByIdStaff
       security:
@@ -4321,7 +4377,7 @@ paths:
   "/client/services/{id}/offers":
     get:
       tags: [Client/Offers]
-      summary: List valid offers for a service
+      summary: Service offers
       description: Returns valid offers for the specified service id, including discounts and dates.
       operationId: getClientServicesByIdOffers
       security:
@@ -4413,7 +4469,7 @@ paths:
   "/client/staff/{id}/profile":
     get:
       tags: [Client/Discovery]
-      summary: Get staff public profile
+      summary: Staff profile
       description: Returns staff biography, photos, rating, and reviews.
       operationId: getClientStaffByIdProfile
       security:
@@ -4457,7 +4513,7 @@ paths:
   "/client/staff/{id}/availability/days":
     get:
       tags: [Client/Discovery]
-      summary: Calculate available days for staff
+      summary: Available days
       description: Chronological list of next 30 days showing open availability status.
       operationId: getClientStaffByIdAvailabilityDays
       security:
@@ -4508,7 +4564,7 @@ paths:
   "/client/staff/{id}/availability/slots":
     get:
       tags: [Client/Discovery]
-      summary: Calculate available time slots for staff on Date
+      summary: Available time slots
       description: Returns array of time slots (e.g. 09:00, 09:30) for selected date and service.
       operationId: getClientStaffByIdAvailabilitySlots
       security:
@@ -4566,7 +4622,7 @@ paths:
   /client/appointments/reserve:
     post:
       tags: [Client/Booking]
-      summary: Reserve appointment slot (PENDING)
+      summary: Reserve slot
       description: Lock a booking slot, returns pending appointment.
       operationId: postClientAppointmentsReserve
       security:
@@ -4632,7 +4688,7 @@ paths:
   "/client/appointments/{id}/confirm-payment":
     post:
       tags: [Client/Booking]
-      summary: Process Fake Payment and Confirm Booking
+      summary: Confirm booking (mock payment)
       description: Process mock checkout logic to transition booking to CONFIRMED.
       operationId: postClientAppointmentsByIdConfirmPayment
       security:
@@ -4694,7 +4750,7 @@ paths:
   /client/appointments:
     get:
       tags: [Client/Booking]
-      summary: List Appointments (Historical and Upcoming)
+      summary: My appointments
       description: Returns historical client booking lists.
       operationId: getClientAppointments
       security:
@@ -4733,7 +4789,7 @@ paths:
   "/client/appointments/{id}":
     get:
       tags: [Client/Booking]
-      summary: Fetch Booking Details
+      summary: Appointment details
       description: Returns full appointment details by ID.
       operationId: getClientAppointmentsById
       security:
@@ -4783,7 +4839,7 @@ paths:
   "/client/appointments/{id}/cancel":
     post:
       tags: [Client/Booking]
-      summary: Cancel Appointment
+      summary: Cancel appointment
       description: Cancel a booking with rules check.
       operationId: postClientAppointmentsByIdCancel
       security:
@@ -4829,7 +4885,7 @@ paths:
   "/client/favourites/branches/{id}":
     post:
       tags: [Client/Favourites]
-      summary: Add Favorite Branch
+      summary: Favourite branch
       description: Adds a branch to client favorites.
       operationId: postClientFavouritesBranchesById
       security:
@@ -4867,7 +4923,7 @@ paths:
           $ref: "#/components/responses/NotFound"
     delete:
       tags: [Client/Favourites]
-      summary: Remove Favorite Branch
+      summary: Unfavourite branch
       description: Removes a branch from client favorites.
       operationId: deleteClientFavouritesBranchesById
       security:
@@ -4907,7 +4963,7 @@ paths:
   "/client/favourites/staff/{id}":
     post:
       tags: [Client/Favourites]
-      summary: Add Favorite Staff
+      summary: Favourite staff
       description: Adds a staff member to client favorites.
       operationId: postClientFavouritesStaffById
       security:
@@ -4945,7 +5001,7 @@ paths:
           $ref: "#/components/responses/NotFound"
     delete:
       tags: [Client/Favourites]
-      summary: Remove Favorite Staff
+      summary: Unfavourite staff
       description: Removes a staff member from client favorites.
       operationId: deleteClientFavouritesStaffById
       security:
@@ -4985,7 +5041,7 @@ paths:
   /client/favourites:
     get:
       tags: [Client/Favourites]
-      summary: List Favorites
+      summary: My favourites
       description: Returns list of favorited branches and staff.
       operationId: getClientFavourites
       security:
@@ -5028,7 +5084,7 @@ paths:
   /auth/register:
     post:
       tags: [Auth/Verification]
-      summary: Register client account
+      summary: Register
       description: Register client account.
       operationId: postAuthRegister
       parameters:
@@ -5174,7 +5230,7 @@ paths:
   /auth/verify-phone:
     post:
       tags: [Auth/Verification]
-      summary: Verify phone OTP and login
+      summary: Verify phone OTP
       description: Verify phone OTP and login.
       operationId: postAuthVerifyPhone
       parameters:
@@ -5216,7 +5272,7 @@ paths:
   /auth/resend-code:
     post:
       tags: [Auth/Verification]
-      summary: Resend verification/reset code
+      summary: Resend OTP
       description: Resend verification/reset code.
       operationId: postAuthResendCode
       parameters:
@@ -5286,7 +5342,7 @@ paths:
   /auth/verify-password-reset:
     post:
       tags: [Auth/Password Reset]
-      summary: Verify password reset OTP
+      summary: Verify reset OTP
       description: Verify password reset OTP.
       operationId: postAuthVerifyPasswordReset
       parameters:
@@ -5325,7 +5381,7 @@ paths:
   /auth/reset-password:
     post:
       tags: [Auth/Password Reset]
-      summary: Reset password using reset token
+      summary: Reset password
       description: Reset password using reset token.
       operationId: postAuthResetPassword
       parameters:
@@ -5355,7 +5411,7 @@ paths:
   /auth/refresh:
     post:
       tags: [Auth/Session]
-      summary: Refresh access token
+      summary: Refresh token
       description: Refresh access token.
       operationId: postAuthRefresh
       parameters:
@@ -5438,7 +5494,7 @@ paths:
   /branch-admin/apply:
     post:
       tags: [Branch_admin/Registration]
-      summary: Submit branch_admin application
+      summary: Submit application
       description: |
         Submit branch_admin application.
         This endpoint supports `multipart/form-data` to upload images (stored as Cloudinary URLs).
@@ -5476,7 +5532,7 @@ paths:
   /branch-admin/verify-email:
     post:
       tags: [Branch_admin/Registration]
-      summary: Verify application email OTP
+      summary: Verify application email
       description: Verify application email OTP.
       operationId: postBranchAdminVerifyEmail
       parameters:
@@ -5510,7 +5566,7 @@ paths:
   /branch-admin/verify-phone:
     post:
       tags: [Branch_admin/Registration]
-      summary: Verify application phone OTP
+      summary: Verify application phone
       description: Verify application phone OTP.
       operationId: postBranchAdminVerifyPhone
       parameters:
@@ -5544,7 +5600,7 @@ paths:
   /branch-admin/resend-code:
     post:
       tags: [Branch_admin/Registration]
-      summary: Resend branch_admin application OTP
+      summary: Resend application OTP
       description: Resend branch_admin application OTP.
       operationId: postBranchAdminResendCode
       parameters:
@@ -5579,7 +5635,7 @@ paths:
     put:
       tags: [Branch_admin/Profile]
       summary: Update branch profile
-      description: Update authenticated branch_admin profile data.
+      description: Update branch profile. Accepts multipart/form-data with optional logo upload.
       operationId: putBranchAdminProfile
       security:
         - bearerAuth: []
@@ -5676,8 +5732,8 @@ paths:
           $ref: "#/components/responses/NotFound"
     get:
       tags: [Branch_admin/Profile]
-      summary: Get authenticated branch profile
-      description: Get authenticated branch_admin profile data.
+      summary: Branch profile
+      description: Branch profile data.
       operationId: getBranchAdminProfile
       security:
         - bearerAuth: []
@@ -5748,8 +5804,8 @@ paths:
   /branch-admin/availability:
     put:
       tags: [Branch_admin/Profile]
-      summary: Update branch availability for a day
-      description: Upsert branch availability for the authenticated branch_admin.
+      summary: Update availability
+      description: Upsert availability slot for the branch.
       operationId: putBranchAdminAvailability
       security:
         - bearerAuth: []
@@ -5802,8 +5858,8 @@ paths:
   /branch-admin/booking-settings:
     put:
       tags: [Branch_admin/Profile]
-      summary: Update booking settings
-      description: Update booking-related settings for the authenticated branch_admin.
+      summary: Booking settings
+      description: Update booking settings.
       operationId: putBranchAdminBookingSettings
       security:
         - bearerAuth: []
@@ -5846,8 +5902,8 @@ paths:
   /branch-admin/notification-settings:
     put:
       tags: [Branch_admin/Profile]
-      summary: Update notification settings
-      description: Update notification settings for the authenticated branch_admin.
+      summary: Notification settings
+      description: Update notification settings.
       operationId: putBranchAdminNotificationSettings
       security:
         - bearerAuth: []
@@ -5890,7 +5946,7 @@ paths:
   /branch-admin/staff:
     post:
       tags: [Branch_admin/Staff]
-      summary: Create staff user
+      summary: Create staff
       description: |
         Create staff user.
         This endpoint supports `multipart/form-data` to upload profile image (stored as Cloudinary URL).
@@ -5937,8 +5993,8 @@ paths:
 
     get:
       tags: [Branch_admin/Staff]
-      summary: List current branch_admin staff
-      description: List current branch_admin staff.
+      summary: Staff list
+      description: List staff for the authenticated branch.
       operationId: getBranchAdminStaff
       security:
         - bearerAuth: []
@@ -5970,8 +6026,8 @@ paths:
   /branch-admin/staff/{id}:
     get:
       tags: [Branch_admin/Staff]
-      summary: Get staff by id for current branch_admin
-      description: Get staff by id for current branch_admin.
+      summary: Staff details
+      description: Get a staff member by ID.
       operationId: getBranchAdminStaffById
       security:
         - bearerAuth: []
@@ -6008,7 +6064,7 @@ paths:
 
     put:
       tags: [Branch_admin/Staff]
-      summary: Update staff by id for current branch_admin
+      summary: Update staff
       description: |
         Update staff by id for current branch_admin.
         This endpoint supports `multipart/form-data` to upload profile image (stored as Cloudinary URL).
@@ -6063,8 +6119,8 @@ paths:
 
     delete:
       tags: [Branch_admin/Staff]
-      summary: Delete staff by id for current branch_admin
-      description: Delete staff by id for current branch_admin.
+      summary: Delete staff
+      description: Delete a staff member by ID.
       operationId: deleteBranchAdminStaffById
       security:
         - bearerAuth: []
@@ -6097,8 +6153,8 @@ paths:
   /branch-admin/services/categories:
     post:
       tags: [Branch_admin/Services]
-      summary: Add service category
-      description: Add service category.
+      summary: Add category
+      description: Add a service category.
       operationId: postBranchAdminServicesCategories
       security:
         - bearerAuth: []
@@ -6138,8 +6194,8 @@ paths:
 
     get:
       tags: [Branch_admin/Services]
-      summary: List service categories for current branch_admin
-      description: List service categories for current branch_admin.
+      summary: Service categories
+      description: List service categories for the branch.
       operationId: getBranchAdminServicesCategories
       security:
         - bearerAuth: []
@@ -6171,8 +6227,8 @@ paths:
   /branch-admin/services:
     post:
       tags: [Branch_admin/Services]
-      summary: Create service (pending approval)
-      description: Create service (pending approval).
+      summary: Create service
+      description: Create a service (submitted for admin approval).
       operationId: postBranchAdminServices
       security:
         - bearerAuth: []
@@ -6215,8 +6271,8 @@ paths:
 
     get:
       tags: [Branch_admin/Services]
-      summary: List current branch_admin services
-      description: List current branch_admin services.
+      summary: Services
+      description: List services for the branch.
       operationId: getBranchAdminServices
       security:
         - bearerAuth: []
@@ -6249,8 +6305,8 @@ paths:
   /branch-admin/services/{id}:
     put:
       tags: [Branch_admin/Services]
-      summary: Update service by id
-      description: Update service by id.
+      summary: Update service
+      description: Update a service by ID.
       operationId: putBranchAdminServicesById
       security:
         - bearerAuth: []
@@ -6301,8 +6357,8 @@ paths:
 
     delete:
       tags: [Branch_admin/Services]
-      summary: Delete service by id
-      description: Delete service by id.
+      summary: Delete service
+      description: Delete a service by ID.
       operationId: deleteBranchAdminServicesById
       security:
         - bearerAuth: []
@@ -6337,8 +6393,8 @@ paths:
   /staff/profile:
     get:
       tags: [Staff/Profile]
-      summary: Get staff profile
-      description: Get authenticated staff profile.
+      summary: Profile
+      description: Staff profile data.
       operationId: getStaffProfile
       security:
         - bearerAuth: []
@@ -6368,7 +6424,7 @@ paths:
   /staff/schedule:
     get:
       tags: [Staff/Schedule]
-      summary: Get staff schedule for a day
+      summary: Schedule
       description: Get staff appointments for a specified date. Returns all appointments for that day.
       operationId: getStaffSchedule
       security:
@@ -6407,7 +6463,7 @@ paths:
   /staff/appointments:
     get:
       tags: [Staff/appointments]
-      summary: List appointments
+      summary: Appointments
       description: List appointments for the authenticated staff member. Defaults to PENDING when no status is provided.
       operationId: getStaffAppointments
       security:
@@ -6446,7 +6502,7 @@ paths:
   /staff/appointments/{appointmentId}:
     get:
       tags: [Staff/appointments]
-      summary: Get appointment details
+      summary: Appointment details
       description: Get detailed information about a specific appointment for the authenticated staff member.
       operationId: getStaffAppointmentDetails
       security:
@@ -6506,7 +6562,7 @@ paths:
   /staff/appointments/{appointmentId}/start:
     patch:
       tags: [Staff/appointments]
-      summary: Mark an appointment as in progress
+      summary: Mark in progress
       description: Mark an appointment as in progress.
       operationId: startAppointment
       security:
@@ -6537,7 +6593,7 @@ paths:
   /staff/appointments/{appointmentId}/complete:
     patch:
       tags: [Staff/appointments]
-      summary: Mark an appointment as completed
+      summary: Mark completed
       description: Mark an appointment as completed.
       operationId: completeAppointment
       security:
@@ -6587,8 +6643,8 @@ paths:
   /staff/income:
     get:
       tags: [Staff/Income]
-      summary: Get staff income statistics
-      description: Get staff income statistics.
+      summary: Income stats
+      description: Income statistics for the authenticated staff.
       operationId: getStaffIncome
       security:
         - bearerAuth: []
@@ -6637,8 +6693,8 @@ paths:
   /staff/services:
     get:
       tags: [Staff/Services]
-      summary: List staff services
-      description: List staff services.
+      summary: My services
+      description: Services linked to the authenticated staff.
       operationId: getStaffServices
       security:
         - bearerAuth: []
@@ -6668,8 +6724,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
     post:
       tags: [Staff/Services]
-      summary: Add a service to the staff profile
-      description: Add a service to the staff profile.
+      summary: Add service
+      description: Link a service to the authenticated staff profile.
       operationId: postStaffServices
       security:
         - bearerAuth: []
@@ -6710,8 +6766,8 @@ paths:
   /staff/availability:
     get:
       tags: [Staff/Availability]
-      summary: List staff availability slots
-      description: List staff availability slots.
+      summary: Availability slots
+      description: List availability slots for the authenticated staff.
       operationId: getStaffAvailability
       security:
         - bearerAuth: []
@@ -6741,7 +6797,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
     post:
       tags: [Staff/Availability]
-      summary: Create a staff availability slot
+      summary: Add availability slot
       description: Create a staff availability slot. `day_of_week` uses JavaScript/dayjs numbering where `0 = Sunday`, `1 = Monday`, `2 = Tuesday`, `3 = Wednesday`, `4 = Thursday`, `5 = Friday`, and `6 = Saturday`.
       operationId: postStaffAvailability
       security:
@@ -6789,7 +6845,7 @@ paths:
   /staff/availability/{availabilityId}:
     put:
       tags: [Staff/Availability]
-      summary: Update a staff availability slot
+      summary: Update availability slot
       description: Update a staff availability slot. `day_of_week` uses JavaScript/dayjs numbering where `0 = Sunday`, `1 = Monday`, `2 = Tuesday`, `3 = Wednesday`, `4 = Thursday`, `5 = Friday`, and `6 = Saturday`.
       operationId: updateStaffAvailability
       security:
@@ -6842,8 +6898,8 @@ paths:
           $ref: "#/components/responses/NotFound"
     delete:
       tags: [Staff/Availability]
-      summary: Delete a staff availability slot
-      description: Delete a staff availability slot.
+      summary: Delete availability slot
+      description: Delete an availability slot.
       operationId: deleteStaffAvailability
       security:
         - bearerAuth: []
@@ -6876,7 +6932,7 @@ paths:
   /staff/available-slots:
     get:
       tags: [Staff/Availability]
-      summary: Get available booking slots for a service
+      summary: Available slots
       description: Get available booking slots for a service.
       operationId: getStaffAvailableSlots
       security:
@@ -6932,7 +6988,7 @@ paths:
   /branch-admin/analytics/revenue-chart:
     get:
       tags: [Branch_admin/Analytics]
-      summary: Get revenue chart data
+      summary: Revenue chart
       description: Returns date-grouped revenue data for the chart based on selected period.
       operationId: getBranchAdminAnalyticsRevenueChart
       security:
@@ -6972,7 +7028,7 @@ paths:
   /branch-admin/analytics/recent-bookings:
     get:
       tags: [Branch_admin/Analytics]
-      summary: Get recent branch bookings
+      summary: Recent bookings
       description: Lightweight overview of last bookings for quick activity feed.
       operationId: getBranchAdminAnalyticsRecentBookings
       security:
@@ -7005,7 +7061,7 @@ paths:
   /branch-admin/analytics/top-services:
     get:
       tags: [Branch_admin/Analytics]
-      summary: Get top services
+      summary: Top services
       description: Returns service catalog items sorted by appointment volume.
       operationId: getBranchAdminAnalyticsTopServices
       security:
@@ -7045,7 +7101,7 @@ paths:
   /branch-admin/analytics/recent-transactions:
     get:
       tags: [Branch_admin/Analytics]
-      summary: Get recent transactions
+      summary: Recent transactions
       description: Get quick summary list of recent branch business payments.
       operationId: getBranchAdminAnalyticsRecentTransactions
       security:
@@ -7078,7 +7134,7 @@ paths:
   /branch-admin/finance/stats:
     get:
       tags: [Branch_admin/Finance]
-      summary: Get branch finance dashboard metrics
+      summary: Finance metrics
       description: Returns gross, platform fee deduction and payout projections.
       operationId: getBranchAdminFinanceStats
       security:
@@ -7106,7 +7162,7 @@ paths:
   /branch-admin/finance/payments:
     get:
       tags: [Branch_admin/Finance]
-      summary: Get branch payout payments
+      summary: Payout payments
       description: Chronological list of branch incoming payout ledger.
       operationId: getBranchAdminFinancePayments
       security:
@@ -7154,7 +7210,7 @@ paths:
   "/branch-admin/finance/payments/{id}/refund":
     post:
       tags: [Branch_admin/Finance]
-      summary: Refund booking payment
+      summary: Refund payment
       description: Transition payment from PAID to REFUNDED.
       operationId: postBranchAdminFinancePaymentsByIdRefund
       security:
@@ -7194,7 +7250,7 @@ paths:
   /branch-admin/finance/export-report:
     get:
       tags: [Branch_admin/Finance]
-      summary: Export financial report
+      summary: Export report
       description: Exports CSV file link for branch tax bookkeeping audits.
       operationId: getBranchAdminFinanceExportReport
       security:
@@ -7228,7 +7284,7 @@ paths:
   /admin/branches:
     get:
       tags: [Super_admin/Branches]
-      summary: List branches for moderation
+      summary: Branches
       description: List branches with optional filtering by status.
       operationId: getAdminBranches
       security:
@@ -7269,7 +7325,7 @@ paths:
   /admin/branches/{id}:
     get:
       tags: [Super_admin/Branches]
-      summary: Get branch details
+      summary: Branch details
       description: Get detailed branch moderation payload.
       operationId: getAdminBranchesById
       security:
@@ -7308,7 +7364,7 @@ paths:
   /admin/branches/{id}/approve:
     patch:
       tags: [Super_admin/Branches]
-      summary: Approve pending branch
+      summary: Approve branch
       description: Approve a branch only when status is PENDING_APPROVAL.
       operationId: postAdminBranchesByIdApprove
       security:
@@ -7349,7 +7405,7 @@ paths:
   /admin/branches/{id}/reject:
     patch:
       tags: [Super_admin/Branches]
-      summary: Reject pending branch
+      summary: Reject branch
       description: Reject a branch only when status is PENDING_APPROVAL.
       operationId: postAdminBranchesByIdReject
       security:
@@ -7394,7 +7450,7 @@ paths:
   /admin/users/{id}:
     get:
       tags: [Super_admin/Users]
-      summary: Get user profile
+      summary: User profile
       description: Get a user profile by ID (e.g., branch admin profile).
       operationId: getAdminUserProfile
       security:
@@ -7481,7 +7537,7 @@ paths:
   /admin/services:
     get:
       tags: [Super_admin/Services]
-      summary: List services for moderation
+      summary: Services
       description: List services with optional filtering by moderation status.
       operationId: getAdminServices
       security:
@@ -7521,7 +7577,7 @@ paths:
   /admin/services/{id}:
     get:
       tags: [Super_admin/Services]
-      summary: Get service details
+      summary: Service details
       description: Get detailed service moderation payload.
       operationId: getAdminServicesById
       security:
@@ -7557,7 +7613,7 @@ paths:
   /admin/analytics/platform:
     get:
       tags: [Super_admin/Analytics]
-      summary: Get platform analytics
+      summary: Platform analytics
       description: Returns total active businesses and paid subscription revenue for a period.
       operationId: getAdminAnalyticsPlatform
       security:
@@ -7600,7 +7656,7 @@ paths:
   /admin/analytics/recent-activities:
     get:
       tags: [Super_admin/Analytics]
-      summary: Get recent activities
+      summary: Recent activity
       description: Returns recent platform activities.
       operationId: getAdminAnalyticsRecentActivities
       security:
@@ -7633,7 +7689,7 @@ paths:
   /admin/payments:
     get:
       tags: [Super_admin/Payments]
-      summary: List branch payments
+      summary: Branch payments
       description: Returns lightweight subscription payment previews ordered by newest first.
       operationId: getAdminPayments
       security:
@@ -7673,7 +7729,7 @@ paths:
   /admin/payments/{paymentId}:
     get:
       tags: [Super_admin/Payments]
-      summary: Get branch payment details
+      summary: Payment details
       description: Returns detailed subscription payment information.
       operationId: getAdminPaymentsByPaymentId
       security:
@@ -7709,7 +7765,7 @@ paths:
   /admin/payments/{paymentId}/refund:
     post:
       tags: [Super_admin/Payments]
-      summary: Refund branch payment
+      summary: Refund payment
       description: Refund a branch subscription payment.
       operationId: postAdminPaymentsByPaymentIdRefund
       security:
@@ -7750,7 +7806,7 @@ paths:
   /branch-admin/subscription/activate:
     post:
       tags: [Branch_admin/Subscription]
-      summary: Activate current branch subscription
+      summary: Activate subscription
       description: Creates a fake paid subscription payment and activates subscription for approved branch.
       operationId: postBranchAdminSubscriptionActivate
       security:
@@ -7785,7 +7841,7 @@ paths:
   /branch-admin/subscription/renew:
     post:
       tags: [Branch_admin/Subscription]
-      summary: Renew branch subscription
+      summary: Renew subscription
       description: Creates a paid subscription payment and activates subscription for approved branch.
       operationId: postBranchAdminSubscriptionRenew
       security:
@@ -7820,7 +7876,7 @@ paths:
   /branch-admin/subscription/{id}:
     put:
       tags: [Branch_admin/Subscription]
-      summary: Change branch subscription plan
+      summary: Change plan
       description: Changes current subscription plan for approved branch.
       operationId: postBranchAdminSubscriptionChangePlan
       security:
@@ -7858,7 +7914,7 @@ paths:
   /branch-admin/subscription/cancel:
     post:
       tags: [Branch_admin/Subscription]
-      summary: Cancel branch subscription
+      summary: Cancel subscription
       description: Deactivates current subscription for approved branch.
       operationId: postBranchAdminSubscriptionCancel
       security:
@@ -7893,7 +7949,7 @@ paths:
   /branch-admin/appointments:
     get:
       tags: [Branch_admin/Appointments]
-      summary: List branch appointments
+      summary: Branch appointments
       description: List appointments for the authenticated branch_admin with optional filtering.
       operationId: getBranchAdminAppointments
       security:
@@ -7942,7 +7998,7 @@ paths:
   /branch-admin/appointments/{id}:
     get:
       tags: [Branch_admin/Appointments]
-      summary: Get appointment details
+      summary: Appointment details
       description: Get details for a branch appointment by id.
       operationId: getBranchAdminAppointmentsById
       security:
@@ -8020,7 +8076,7 @@ paths:
   /branch-admin/booking-payments:
     get:
       tags: [Branch_admin/Payments]
-      summary: List booking payments
+      summary: Branch payments
       description: List booking payments for the authenticated branch_admin.
       operationId: getBranchAdminBookingPayments
       security:
@@ -8063,7 +8119,7 @@ paths:
   /branch-admin/booking-payments/{id}:
     get:
       tags: [Branch_admin/Payments]
-      summary: Get booking payment details
+      summary: Payment details
       description: Get booking payment details by id for the authenticated branch_admin.
       operationId: getBranchAdminBookingPaymentsById
       security:
@@ -8101,7 +8157,7 @@ paths:
   /branch-admin/analytics/dashboard:
     get:
       tags: [Branch_admin/Analytics]
-      summary: Get branch dashboard stats
+      summary: Dashboard stats
       description: Returns bookings, revenue, clients, staff, and services metrics for selected period.
       operationId: getBranchAdminAnalyticsDashboard
       security:
@@ -8139,7 +8195,7 @@ paths:
   /branch-admin/analytics/staff-earnings:
     get:
       tags: [Branch_admin/Analytics]
-      summary: Get branch staff earnings
+      summary: Staff earnings
       description: Returns lightweight earnings summary per staff member for selected period.
       operationId: getBranchAdminAnalyticsStaffEarnings
       security:
@@ -8179,7 +8235,7 @@ paths:
   /admin/services/{id}/approve:
     patch:
       tags: [Super_admin/Services]
-      summary: Approve pending service
+      summary: Approve service
       description: Approve pending service.
       operationId: postAdminServicesByIdApprove
       security:
@@ -8220,7 +8276,7 @@ paths:
   /admin/services/{id}/reject:
     patch:
       tags: [Super_admin/Services]
-      summary: Reject pending service
+      summary: Reject service
       description: Reject pending service.
       operationId: postAdminServicesByIdReject
       security:
@@ -8389,7 +8445,7 @@ paths:
 
     get:
       tags: [Branch_admin/Offers]
-      summary: List branch offers
+      summary: Offers
       description: List offers for authenticated branch_admin.
       operationId: getOffers
       security:
@@ -8444,7 +8500,7 @@ paths:
   /branch-admin/offers/{id}:
     put:
       tags: [Branch_admin/Offers]
-      summary: Update offer by id
+      summary: Update offer
       description: Update an offer owned by authenticated branch_admin.
       operationId: putOffersById
       security:
@@ -8560,7 +8616,7 @@ paths:
 
     delete:
       tags: [Branch_admin/Offers]
-      summary: Delete offer by id
+      summary: Delete offer
       description: Delete an offer owned by authenticated branch_admin.
       operationId: deleteOffersById
       security:
@@ -8599,7 +8655,7 @@ paths:
   /branch-admin/offers/{id}/toggle:
     patch:
       tags: [Branch_admin/Offers]
-      summary: Toggle offer active state
+      summary: Toggle offer
       description: Toggle active/inactive state for an offer owned by authenticated branch_admin.
       operationId: patchOffersByIdToggle
       security:
@@ -8639,7 +8695,7 @@ paths:
   /reviews:
     get:
       tags: [Reviews]
-      summary: List scoped reviews
+      summary: Reviews
       description: List reviews visible to authenticated branch_admin, staff, or super_admin.
       operationId: getReviews
       security:
@@ -8820,7 +8876,7 @@ paths:
   /reviews/my:
     get:
       tags: [Reviews]
-      summary: List my submitted reviews
+      summary: My reviews
       description: List reviews submitted by authenticated user.
       operationId: getReviewsMy
       security:
@@ -8937,40 +8993,3 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-
-  /branch-admin/{id}/profile:
-    get:
-      tags: [Branch_admin/Profile]
-      summary: Get public branch profile with reviews
-      description: Get public profile of a branch including average rating and latest 5 reviews. Accessible to clients and branch admins.
-      operationId: getBranchPublicProfile
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
-        - name: id
-          in: path
-          required: true
-          description: Branch admin ID
-          schema:
-            type: integer
-            minimum: 1
-      responses:
-        "200":
-          description: Branch profile with reviews fetched
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiSuccess"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/BranchPublicProfile"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"

@@ -140,6 +140,15 @@ export const STABLE_INITIAL_STAFF = [
     role: Role.staff,
     status: UserStatus.ACTIVE,
   },
+  {
+    name: "Youssef Salah",
+    email: "youssef.salah@medicare.com",
+    password: "12345678",
+    phone: "01000000024",
+    age: 35,
+    role: Role.staff,
+    status: UserStatus.ACTIVE,
+  },
 ];
 
 export const STABLE_BRANCH_ADMINS = [

@@ -34,6 +34,10 @@ beforeEach(() => {
     delete: jest.fn(),
     findMany: jest.fn(),
   };
+
+  prisma.user = {
+    findUnique: jest.fn(),
+  };
   
   prisma.appointment = {
     findUnique: jest.fn(),
@@ -73,30 +77,47 @@ describe("Staff Service", () => {
   // ─── Profile Tests ───────────────────────────────────────────────────
   describe("getStaffProfile", () => {
     it("should return staff profile successfully", async () => {
-      const mockStaff = {
+      const mockUser = {
         id: 1,
-        profileImageUrl: "https://example.com/image.jpg",
-        age: 30,
-        staffRole: "DOCTOR",
-        commissionPercentage: 15,
-        averageRating: 4.5,
-        reviewCount: 10,
-        user: {
-          name: "Dr. Ahmed",
-          phone: "01234567890",
-        },
-        branch: {
-          businessName: "Healthcare Clinic",
-          category: "CLINIC",
-        },
-        professionalProfile: {
-          bio: "Experienced doctor",
-          yearsOfExperience: 5,
-          specialization: "General Practice",
+        name: "Dr. Ahmed",
+        email: "ahmed@example.com",
+        phone: "01234567890",
+        role: "staff",
+        status: "ACTIVE",
+        createdAt: new Date("2026-04-01T10:00:00.000Z"),
+        updatedAt: new Date("2026-05-01T10:00:00.000Z"),
+        staff: {
+          id: 1,
+          profileImageUrl: "https://example.com/image.jpg",
+          age: 30,
+          staffRole: "DOCTOR",
+          commissionPercentage: 15,
+          isActive: true,
+          averageRating: 4.5,
+          reviewCount: 10,
+          createdAt: new Date("2026-04-01T10:00:00.000Z"),
+          updatedAt: new Date("2026-05-01T10:00:00.000Z"),
+          branch: {
+            id: 1,
+            businessName: "Healthcare Clinic",
+            category: "CLINIC",
+          },
+          professionalProfile: {
+            id: 1,
+            bio: "Experienced doctor",
+            yearsOfExperience: 5,
+            specialization: "General Practice",
+            createdAt: new Date("2026-04-02T10:00:00.000Z"),
+            updatedAt: new Date("2026-05-02T10:00:00.000Z"),
+          },
+          certificates: [],
+          availabilities: [],
+          services: [],
+          reviews: [],
         },
       };
 
-      prisma.staff.findUnique.mockResolvedValue(mockStaff);
+      prisma.user.findUnique.mockResolvedValue(mockUser);
 
       const result = await staffService.getStaffProfile(1, "en");
 
@@ -105,14 +126,14 @@ describe("Staff Service", () => {
       expect(result).toHaveProperty("phone", "01234567890");
       expect(result.staff).toHaveProperty("staffRole", "DOCTOR");
       expect(result.staff).toHaveProperty("averageRating", 4.5);
-      expect(prisma.staff.findUnique).toHaveBeenCalledWith({
-        where: { userId: 1 },
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
         select: expect.any(Object),
       });
     });
 
     it("should throw error when staff not found", async () => {
-      prisma.staff.findUnique.mockResolvedValue(null);
+      prisma.user.findUnique.mockResolvedValue(null);
 
       await expect(staffService.getStaffProfile(999, "en")).rejects.toThrow();
     });

@@ -116,5 +116,5 @@ export async function getStaffProfile(userId) {
     throw new StaffNotFoundError();
   }
 
-  return { user: mapStaffProfile(staff) };
+  return mapStaffProfile(staff);
 }
