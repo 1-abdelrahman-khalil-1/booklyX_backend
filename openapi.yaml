@@ -5833,6 +5833,13 @@ paths:
                 status:
                   type: string
                   example: AVAILABLE
+            examples:
+              default:
+                value:
+                  dayOfWeek: 1
+                  startTime: "09:00"
+                  endTime: "17:00"
+                  status: "AVAILABLE"
       responses:
         "200":
           description: Availability updated
@@ -5877,6 +5884,10 @@ paths:
                 allowCancellationBeforeHours:
                   type: integer
                   minimum: 0
+            examples:
+              default:
+                value:
+                  allowCancellationBeforeHours: 24
       responses:
         "200":
           description: Booking settings updated
@@ -5921,6 +5932,11 @@ paths:
                   type: boolean
                 marketingNotificationsEnabled:
                   type: boolean
+            examples:
+              default:
+                value:
+                  bookingNotificationsEnabled: true
+                  marketingNotificationsEnabled: false
       responses:
         "200":
           description: Notification settings updated

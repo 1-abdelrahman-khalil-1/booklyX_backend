@@ -8,7 +8,7 @@ const PASSWORD_RESET_PURPOSE = "PASSWORD_RESET";
 
 export async function requestPasswordReset(email) {
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return;
+  if (!user) throw new UserNotFound();
   const code = await helpers.createVerificationCode(user.id, VerificationType.PASSWORD_RESET);
   await import("../../../lib/email.js").then(m=>m.sendPasswordResetEmail(email, code));
 }

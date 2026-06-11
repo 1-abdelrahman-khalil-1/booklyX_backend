@@ -260,8 +260,8 @@ describe("Admin Service - listBranches", () => {
     expect(prisma.branchAdmin.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { status: BranchStatus.PENDING_APPROVAL },
     }));
-    expect(result).toHaveLength(1);
-    expect(result[0].businessName).toBe("Branch A");
+    expect(result.branches).toHaveLength(1);
+    expect(result.branches[0].businessName).toBe("Branch A");
   });
 
   it("should list branches matching custom status filter", async () => {
