@@ -1,752 +1,215 @@
 # BooklyX Backend - Developer & AI Instructions
 
-**⚠️ CRITICAL WORKFLOW RULE**: Do NOT execute `git commit` or `git push` until explicitly requested by the project owner. This constraint is mandatory.
+**⚠️ CRITICAL**: Do NOT execute `git commit` or `git push` until explicitly requested by the project owner.
 
 ---
 
 ## Human Approval Gate (Mandatory)
 
-If any of the following occurs, STOP and ask for confirmation before continuing:
+STOP and ask for confirmation before continuing if any of the following occurs:
 
-- Architectural uncertainty
-- Multiple valid implementation approaches
+- Architectural uncertainty or multiple valid approaches
 - Ambiguous business logic
-- Schema or migration changes
-- Prisma model modifications
+- Schema/migration changes or Prisma model modifications
 - Breaking API changes
 - Deleting or renaming files
 - Refactoring shared/core logic
-- Security-sensitive decisions
-- RBAC behavior changes
-- Changes affecting authentication or tokens
+- Security-sensitive or RBAC/auth/token decisions
 - Unclear translation keys or localization behavior
 - Any operation with potential data loss
 - Any action that modifies more files/modules than originally expected
 
-Do not assume intent in ambiguous situations.
-Present the options, tradeoffs, and recommended approach first.
-Continue only after explicit confirmation.
-This rule has higher priority than implementation speed.
-When uncertain, asking is REQUIRED — not optional.
+Do not assume intent. Present options, tradeoffs, and recommended approach first. Continue only after explicit confirmation. This rule has higher priority than implementation speed.
+
+---
 
 ## 1. Project Architecture (Feature-Based)
 
-- The application is divided into `src/modules/*` (examples: `auth`, `users`, `admin`, `branch_admin`, `plans`, `offers`, `staff`, `reviews`).
-- Strict request flow: Route -> Controller -> Service -> Prisma (use the centralized `src/lib/prisma.js`).
-- Key mental model:
+- Modules live in `src/modules/*`: `auth`, `users`, `admin` (submodules: `financial`, `analytics`), `branch_admin`, `client`, `plans`, `offers`, `staff`, `reviews`.
+- Strict flow: **Route → Controller → Service → Prisma** (centralized `src/lib/prisma.js`).
+- Mental model:
   - `auth`: identity, session, verification lifecycle
   - `client`: home dashboard, map discovery, booking wizard, payments, appointments history, favourites
   - `branch_admin`: branch onboarding, verification, subscription and management
-  - `admin` / `super_admin`: moderation, approvals, global actions
+  - `admin` / `super_admin`: moderation, approvals, global actions, platform financial summary, analytics overview, monthly revenue charting
   - `staff`: staff profiles, schedules, earnings
   - `plans`: subscription plans and limits
-- Each module MUST contain (unless module is intentionally lightweight):
-  - `[module].controller.js`
-  - `[module].service.js`
-  - `[module].routes.js`
-  - `[module].validation.js` (Zod schemas and validator helpers)
+- Each module MUST contain: `[module].controller.js`, `[module].service.js`, `[module].routes.js`, `[module].validation.js` (unless intentionally lightweight).
 
-### 1.1 IDs and Identifiers
+### 1.1 IDs, Enums & Models
 
-- All primary identifiers are integers (`Int`) with `autoincrement()` in Prisma models. Do not use UUIDs in new models; existing schema uses integer IDs.
-
-### 1.2 Prisma Enums and Models
-
-- Prefer Prisma enums (defined in `prisma/schema.prisma`) for persisted domain values (roles, statuses, platform, etc.). Use `src/utils/enums.js` only for non-persisted, app-level enumerations.
-- Notable persistent enums: `Role` (client, staff, branch_admin, super_admin), `BranchStatus`, `ServiceApprovalStatus`, `AppointmentStatus`, `PaymentStatus` (especially `REFUNDED` for distinct tracking), `Plan` relation on `BranchAdmin`, and `OfferDiscountType`.
-
-### 1.1. Prisma Enum vs. Custom Enum
-
-- **Prisma Enum**: Use for values stored in the database that are generated from `schema.prisma`.
-- **Custom Enum**: Use for business logic values not in the database, stored in `src/utils/enums.js`.
+- All primary keys are `Int` with `autoincrement()`. No UUIDs.
+- Prefer **Prisma enums** (`prisma/schema.prisma`) for persisted values. Use `src/utils/enums.js` only for non-persisted, app-level enumerations.
+- Notable enums: `Role`, `BranchStatus`, `ServiceApprovalStatus`, `AppointmentStatus`, `PaymentStatus` (especially `REFUNDED`), `OfferDiscountType`.
 
 ---
 
 ## 2. Controller Rules
 
-- No business logic inside controllers
-- Controller responsibility ONLY:
-  - Receive request
-  - Call validation (if needed)
-  - Call service
-  - Return response
-    -- **Translation in controllers**: Controllers SHOULD call `getLanguage(req)` and may use `t(tr.KEY, lang)` for success responses. Services must still throw `AppError` with `tr.KEY` for errors; the global error handler performs translation for thrown errors.
-
-- Must use:
-  - `asyncHandler`
-  - `successResponse`
-
-- Validation MUST happen in the controller before calling services (see Implementation Checklist). Controllers build validated payloads and convert uploaded files to URLs.
-
-- Controller output contract:
-  - Success responses must be sent through `successResponse`
-  - Errors must be delegated to global error middleware (no local formatting logic)
+- **No business logic** inside controllers. Responsibility: receive request → validate → call service → return response.
+- Must use `asyncHandler` and `successResponse`. No `try/catch`, no raw `res.json`.
+- Validation MUST happen in controller before calling services. Controllers build validated payloads and convert uploaded files to URLs.
+- Translation: call `getLanguage(req)` and use `t(tr.KEY, lang)` for success responses. Errors use `AppError` with `tr.KEY` (translated by global error handler).
 
 ---
 
 ## 3. Service Rules
 
-- All business logic MUST be inside services
-- All DB access MUST be inside services
-- Never throw raw errors
-- Always throw domain-specific error classes that extend `AppError`
-- Services must be reusable and independent
-- No dependency on Express داخل services
+- All business logic and DB access MUST be inside services.
+- Never throw raw errors — always throw domain-specific errors extending `AppError` with `tr.KEY` and optional `params`.
+- No dependency on Express inside services. Services must be reusable and independent.
+- Use `src/lib/mappers/profile.mapper.js` for profile responses. Keep profile shaping centralized.
+- Preserve DB-selected response shapes unless the API contract explicitly requires transformation.
+- Error-to-HTTP: `400` (validation/business), `401` (auth), `403` (forbidden), `404` (not found), `409` (conflict).
 
-- Preserve database-selected response shapes in services: avoid remapping or formatting DB query results inside services unless the API contract explicitly requires it. Keep any non-trivial response transformations documented and reviewed.
-- Use `src/lib/mappers/profile.mapper.js` for branch admin, staff, and admin user profile responses. Keep profile shaping centralized, explicit, and whitelisted rather than hand-mapping the same profile object in multiple services.
+### 3.1 Subscription & Plan Guards
 
-- Error-to-HTTP guidance:
-  - Validation/business input errors -> `400`
-  - Unauthorized/auth errors -> `401`
-  - Forbidden role/access errors -> `403`
-  - Not found domain entities -> `404`
-  - Conflict/duplicate state -> `409`
-
-### 3.1 Service Contracts & Translation
-
-- Services must throw domain `AppError` instances containing translation keys (`tr.KEY`) and optional `params`. Do not attempt to translate inside services; the global error handler performs translation using request language.
-
-### 3.2 Subscription & Plan Enforcements (Service-level guards)
-
-- Use `src/utils/subscriptionGuards.js` to enforce plan and subscription rules from services and controllers. Stable helpers present in the codebase:
-  - `ensureActiveSubscription(branchId, branchRecord?)` → throws `SubscriptionRequiredError` if branch not APPROVED or not subscribed.
-  - `ensureServiceLimitNotExceeded(branchId, branchRecord?)` → throws `PlanLimitExceededError` when approved services count >= plan.maxServices.
-  - `ensureStaffLimitNotExceeded(branchId, branchRecord?)` → throws `PlanLimitExceededError` when active staff count >= plan.maxStaff.
-  - `ensureOffersEnabled(branchId)` and `ensureLoyaltyEnabled(branchId)` → throw `FeatureNotEnabledError` when plan feature flags are disabled.
-
-Apply these guards in services responsible for creating services, staff, offers, and reporting endpoints that require subscription activation.
+Use `src/utils/subscriptionGuards.js` helpers: `ensureActiveSubscription`, `ensureServiceLimitNotExceeded`, `ensureStaffLimitNotExceeded`, `ensureOffersEnabled`, `ensureLoyaltyEnabled`. Apply these when creating services, staff, offers, or subscription-gated features.
 
 ---
 
 ## 4. Validation Rules (Zod)
 
-- Never write validation inside controllers or services
-- Always use `[module].validation.js`
-
-- Use Zod schemas only
-- Use helper function (e.g., `validateInput(schema, data)`)
-- Prefer shared validation primitives in `src/lib/validation/primitives.js` for repeated IDs, emails, phones, passwords, ISO dates, and URLs.
-- Prefer shared generic object schemas in `src/lib/validation/primitives.js` for repeated parameter shapes such as `zIdParamSchema` and `createIdParamSchema(name)`.
-- Prefer shared validation helpers in `src/lib/validation/helpers.js` for repeated `safeParse` wrappers, `requireAtLeastOneField`, `validateTimeRange`, and password-change validation.
-- Keep feature schemas readable and explicit; compose shared primitives/helpers instead of building large generic schemas.
-
-- Validation flow:
-  - `safeParse`
-  - On failure → throw a domain error extending `AppError`
-  - Map errors to `tr.KEY`
-  - For all enum validation failures, always use one generic key: `tr.INVALID_ENUM_VALUE`
-  - Detect enum failures by Zod issue code: `firstIssue.code === "invalid_enum_value" || firstIssue.code === "invalid_value"`
-  - Always attach available enum options dynamically in error params from either shape: `{ values: (firstIssue.options ?? firstIssue.values)?.join(", ") }`
-  - Prefer Prisma enums or shared constant enums for validation and business rules instead of hardcoded literal values
-  - Validation helpers should return translation keys and params only; do not translate inside validation helpers
-  - Validation wrappers should be thin; use the shared helper in `src/lib/validation/helpers.js` instead of reimplementing `safeParse` logic in each module.
-
-- Never trust `req.body`
-
-Note: The project enforces controller-side validation using Zod helpers that throw `AppError`-derived validation errors with `tr.KEY` codes.
+- Never write validation inside controllers or services — always use `[module].validation.js`.
+- Use Zod schemas only. Prefer shared primitives from `src/lib/validation/primitives.js` and helpers from `src/lib/validation/helpers.js`.
+- Validation flow: `safeParse` → on failure throw `AppError`-derived error with `tr.KEY`.
+- Enum failures: use `tr.INVALID_ENUM_VALUE` with `{ values: (firstIssue.options ?? firstIssue.values)?.join(", ") }`.
+- Validation wrappers should be thin — use the shared `safeParse` helper instead of reimplementing per module.
+- Never trust `req.body`.
 
 ---
 
-## 5. Package-First Approach (IMPORTANT)
+## 5. Package-First Approach
 
-**MANDATORY WORKFLOW**: Before implementing any feature, utility, or data generation, you MUST check for existing libraries first.
+**MANDATORY**: Before implementing any feature or utility, check for existing libraries first.
 
-### 5.1 Workflow (Always Follow This Order)
+1. Check `package.json` for what's already installed
+2. Search npm if needed
+3. Ask before installing new libraries
+4. Only code manually when no suitable library exists AND user confirms
 
-1. **Search for existing solutions** → Check npm ecosystem, your project dependencies
-2. **Check package.json** → Verify what's already installed in the project
-3. **Ask or confirm** → If multiple options exist, ask the user which library to use
-4. **Install if needed** → Use `npm install` or `npm install --save-dev`
-5. **Integrate the library** → Use the library instead of manual implementation
-6. **Only code manually** → When no suitable library exists AND the user confirms the approach
-
-### 5.2 Common Task → Library Mapping
-
-| Task                  | Preferred Library     | Alternatives       | Notes                   |
-| --------------------- | --------------------- | ------------------ | ----------------------- |
-| Input Validation      | `zod`                 | joi, yup           | Already in project      |
-| Password Hashing      | `bcrypt`              | argon2             | Already in project      |
-| JWT Auth              | `jsonwebtoken`        | jose               | Already in project      |
-| Date/Time             | `dayjs`               | date-fns, moment   | Already in project      |
-| Environment Variables | `dotenv`              | -                  | Already in project      |
-| Database ORM          | `prisma`              | -                  | Already in project      |
-| **Data Generation**   | **`@faker-js/faker`** | **casual, chance** | **For testing/seeding** |
-| HTTP Client           | `axios`               | fetch              | Check if installed      |
-| File Upload           | `multer`              | express-fileupload | Already in project      |
-| Logging               | Check project         | winston, pino      | Use what's configured   |
-| Testing               | `jest`                | vitest, mocha      | Already in project      |
-
-### 5.3 Rules
-
-- **Avoid reinventing the wheel** - If a mature package exists, use it
-- **Use stable, well-known libraries only** - No experimental or unmaintained packages
-- **Keep usage consistent** - Use the same library across the project for the same purpose
-- **Check project dependencies first** - Don't duplicate packages
-- **Ask before installing new libraries** - New deps impact project size and maintenance
-- **Document non-obvious choices** - If you pick a less common library, explain why
-
-### 5.4 Example: The Right Way (Seed Data Generation)
-
-❌ **Wrong**: Manually create hundreds of hardcoded seed records
-
-```javascript
-const CLIENTS = [
-  { name: "Client 1", email: "client1@...", phone: "0100..." },
-  { name: "Client 2", email: "client2@...", phone: "0100..." },
-  // ... manually typed 100 more
-];
-```
-
-✅ **Right**: Use faker library with stable accounts preserved
-
-```javascript
-import { faker } from "@faker-js/faker";
-
-const STABLE_ACCOUNTS = [
-  /* preserved accounts */
-];
-function generateFakeClients(count) {
-  return Array.from({ length: count }, () => ({
-    name: faker.person.fullName(),
-    email: faker.internet.email(),
-    phone: faker.phone.number("0##########"),
-  }));
-}
-const CLIENTS = [...STABLE_ACCOUNTS, ...generateFakeClients()];
-```
+**Already installed**: `zod`, `bcrypt`, `jsonwebtoken`, `dayjs`, `dotenv`, `prisma`, `@faker-js/faker` (dev), `multer`, `jest`, `axios` (check). Use these consistently — avoid duplicating or reinventing.
 
 ---
 
-## 6. Global Error Handling
+## 6. Error Handling & Localization (i18n)
 
-- No `try/catch` in controllers
-- Always use `asyncHandler`
-
-- Services throw:
-  - Domain errors extending `AppError`
-  - Error constructors should take translation keys, not language arguments; translation happens in the global error handler
-
-- Global error handler:
-  - formats response
-  - handles translation
-
-Important: Services and validation helpers must not call translation functions directlظy; put `tr.KEY` into thrown errors and let the global middleware translate based on `Accept-Language`.
+- No `try/catch` in controllers — use `asyncHandler`. Global error handler formats and translates.
+- Services throw `AppError` subclasses with `tr.KEY` — never translate inside services or validation helpers.
+- Never return raw strings or hardcode user-facing text. Always use `tr.KEY` with `t(tr.KEY, lang)`.
+- Error constructors take translation keys, not language arguments.
 
 ---
 
-## 7. Localization (i18n)
+## 7. Database Rules (Prisma)
 
-- Never return raw strings
-- Never hardcode user-facing text in controllers, services, validations, or middleware
-- Always use `tr.KEY`
-- Translation handled using:
-  - `t(tr.KEY, lang)`
-  - Schema validation messages should be translation keys, not plain text
-  - Prefer the auth-service pattern: store `tr.KEY` in the error message and let the error middleware translate it
-
----
-
-## 8. Database Rules (Prisma)
-
-- No DB access in controllers
-- All DB logic inside services
-- Import Prisma in modules through `src/lib/prisma.js` (centralized instance)
-- If you change a Prisma model/schema, update `prisma/seed.js` in the same change so seeded data stays aligned with the schema.
-- If you introduce, expand, or rely on new seed data for a feature, update `prisma/seed.js` in the same change; do not leave seed updates as a follow-up.
-- If the new or changed seed data exposes new API behavior, examples, statuses, or entities, update `openapi.yaml` in the same change as well.
-- After Prisma schema/model changes, run `npx prisma generate` before tests so generated types stay in sync.
-- If Prisma schema changes are part of a real feature change, apply them with `npx prisma migrate dev --name <descriptive-name>` before validating the feature.
-- If Prisma reports drift or asks for a reset, treat `npx prisma migrate reset` as destructive development-only maintenance and ask for confirmation before using it.
-- After any schema-driven migrate or reset, re-run `npx prisma generate` and confirm `prisma/seed.js` still matches the schema.
-
-- Use:
-  - `select` (avoid overfetching)
-  - `include` carefully
-
-- Use transactions for multi-step operations
-- Avoid N+1 queries
-
-### 8.2 Prisma usage: explicit selects
-
-- Never return Prisma model raw objects if they contain sensitive or internal fields (passwords, token hashes, internal flags, etc.). Always use explicit `select` or shape the returned object before sending to clients.
-
-### 8.1 Prisma schema realities (stable)
-
-- Database provider: MySQL (see `prisma/schema.prisma` datasource).
-- IDs: primary keys are `Int` with `autoincrement()` across models (no UUIDs).
-- Important models and relations (as implemented): `User`, `Client`, `Staff`, `BranchAdmin`, `Plan`, `Service`, `Offer`, `Review`, `Appointment`, `SubscriptionPayment`, `ServiceExecution`.
-
-When adding or modifying relations, keep `@@index` and `@@map` conventions consistent with existing models.
+- No DB access in controllers. Import Prisma through `src/lib/prisma.js`.
+- **Seeder Consistency Rule (CRITICAL)**: If you change any schema, model, validation constraints, or business rules that affect seeded data, you MUST update the `seed/` directory (`seed/index.js`, `seed/modules/*`, `seed/generators/*`) in the same change. Always run `node seed/index.js` to verify.
+- If seed changes expose new API behavior, update `openapi.yaml` in the same change.
+- After schema changes: run `npx prisma generate`. For migrations: `npx prisma migrate dev --name <name>`. For resets: ask for confirmation first (destructive).
+- Use `select` (avoid overfetching), `include` carefully. Use transactions for multi-step operations. Avoid N+1 queries.
+- Never return raw Prisma objects containing sensitive fields (passwords, token hashes). Always use explicit `select`.
+- Database: MySQL. Keep `@@index` and `@@map` conventions consistent.
+- Important models: `User`, `Client`, `Staff`, `BranchAdmin`, `Plan`, `Service`, `Offer`, `Review`, `Appointment`, `SubscriptionPayment`, `ServiceExecution`.
 
 ---
 
-## 9. Security Rules
+## 8. Security & Auth
 
-- Never trust input
-- Always validate using Zod
-- Sanitize sensitive data (e.g., remove password)
-- Do not expose internal errors
-- Use proper HTTP status codes
-
-### 9.1 Token & Platform enforcement
-
-- Access token format: `<loginSequence>|<jwt>` (examples and validation are enforced in `src/middleware/authenticate.js`).
-- The `platform` header is required and must match the token's `platform` claim. Token verification enforces the platform match and validates `decoded.sub` (numeric user id) and `decoded.role`.
-- Use `authenticate` then `authorize(Role.xxx)` middleware order for protected routes.
+- Never trust input — always validate with Zod. Sanitize sensitive data. Use proper HTTP status codes.
+- Access token format: `<loginSequence>|<jwt>` (enforced in `src/middleware/authenticate.js`).
+- `platform` header is required and must match token's `platform` claim.
+- Route protection order: `authenticate` → `authorize(Role.xxx)`.
 
 ---
 
-## 10. Performance Rules
+## 9. Routing
 
-- Avoid unnecessary DB calls
-- Use pagination for lists
-- Use `select` instead of full objects
-- Avoid blocking operations
-- Keep services efficient
-
----
-
-## 11. Async Rules
-
-- No unhandled promises
-- No try/catch in controllers
-- Always use `asyncHandler`
+- Define routes in `[module].routes.js`. Register in `src/routes/index.js`. Do NOT touch `server.js`.
+- **RESTful principles**:
+  - Nouns, not verbs in paths: ✅ `POST /branch-admin/staff` ❌ `POST /branch-admin/create-staff`
+  - No redundancy: ✅ `GET /branch-admin/staff` ❌ `GET /branch-admin/staff/my-staff`
+  - Method semantics: `GET` (fetch), `POST` (create/heavy actions), `PUT` (full replace), `PATCH` (partial/state changes like approve, reject, toggle)
+  - Use resource IDs directly in path.
+- File upload routes must use configured `multer` middleware.
 
 ---
 
-## 12. Response Rules
+## 10. File Upload Pattern
 
-- Always use `successResponse`
-- Never use raw `res.json`
-- Keep response structure consistent: `{ status, error, message, data }`
+Files are **NEVER** stored as raw file objects. Flow:
 
-- For profile-like endpoints, prefer reusable OpenAPI schemas in `openapi.yaml` instead of duplicating inline profile trees. Keep the documented schema aligned with the shared mapper output.
-
-Responses follow `snake_case` keys in OpenAPI examples (see `openapi.yaml`). Keep response payloads consistent with documented schemas.
-
----
-
-## 13. Routing
-
-- Define routes in `[module].routes.js`
-- Register all modules in `src/routes/index.js`
-- Do NOT touch `server.js`
-
-### 13.1 RESTful Routing Principles (Mandatory)
-
-When defining endpoints, adhere to strict REST best practices:
-1. **Nouns, Not Verbs**: Never include verbs in endpoint paths. Use resources instead.
-   - ❌ *Incorrect*: `POST /branch-admin/create-staff`
-   - ✅ *Correct*: `POST /branch-admin/staff`
-2. **Avoid Redundancy**: If a route is already mounted under a parent path (like `/branch-admin`), do not repeat contextual info.
-   - ❌ *Incorrect*: `GET /branch-admin/staff/my-staff`
-   - ✅ *Correct*: `GET /branch-admin/staff` (it inherently implies "my staff" within the branch context)
-   - ❌ *Incorrect*: `GET /branch-admin/services/my-services`
-   - ✅ *Correct*: `GET /branch-admin/services`
-3. **HTTP Method Semantics**:
-   - Use `GET` to fetch resources.
-   - Use `POST` to create resources or trigger heavy operations/actions (like `login`, `refund`).
-   - Use `PUT` only for complete resource updates (replacements).
-   - Use `PATCH` for partial resource updates or state changes (like `approve`, `reject`, `toggle`).
-     - ❌ *Incorrect*: `POST /admin/branches/:id/approve`
-     - ✅ *Correct*: `PATCH /admin/branches/:id/approve`
-4. **Clean Parameter Passing**: Use resource IDs directly in the path where logical.
-
-Route-level patterns:
-
-- Protect write/update routes with `authenticate` + `authorize(Role.branch_admin)` or appropriate role checks.
-- File upload routes must use configured `multer` middleware and controllers should convert files to public URLs before validation.
+1. Endpoint uses `multipart/form-data`. File fields use `snake_case` (e.g., `profile_image`, `logo`).
+2. Controller receives file via `multer` middleware, converts to URL using helper functions.
+3. If no file uploaded during update, URL stays `undefined` → Prisma retains old image automatically.
+4. Controller validates URL in Zod schema (optional string URL).
+5. Service receives and stores URL string in DB.
+6. OpenAPI: use `format: binary` for file fields. Do NOT include URL fallback fields in `multipart/form-data` schemas.
 
 ---
 
-## 14. Testing
+## 11. Response & Code Quality
 
-- Use Jest
-- Place tests inside `__tests__` per module
-- Mock Prisma & external services
-- Focus on service layer
-
-Stable tests in repo show unit tests for service layer under `src/modules/*/__tests__`. Follow that pattern and mock `prisma` client via jest mocks.
+- Always use `successResponse`. Response structure: `{ status, error, message, data }`. Keys follow `snake_case` in OpenAPI.
+- For profile endpoints, prefer reusable OpenAPI schemas aligned with the shared mapper output.
+- No duplicate code, dead code, or unused imports. Follow SOLID principles. Prefer simple, readable code.
+- Use pagination for lists. Avoid unnecessary DB calls and blocking operations.
 
 ---
 
-## 15. Code Quality Rules
+## 12. Testing
 
-- No duplicate code
-- No dead code
-- No unused imports
-- Follow SOLID principles
-- Prefer simple, readable code
+- Use **Jest**. Place tests in `__tests__` per module. Focus on service layer.
+- Mock Prisma & external services. Run with `npm test`.
 
 ---
 
-## 16. Module File Patterns (Reference)
+## 13. OpenAPI & Apidog
 
-### 16.1 `[module].controller.js` — Request Entry + Validation
+Every endpoint in `openapi.yaml` MUST include: `tags`, `summary`, `description`, `operationId` (camelCase, starts with HTTP verb, e.g., `patchStaffAppointmentsByAppointmentIdAccept`), standard headers (`AcceptLanguageHeader`, `PlatformHeader`), `requestBody` with schema+examples for writes, `responses` with success + standard errors.
 
-```javascript
-import { getLanguage, t, tr } from "../../lib/i18n/index.js";
-import { asyncHandler } from "../../utils/asyncHandler.js";
-import { successResponse } from "../../utils/response.js";
-import { someServiceFunction } from "./example.service.js";
-import { someSchema, validateModuleInput } from "./example.validation.js";
-
-export const exampleHandler = asyncHandler(async (req, res) => {
-  // Validation must happen in controller
-  const data = validateModuleInput(someSchema, req.body);
-
-  // ✅ Pass validated data to service (service receives clean data)
-  const result = await someServiceFunction(data);
-
-  successResponse(res, 200, t(tr.SUCCESS_KEY, req.language), result);
-});
-```
-
-### 16.2 `[module].service.js` — Business Logic + DB Access
-
-```javascript
-import prisma from "../../lib/prisma.js";
-import { tr } from "../../lib/i18n/index.js";
-import { AppError } from "../../utils/AppError.js";
-
-// ✅ Domain errors (for business logic, not input validation)
-export class EntityNotFoundError extends AppError {
-  constructor() {
-    super(tr.ENTITY_NOT_FOUND, 404);
-    this.name = "EntityNotFoundError";
-  }
-}
-
-export class DuplicateEntityError extends AppError {
-  constructor(message) {
-    super(message, 409);
-    this.name = "DuplicateEntityError";
-  }
-}
-
-export async function someServiceFunction(data) {
-  // ✅ NO validation here — data is already validated by controller
-  // ✅ Work directly with validated data (no safeParse, no validateInput)
-
-  const entity = await prisma.someModel.findUnique({
-    where: { id: data.id },
-    select: { id: true },
-  });
-
-  if (!entity) {
-    throw new EntityNotFoundError();
-  }
-
-  return entity;
-}
-
-// ✅ File upload handling: Accept file URLs from controller
-export async function createWithAttachment(data) {
-  // data.attachmentUrl is already a URL (uploaded and validated by controller)
-  const record = await prisma.someModel.create({
-    data: {
-      title: data.title,
-      attachmentUrl: data.attachmentUrl, // Already a URL, not a file
-    },
-  });
-  return record;
-}
-```
-
-### 16.3 `[module].validation.js` — Zod Schemas + Validation Logic
-
-```javascript
-import { z } from "zod";
-import { tr } from "../../lib/i18n/index.js";
-import { DomainError } from "./example.service.js"; // Adjust name
-
-class ModuleValidationError extends DomainError {
-  constructor(message, params) {
-    super(message, 400, params);
-    this.name = "ModuleValidationError";
-  }
-}
-
-export const someSchema = z.object({
-  id: z.coerce.number().int().positive({ message: tr.INVALID_ID }),
-  title: z.string().min(1, tr.TITLE_REQUIRED),
-  // ✅ For file uploads, expect URL strings (files uploaded in controller)
-  attachmentUrl: z.string().url().optional(),
-});
-
-// ✅ Validate any input, handle validation errors
-export function validateModuleInput(schema, data) {
-  const result = schema.safeParse(data);
-  if (result.success) return result.data;
-
-  const firstIssue = result.error.issues[0];
-
-  if (
-    firstIssue.code === "invalid_enum_value" ||
-    firstIssue.code === "invalid_value"
-  ) {
-    const enumValues = firstIssue.options ?? firstIssue.values;
-    throw new ModuleValidationError(tr.INVALID_ENUM_VALUE, {
-      values: Array.isArray(enumValues) ? enumValues.join(", ") : "",
-    });
-  }
-
-  throw new ModuleValidationError(firstIssue.message);
-}
-
-Note: Validation helpers should return structured translation keys and params; controllers or middleware are responsible for setting `req.language` (global error handler reads `Accept-Language`).
-```
-
-### 16.4 `[module].controller.js` — File Upload Handling
-
-```javascript
-// For controllers that handle file uploads (images, attachments, etc.)
-
-import multer from "multer"; // Already configured middleware
-import { asyncHandler } from "../../utils/asyncHandler.js";
-
-function getUploadedFileUrl(req, fieldName) {
-  const files = req.files?.[fieldName];
-  const file = Array.isArray(files) ? files[0] : undefined;
-  if (!file) return undefined;
-
-  // ✅ Return the full URL (assuming file middleware sets file.path or similar)
-  return `${req.protocol}://${req.get("host")}/files/public/${file.filename}`;
-}
-
-function getUploadedFilesUrls(req, fieldName) {
-  const files = req.files?.[fieldName];
-  if (!files || files.length === 0) return [];
-
-  return files.map(
-    (file) =>
-      `${req.protocol}://${req.get("host")}/files/public/${file.filename}`,
-  );
-}
-
-export const createWithAttachmentHandler = asyncHandler(async (req, res) => {
-  const lang = getLanguage(req);
-
-  // ✅ Handle file upload in controller
-  const attachmentUrl = getUploadedFileUrl(req, "attachment");
-
-  // ✅ Build validated data with URL
-  const data = validateModuleInput(someSchema, {
-    ...req.body,
-    attachmentUrl,
-  });
-
-  // ✅ Pass to service with URL (not file object)
-  const result = await someServiceFunction(data);
-
-  successResponse(res, 201, t(tr.SUCCESS_KEY, lang), result);
-});
-
-export const createWithMultipleAttachmentsHandler = asyncHandler(
-  async (req, res) => {
-    const lang = getLanguage(req);
-
-    // ✅ Handle multiple file uploads
-    const attachmentUrls = getUploadedFilesUrls(req, "attachments");
-
-    // ✅ Validate with URLs in array
-    const data = validateModuleInput(multipleAttachmentsSchema, {
-      ...req.body,
-      attachments: attachmentUrls,
-    });
-
-    const result = await someServiceFunction(data);
-    successResponse(res, 201, t(tr.SUCCESS_KEY, lang), result);
-  },
-);
-```
-
-### 16.5 `[module].routes.js`
-
-```javascript
-import { Router } from "express";
-import multer from "multer"; // Express file upload middleware
-import { Role } from "../../generated/prisma/client.js";
-import { authenticate, authorize } from "../../middleware/authenticate.js";
-import {
-  someHandler,
-  createWithAttachmentHandler,
-} from "./example.controller.js";
-
-const upload = multer({ dest: "uploads/" }); // Configure as needed
-const moduleRouter = Router();
-
-moduleRouter.get(
-  "/example",
-  authenticate,
-  authorize(Role.branch_admin),
-  someHandler,
-);
-
-// ✅ File upload routes include multer middleware
-moduleRouter.post(
-  "/with-attachment",
-  authenticate,
-  authorize(Role.branch_admin),
-  upload.single("attachment"), // Handle single file
-  createWithAttachmentHandler,
-);
-
-moduleRouter.post(
-  "/with-attachments",
-  authenticate,
-  authorize(Role.branch_admin),
-  upload.array("attachments", 10), // Handle multiple files (max 10)
-  createWithAttachmentsHandler,
-);
-
-export default moduleRouter;
-```
+- Validate: `npm run openapi:validate`
+- Sync: `npm run apidog:sync` (requires `APIDOG_ACCESS_TOKEN`, `APIDOG_PROJECT_ID` in `.env`)
+- When adding/changing endpoints or seed data, update `openapi.yaml` in the same change.
 
 ---
 
-## 17. File Upload Pattern (Multipart/Form-Data)
+## 14. Implementation Checklist
 
-Files are **NEVER** stored in database as raw file objects. Follow this pattern:
-
-1. **Request format** → Endpoints accepting files MUST use `multipart/form-data`.
-2. **Controller receives file** → upload middleware (`multer`, e.g., `imageOnlyUpload`) handles it. Use `snake_case` names for file fields (e.g., `profile_image`, `logo`, `image`).
-3. **Controller converts file to URL** → use helper functions (like `buildProfilePayload`) to extract the file URL. If a file is NOT uploaded during an update, the helper leaves the URL as `undefined`, and Prisma automatically retains the old image. The frontend does NOT need to send the old URL back.
-4. **Controller validates URL** → include URL in validation schema (as an optional string URL).
-5. **Service receives URL** → stores the URL in database (string field, not file).
-6. **OpenAPI Schema (`openapi.yaml`)** → Define request content as `multipart/form-data`. Use `format: binary` for file fields. **Do NOT** include URL fallback fields (like `profileImageUrl` or `imageUrl`) in the `multipart/form-data` schema to avoid frontend confusion; if no file is sent, the old image is kept automatically.
-
-✅ **Example Flow**:
-
-- Request: `POST /service` with `FormData { image: (binary file), title: "..." }`
-- Middleware: `multer` uploads files → stored in Cloudinary/uploads
-- Controller: Extracts URL using helper → `https://cdn.booklyx.com/image.jpg`
-- Validation: Confirms it's a valid URL (if provided)
-- Service: Stores `imageUrl: "https://cdn.booklyx.com/image.jpg"` in DB
-- Response: Returns record with URL strings
-
-## 18. Implementation Checklist (Quick)
-
-- Add/extend module files in `src/modules/<module>/`
-- Add or update Zod schema in `[module].validation.js`
-- ✅ **NEW PATTERN**: Validation MUST happen in `[module].controller.js` before calling service
-- ✅ All business logic and Prisma calls inside `[module].service.js`
-- Services receive already-validated data (no validation inside services)
-- ✅ Domain errors in service extend `AppError` and describe business logic failures (not input validation)
-- Throw domain errors extending `AppError` with `tr.KEY`
-- Ensure all user-facing messages/errors use translation keys (no hardcoded text)
-- Use `asyncHandler` + `successResponse` in controller
-- ✅ **FOR FILE UPLOADS**: Handle file upload in controller, build URL, pass URL to service (not file object)
-- Register routes in `src/routes/index.js`
-- Add/update service-layer Jest tests in `__tests__`
-- If Prisma schema changes, update `prisma/seed.js` in the same change and regenerate Prisma client.
-- If the schema change needs a database migration, run `npx prisma migrate dev --name <descriptive-name>`; if drift is detected, only use `npx prisma migrate reset` after confirming data loss is acceptable in the development DB.
-- If API surface changed: update OpenAPI docs and run `npm run apidog:sync`
-- If you add a mobile-only module like `staff`, keep it under `src/modules/staff/` and protect it with `Role.staff`
-
-## 19. OpenAPI Endpoint Pattern (Required)
-
-- Every endpoint in `openapi.yaml` MUST include:
-  - `tags` (for large modules, subdivide logically, e.g., `Client/Home`, `Client/Booking`, `Client/Discovery`)
-  - `summary`
-  - `description`
-  - `operationId` (unique and stable)
-  - Standard headers where applicable: `AcceptLanguageHeader` and `PlatformHeader`
-  - `requestBody` with `schema` and `examples` for write operations (`POST`, `PUT`, `PATCH`)
-  - `responses` with at least one success response (`200`/`201`) including response examples for JSON payloads
-  - Standard error responses where applicable (`400`, `401`, `403`, `404`, `409`, `429`)
-
-- `operationId` naming convention:
-  - camelCase
-  - starts with HTTP action semantics (`get`, `post`, `put`, `patch`, `delete`)
-  - includes resource and key identifiers (example: `patchStaffAppointmentsByAppointmentIdAccept`)
-
-### 18.1 Endpoint Template
-
-```yaml
-/resource/path/{id}:
-  patch:
-    tags: [Module]
-    summary: Short action summary
-    description: Clear endpoint behavior and intent.
-    operationId: patchResourcePathByIdAction
-    security:
-      - bearerAuth: []
-    parameters:
-      - $ref: "#/components/parameters/AcceptLanguageHeader"
-      - $ref: "#/components/parameters/PlatformHeader"
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/SomeRequest"
-          examples:
-            default:
-              $ref: "#/components/examples/SomeRequest"
-    responses:
-      "200":
-        description: Action completed successfully
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ApiSuccess"
-            examples:
-              default:
-                $ref: "#/components/examples/SimpleSuccessResponse"
-      "400":
-        $ref: "#/components/responses/BadRequest"
-      "401":
-        $ref: "#/components/responses/Unauthorized"
-      "403":
-        $ref: "#/components/responses/Forbidden"
-      "404":
-        $ref: "#/components/responses/NotFound"
-```
-
-## 19. FINAL RULE (MANDATORY)
-
-- Write unit tests for core logical functions and services using `Jest`.
-- Store tests inside the module directory in a `__tests__` folder (e.g., `src/modules/auth/__tests__/auth.service.test.js`).
-- Mock database interactions (Prisma) and third-party dependencies when writing unit tests. Use `npm test` to run them.
-
-## 20. OpenAPI + Apidog Sync
-
-- When adding new API endpoints or routes, update `openapi.yaml` first.
-- When a change is driven by new seed data or changes an existing seeded flow, update `openapi.yaml` in the same change so the docs match the seeded behavior.
-- Validate using: `npm run openapi:validate`
-- Sync to Apidog using: `npm run apidog:sync`
-- Requires valid Apidog credentials in `.env` (`APIDOG_ACCESS_TOKEN`, `APIDOG_PROJECT_ID`).
-
-- This file is the single source of truth for AI development flow in this repository
-- Follow `.github/ai_workflow.md` for the execution cycle and phase gates
-- For quick daily checklists: `.github/ai_workflow.strict.md`
-- Do NOT skip steps
-- Do NOT change flow order
-- See `.github/ai_workflow.md` for full workflow details.
+1. Add/extend module files in `src/modules/<module>/`
+2. Add Zod schema in `[module].validation.js`
+3. Validate in controller before calling service
+4. Business logic and Prisma calls in service only
+5. Domain errors extend `AppError` with `tr.KEY`
+6. All user-facing messages use translation keys
+7. Use `asyncHandler` + `successResponse` in controller
+8. File uploads: handle in controller → build URL → pass URL to service
+9. Register routes in `src/routes/index.js`
+10. Add/update Jest tests in `__tests__`
+11. If schema changes: update `seed/` files, run `npx prisma generate`, migrate if needed
+12. If API surface changed: update `openapi.yaml`, run `npm run apidog:sync`
 
 ---
 
-## 21. Business Rules & Appointments (BooklyX)
+## 15. Business Rules & Appointments
 
-- **Search & Discovery**:
-  - Distance search relies on numeric `lat` and `lng` coordinates and spatial distance calculations (`ST_Distance_Sphere`).
-  - Sorting must prioritize distance first, then rating.
-  - Only APPROVED branches with active subscriptions (`isSubscriptionActive = true`) appear in searches and discovery feeds.
-- **Booking Flow**:
-  - Appointments are initially created as `PENDING`.
-  - Appointments require a successful payment to become `CONFIRMED`.
-  - Failed payments leave the appointment as `PENDING`; they must not confirm it.
-  - Double booking and past bookings must be strictly prevented.
-- **Cancellations & Refunds**:
-  - Cancellations are restricted by the branch's `allowCancellationBeforeHours` window.
-  - Refunded payments transition to a discrete `REFUNDED` status. Never overload `FAILED` with refunded meaning.
-- **Reviews**:
-  - Reviews are only allowed for `COMPLETED` appointments, with a limit of one review per appointment.
+- **Search & Discovery**: Distance search uses `ST_Distance_Sphere` on `lat`/`lng`. Sort: distance first, then rating. Only APPROVED branches with `isSubscriptionActive = true` appear.
+- **Booking**: Appointments created as `PENDING` → require payment to become `CONFIRMED`. Failed payments keep `PENDING`. Prevent double booking and past bookings.
+- **Cancellations & Refunds**: Restricted by `allowCancellationBeforeHours`. Refunds use discrete `REFUNDED` status — never overload `FAILED`.
+- **Reviews**: Only for `COMPLETED` appointments, one review per appointment.
+
+---
+
+## 16. Admin Financial & Analytics
+
+- **Financial Summary** (`/admin/financial/summary`): MoM trends for Monthly Revenue, Active Subscriptions, Refunds, Total Payments. Tracks `SubscriptionPayment` records only.
+- **Analytics Overview** (`/admin/analytics/overview`): `revenueThisMonth`, `activeBranches`, `totalUsers`.
+- **Revenue Chart** (`/admin/analytics/revenue-chart`): Monthly historical timeline using `dayjs`. Super Admin only.
+
+---
+
+## Final Notes
+
+- This file is the single source of truth for AI development flow.
+- Follow `.github/ai_workflow.md` for the execution cycle. Quick checklists: `.github/ai_workflow.strict.md`.
+- Do NOT skip steps. Do NOT change flow order.

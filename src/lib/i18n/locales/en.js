@@ -229,6 +229,9 @@ const en = {
   FAVOURITE_ALREADY_EXISTS: "This item is already in your favourites.",
   FAVOURITE_NOT_FOUND: "This item was not found in your favourites.",
   SERVICE_NOT_BOOKABLE: "This service is not available for booking.",
+  FINANCIAL_SUMMARY_RETRIEVED_SUCCESSFULLY: "Financial summary retrieved successfully.",
+  ANALYTICS_OVERVIEW_RETRIEVED_SUCCESSFULLY: "Analytics overview retrieved successfully.",
+  REVENUE_CHART_RETRIEVED_SUCCESSFULLY: "Revenue chart data retrieved successfully.",
 };
 
 export default en;

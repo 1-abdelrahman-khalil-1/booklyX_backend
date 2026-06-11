@@ -220,6 +220,9 @@ const ar = {
   FAVOURITE_ALREADY_EXISTS: "هذا العنصر موجود بالفعل في المفضلة.",
   FAVOURITE_NOT_FOUND: "هذا العنصر غير موجود في المفضلة.",
   SERVICE_NOT_BOOKABLE: "هذه الخدمة غير متاحة للحجز حالياً.",
+  FINANCIAL_SUMMARY_RETRIEVED_SUCCESSFULLY: "تم استرجاع الملخص المالي بنجاح.",
+  ANALYTICS_OVERVIEW_RETRIEVED_SUCCESSFULLY: "تم استرجاع نظرة عامة على التحليلات بنجاح.",
+  REVENUE_CHART_RETRIEVED_SUCCESSFULLY: "تم استرجاع بيانات مخطط الإيرادات بنجاح.",
 };
 
 export default ar;

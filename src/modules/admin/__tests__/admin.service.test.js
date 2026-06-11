@@ -29,7 +29,8 @@ import {
     approveService,
     rejectService,
 } from "../services/services.service.js";
-import { getPlatformAnalytics } from "../analytics/analytics.service.js";
+import { getPlatformAnalytics, getAnalyticsOverview, getRevenueChartData } from "../analytics/analytics.service.js";
+import { getFinancialSummary } from "../financial/financial.service.js";
 import {
     BranchIsNotPendingError,
     BranchNotFound,
@@ -495,5 +496,109 @@ describe("Admin Service - getPlatformAnalytics", () => {
     expect(prisma.subscriptionPayment.aggregate).toHaveBeenCalled();
     expect(result.totalActiveBusinesses).toBe(10);
     expect(result.totalSubscriptionRevenue).toBe(1500);
+  });
+});
+
+describe("Admin Service - getFinancialSummary", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should calculate correct financial metrics and trends", async () => {
+    jest.spyOn(prisma.subscriptionPayment, "aggregate")
+      .mockResolvedValueOnce({ _sum: { amount: 1200 } })
+      .mockResolvedValueOnce({ _sum: { amount: 1000 } })
+      .mockResolvedValueOnce({ _sum: { amount: 150 }, _count: { id: 3 } })
+      .mockResolvedValueOnce({ _sum: { amount: 100 } });
+
+    jest.spyOn(prisma.branchAdmin, "count")
+      .mockResolvedValueOnce(50)
+      .mockResolvedValueOnce(40);
+
+    jest.spyOn(prisma.subscriptionPayment, "count")
+      .mockResolvedValueOnce(25)
+      .mockResolvedValueOnce(20);
+
+    const result = await getFinancialSummary();
+
+    expect(result.monthlyRevenue).toEqual({ value: 1200, trend: 20 });
+    expect(result.activeSubscriptions).toEqual({ value: 50, trend: 25 });
+    expect(result.refunds).toEqual({ value: 150, count: 3, trend: 50 });
+    expect(result.totalPayments).toEqual({ value: 25, trend: 25 });
+  });
+
+  it("should handle zero previous month gracefully", async () => {
+    jest.spyOn(prisma.subscriptionPayment, "aggregate")
+      .mockResolvedValueOnce({ _sum: { amount: 1200 } })
+      .mockResolvedValueOnce({ _sum: { amount: 0 } })
+      .mockResolvedValueOnce({ _sum: { amount: 0 }, _count: { id: 0 } })
+      .mockResolvedValueOnce({ _sum: { amount: 0 } });
+
+    jest.spyOn(prisma.branchAdmin, "count")
+      .mockResolvedValueOnce(50)
+      .mockResolvedValueOnce(0);
+
+    jest.spyOn(prisma.subscriptionPayment, "count")
+      .mockResolvedValueOnce(25)
+      .mockResolvedValueOnce(0);
+
+    const result = await getFinancialSummary();
+
+    expect(result.monthlyRevenue.trend).toBe(100);
+    expect(result.activeSubscriptions.trend).toBe(100);
+    expect(result.refunds.trend).toBe(0);
+    expect(result.totalPayments.trend).toBe(100);
+  });
+});
+
+describe("Admin Service - getAnalyticsOverview", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should return the correct counts for overview", async () => {
+    jest.spyOn(prisma.subscriptionPayment, "aggregate").mockResolvedValueOnce({ _sum: { amount: 2000 } });
+    jest.spyOn(prisma.branchAdmin, "count").mockResolvedValueOnce(15);
+    jest.spyOn(prisma.user, "count").mockResolvedValueOnce(120);
+
+    const result = await getAnalyticsOverview();
+
+    expect(result).toEqual({
+      revenueThisMonth: 2000,
+      activeBranches: 15,
+      totalUsers: 120,
+    });
+  });
+});
+
+describe("Admin Service - getRevenueChartData", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should aggregate data points for last N months", async () => {
+    const mockPayments = [
+      { amount: 500, paidAt: new Date() },
+      { amount: 300, paidAt: new Date() },
+    ];
+    jest.spyOn(prisma.subscriptionPayment, "findMany").mockResolvedValueOnce(mockPayments);
+
+    const result = await getRevenueChartData(6);
+
+    expect(result).toHaveLength(6);
+    const latestMonth = result[5];
+    expect(latestMonth.revenue).toBe(800);
   });
 });

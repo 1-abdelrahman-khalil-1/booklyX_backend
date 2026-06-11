@@ -7686,6 +7686,145 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /admin/analytics/overview:
+    get:
+      tags: [Super_admin/Analytics]
+      summary: Platform analytics overview
+      description: Returns subscription revenue this month, active branches count, and total platform users.
+      operationId: getAdminAnalyticsOverview
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      responses:
+        "200":
+          description: Analytics overview fetched successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          revenueThisMonth:
+                            type: number
+                          activeBranches:
+                            type: integer
+                          totalUsers:
+                            type: integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /admin/analytics/revenue-chart:
+    get:
+      tags: [Super_admin/Analytics]
+      summary: Platform monthly revenue chart
+      description: Returns historical monthly subscription revenue data points.
+      operationId: getAdminAnalyticsRevenueChart
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 6
+      responses:
+        "200":
+          description: Revenue chart data fetched successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            year:
+                              type: integer
+                            month:
+                              type: integer
+                            label:
+                              type: string
+                            revenue:
+                              type: number
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /admin/financial/summary:
+    get:
+      tags: [Super_admin/Financial]
+      summary: Platform financial summary
+      description: Returns platform monthly revenue, active subscriptions count, refunds details, total payments count and their trends.
+      operationId: getAdminFinancialSummary
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      responses:
+        "200":
+          description: Financial summary fetched successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          monthlyRevenue:
+                            type: object
+                            properties:
+                              value:
+                                type: number
+                              trend:
+                                type: number
+                          activeSubscriptions:
+                            type: object
+                            properties:
+                              value:
+                                type: integer
+                              trend:
+                                type: number
+                          refunds:
+                            type: object
+                            properties:
+                              value:
+                                type: number
+                              count:
+                                type: integer
+                              trend:
+                                type: number
+                          totalPayments:
+                            type: object
+                            properties:
+                              value:
+                                type: integer
+                              trend:
+                                type: number
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   /admin/payments:
     get:
       tags: [Super_admin/Payments]
