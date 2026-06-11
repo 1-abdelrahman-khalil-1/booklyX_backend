@@ -4,7 +4,7 @@ import prisma from "../../../lib/prisma.js";
 import { BranchIsNotPendingError, BranchNotFound } from "../errors.js";
 
 export async function listBranches(status) {
-  return prisma.branchAdmin.findMany({
+  const branches = await prisma.branchAdmin.findMany({
     where: status ? { status } : { status: BranchStatus.PENDING_APPROVAL },
     select: {
       id: true,
@@ -19,6 +19,12 @@ export async function listBranches(status) {
     },
     orderBy: { createdAt: "desc" },
   });
+  const categoryCounts = {};
+  branches.forEach((branch) => {
+    if (!categoryCounts[branch.category]) categoryCounts[branch.category] = 0;
+    categoryCounts[branch.category]++;
+  });
+  return { branches, categoryCounts };
 }
 
 export async function getBranchDetails(id) {
