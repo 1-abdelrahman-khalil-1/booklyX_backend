@@ -1081,6 +1081,35 @@ components:
               type: string
             status:
               type: string
+            owner_name:
+              type: string
+            email:
+              type: string
+            phone:
+              type: string
+            operating_hours:
+              type: string
+              nullable: true
+            is_subscription_active:
+              type: boolean
+            subscription_started_at:
+              type: string
+              format: date-time
+              nullable: true
+            email_verified:
+              type: boolean
+            phone_verified:
+              type: boolean
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+            plan:
+              allOf:
+                - $ref: "#/components/schemas/ProfilePlan"
+              nullable: true
             selectedPlan:
               allOf:
                 - $ref: "#/components/schemas/ProfilePlan"
@@ -4132,6 +4161,70 @@ paths:
                 allOf:
                   - $ref: "#/components/schemas/ApiSuccess"
                   - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          categories:
+                            type: array
+                            items:
+                              type: string
+                          offers:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                title:
+                                  type: string
+                                description:
+                                  type: string
+                                  nullable: true
+                                discount_type:
+                                  type: string
+                                discount_value:
+                                  type: number
+                                image_url:
+                                  type: string
+                                  nullable: true
+                                branch_id:
+                                  type: integer
+                                branch:
+                                  type: object
+                                  properties:
+                                    business_name:
+                                      type: string
+                          nearby_providers:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                name:
+                                  type: string
+                                category:
+                                  type: string
+                                description:
+                                  type: string
+                                  nullable: true
+                                profile_image:
+                                  type: string
+                                  nullable: true
+                                rating:
+                                  type: number
+                                total_reviews:
+                                  type: integer
+                                location:
+                                  type: object
+                                  properties:
+                                    lat:
+                                      type: number
+                                    lng:
+                                      type: number
+                                distance:
+                                  type: number
               example:
                 status: 200
                 error: false
@@ -4144,12 +4237,24 @@ paths:
                   offers:
                     - id: 7
                       title: "Weekend Offer"
+                      description: "20% off all services"
                       discount_value: 20
                       discount_type: "PERCENTAGE"
-                  nearbyBranches:
+                      image_url: "https://cdn.booklyx.com/offers/weekend.png"
+                      branch_id: 1
+                      branch:
+                        business_name: "Hassan Beauty Salon"
+                  nearby_providers:
                     - id: 1
-                      business_name: "Hassan Beauty Salon"
-                      logo_url: "https://cdn.booklyx.com/branch/logo.png"
+                      name: "Hassan Beauty Salon"
+                      category: "SPA"
+                      description: "Premium beauty and skincare services."
+                      profile_image: "https://cdn.booklyx.com/branch/logo.png"
+                      rating: 4.8
+                      total_reviews: 120
+                      location:
+                        lat: 30.0626
+                        lng: 31.3368
                       distance: 2.5
         "400":
           $ref: "#/components/responses/BadRequest"
@@ -4266,18 +4371,64 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/BranchPublicProfile"
               example:
                 status: 200
                 error: false
                 message: "Branch profile retrieved successfully."
                 data:
-                  id: 1
-                  business_name: "Hassan Beauty Salon"
-                  category: "SPA"
-                  description: "Premium beauty and skincare services."
-                  logo_url: "https://cdn.booklyx.com/branch/logo.png"
-                  address: "12 Makram Ebeid Street"
-                  rating: 4.8
+                  branch:
+                    id: 1
+                    business_name: "Hassan Beauty Salon"
+                    category: "SPA"
+                    description: "Premium beauty and skincare services."
+                    logo_url: "https://cdn.booklyx.com/branch/logo.png"
+                    city: "Cairo"
+                    district: "Nasr City"
+                    address: "12 Makram Ebeid Street"
+                    status: "APPROVED"
+                    selectedPlan:
+                      id: 1
+                      name: "Basic Plan"
+                      price: 199
+                      max_staff: 5
+                      max_services: 10
+                      loyalty_enabled: true
+                      offers_enabled: true
+                    currentSubscription:
+                      is_subscription_active: true
+                      subscription_started_at: "2026-05-25T12:00:00.000Z"
+                    average_rating: 4.8
+                    total_reviews: 24
+                    booking_settings:
+                      allow_cancellation_before_hours: 4
+                    notification_settings:
+                      booking_notifications_enabled: true
+                      marketing_notifications_enabled: false
+                    branch_availability:
+                      - id: 11
+                        day_of_week: 0
+                        start_time: "09:00"
+                        end_time: "17:00"
+                        status: "AVAILABLE"
+                  reviews:
+                    - id: 31
+                      rating: 5
+                      comment: "Excellent service!"
+                      appointment_id: 15
+                      created_at: "2026-06-01T12:00:00.000Z"
+                      reviewer:
+                        name: "Abdo Khalil"
+                        phone: "01000000001"
+                      service:
+                        id: 1
+                        name: "Haircut"
+                      staff:
+                        id: 7
+                        name: "Mazen Tamer"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4313,6 +4464,44 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                            description:
+                              type: string
+                              nullable: true
+                            price:
+                              type: number
+                            duration_minutes:
+                              type: integer
+                            image_url:
+                              type: string
+                              nullable: true
+                            service_category_id:
+                              type: integer
+                            category:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                            has_offer:
+                              type: boolean
+                            offer:
+                              type: object
+                              nullable: true
+                              properties:
+                                discount_type:
+                                  type: string
+                                discount_value:
+                                  type: number
               example:
                 status: 200
                 error: false
@@ -4320,8 +4509,17 @@ paths:
                 data:
                   - id: 1
                     name: "Haircut"
+                    description: "Standard haircut service"
                     price: 150.00
-                    durationMinutes: 30
+                    duration_minutes: 30
+                    image_url: "https://cdn.booklyx.com/services/haircut.png"
+                    service_category_id: 1
+                    category:
+                      name: "Hair"
+                    has_offer: true
+                    offer:
+                      discount_type: "PERCENTAGE"
+                      discount_value: 10
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4422,7 +4620,7 @@ paths:
                             description:
                               type: string
                               nullable: true
-                            imageUrl:
+                            image_url:
                               type: string
                               format: uri
                               nullable: true
@@ -4450,7 +4648,7 @@ paths:
                   - id: 7
                     title: "Weekend Offer"
                     description: "20 percent discount this weekend"
-                    imageUrl: "https://cdn.booklyx.com/offers/weekend-promo.png"
+                    image_url: "https://cdn.booklyx.com/offers/weekend-promo.png"
                     discount_type: "PERCENTAGE"
                     discount_value: 20
                     start_date: "2026-04-24T00:00:00.000Z"
@@ -5063,6 +5261,54 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          branches:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                name:
+                                  type: string
+                                category:
+                                  type: string
+                                logo_url:
+                                  type: string
+                                  nullable: true
+                                city:
+                                  type: string
+                                district:
+                                  type: string
+                                rating:
+                                  type: number
+                                total_reviews:
+                                  type: integer
+                          staff:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                name:
+                                  type: string
+                                profile_image_url:
+                                  type: string
+                                  nullable: true
+                                role:
+                                  type: string
+                                average_rating:
+                                  type: number
+                                review_count:
+                                  type: integer
+                                specialization:
+                                  type: string
+                                  nullable: true
               example:
                 status: 200
                 error: false
@@ -5070,12 +5316,21 @@ paths:
                 data:
                   branches:
                     - id: 1
-                      business_name: "Hassan Beauty Salon"
+                      name: "Hassan Beauty Salon"
+                      category: "SPA"
                       logo_url: "https://cdn.booklyx.com/branch/logo.png"
+                      city: "Cairo"
+                      district: "Nasr City"
+                      rating: 4.8
+                      total_reviews: 24
                   staff:
                     - id: 7
                       name: "Mazen Tamer"
                       profile_image_url: "https://cdn.booklyx.com/staff/mazen-tamer.png"
+                      role: "BARBER"
+                      average_rating: 4.7
+                      review_count: 15
+                      specialization: "Beard trim"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":

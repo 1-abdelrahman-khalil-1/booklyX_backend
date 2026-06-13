@@ -30,6 +30,20 @@ function mapNotificationSettings(branchAdmin) {
   };
 }
 
+function mapUserCore(user) {
+  if (!user) return null;
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    status: user.status,
+    createdAt: toIsoString(user.createdAt),
+    updatedAt: toIsoString(user.updatedAt),
+  };
+}
+
 function mapBranchAvailability(availability) {
   return {
     id: availability.id,
@@ -43,32 +57,33 @@ function mapBranchAvailability(availability) {
 }
 
 function mapPublicBranchAvailability(availability) {
-  return {
-    id: availability.id,
-    dayOfWeek: availability.dayOfWeek,
-    startTime: availability.startTime,
-    endTime: availability.endTime,
-    status: availability.status,
-  };
+  const { createdAt, updatedAt, ...rest } = mapBranchAvailability(availability);
+  return rest;
 }
 
-function mapBranchReview(review) {
+function mapBaseReview(review) {
   return {
     id: review.id,
     rating: review.rating,
     comment: review.comment,
     appointmentId: review.appointmentId,
     createdAt: toIsoString(review.createdAt),
-    reviewer: review.client
-      ? {
-        name: review.client.user.name,
-        phone: review.client.user.phone,
-      }
-      : null,
     service: review.service
       ? {
         id: review.service.id,
         name: review.service.name,
+      }
+      : null,
+  };
+}
+
+function mapBranchReview(review) {
+  return {
+    ...mapBaseReview(review),
+    reviewer: review.client
+      ? {
+        name: review.client.user.name,
+        phone: review.client.user.phone,
       }
       : null,
     staff: review.staff
@@ -119,10 +134,7 @@ function mapStaffAvailability(availability) {
 
 function mapStaffReview(review) {
   return {
-    id: review.id,
-    rating: review.rating,
-    comment: review.comment,
-    createdAt: toIsoString(review.createdAt),
+    ...mapBaseReview(review),
     reviewer: review.client
       ? {
         id: review.client.user.id,
@@ -130,13 +142,6 @@ function mapStaffReview(review) {
         phone: review.client.user.phone,
       }
       : null,
-    service: review.service
-      ? {
-        id: review.service.id,
-        name: review.service.name,
-      }
-      : null,
-    appointmentId: review.appointmentId,
   };
 }
 
@@ -180,12 +185,12 @@ function mapStaffSummary(staff) {
 }
 
 export function mapBranchAdminProfile(branchAdmin) {
+  const summary = mapBranchAdminSummary(branchAdmin);
   return {
-    id: branchAdmin.id,
+    ...summary,
     ownerName: branchAdmin.ownerName,
     email: branchAdmin.email,
     phone: branchAdmin.phone,
-    businessName: branchAdmin.businessName,
     category: branchAdmin.category,
     description: branchAdmin.description ?? null,
     logoUrl: branchAdmin.logoUrl ?? null,
@@ -193,14 +198,10 @@ export function mapBranchAdminProfile(branchAdmin) {
     address: branchAdmin.address,
     city: branchAdmin.city,
     district: branchAdmin.district,
-    status: branchAdmin.status,
-    isSubscriptionActive: branchAdmin.isSubscriptionActive,
-    subscriptionStartedAt: toIsoString(branchAdmin.subscriptionStartedAt),
     emailVerified: branchAdmin.emailVerified,
     phoneVerified: branchAdmin.phoneVerified,
     createdAt: toIsoString(branchAdmin.createdAt),
     updatedAt: toIsoString(branchAdmin.updatedAt),
-    plan: mapPlan(branchAdmin.plan),
     bookingSettings: mapBranchSettings(branchAdmin),
     notificationSettings: mapNotificationSettings(branchAdmin),
     branchAvailability: (branchAdmin.branchAvailabilities ?? [])
@@ -210,30 +211,22 @@ export function mapBranchAdminProfile(branchAdmin) {
 }
 
 export function mapBranchPublicProfile(branch, reviews = []) {
+  const adminProfile = mapBranchAdminProfile(branch);
   return {
     branch: {
-      id: branch.id,
-      businessName: branch.businessName,
-      category: branch.category,
-      description: branch.description ?? null,
-      logoUrl: branch.logoUrl ?? null,
-      city: branch.city,
-      district: branch.district,
-      address: branch.address,
-      status: branch.status,
-      selectedPlan: mapPlan(branch.plan),
+      ...adminProfile,
+      selectedPlan: adminProfile.plan,
       currentSubscription: {
-        plan: mapPlan(branch.plan),
-        isSubscriptionActive: branch.isSubscriptionActive,
-        subscriptionStartedAt: toIsoString(branch.subscriptionStartedAt),
+        plan: adminProfile.plan,
+        isSubscriptionActive: adminProfile.isSubscriptionActive,
+        subscriptionStartedAt: adminProfile.subscriptionStartedAt,
       },
       average_rating: branch.averageRating,
       total_reviews: branch.reviewCount,
-      bookingSettings: mapBranchSettings(branch),
-      notificationSettings: mapNotificationSettings(branch),
-      branchAvailability: (branch.branchAvailabilities ?? []).map(
-        mapPublicBranchAvailability,
-      ),
+      branchAvailability: adminProfile.branchAvailability.map(avail => {
+        const { createdAt, updatedAt, ...rest } = avail;
+        return rest;
+      }),
     },
     reviews: reviews.map(mapBranchReview),
   };
@@ -241,21 +234,12 @@ export function mapBranchPublicProfile(branch, reviews = []) {
 
 export function mapStaffProfile(user) {
   if (!user) return null;
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    role: user.role,
-    status: user.status,
-    createdAt: toIsoString(user.createdAt),
-    updatedAt: toIsoString(user.updatedAt),
-    staff: user.staff ? {
-      id: user.staff.id,
-      profileImageUrl: user.staff.profileImageUrl,
-      staffRole: user.staff.staffRole,
-      age: user.staff.age,
-      commissionPercentage: user.staff.commissionPercentage,
+
+  let staffData = null;
+  if (user.staff) {
+    const { branchId, ...summary } = mapStaffSummary(user.staff);
+    staffData = {
+      ...summary,
       isActive: user.staff.isActive,
       createdAt: toIsoString(user.staff.createdAt),
       updatedAt: toIsoString(user.staff.updatedAt),
@@ -264,28 +248,50 @@ export function mapStaffProfile(user) {
         businessName: user.staff.branch.businessName,
         category: user.staff.branch.category,
       } : null,
-      professionalProfile: mapStaffProfessionalProfile(user.staff.professionalProfile),
       certificates: (user.staff.certificates || []).map(mapStaffCertificate),
       availabilities: (user.staff.availabilities || []).map(mapStaffAvailability),
       services: (user.staff.services || []).map(mapStaffServiceLink),
       reviews: (user.staff.reviews || []).map(mapStaffReview),
-      averageRating: user.staff.averageRating,
-      reviewCount: user.staff.reviewCount,
-    } : null,
+    };
+  }
+
+  return {
+    ...mapUserCore(user),
+    staff: staffData,
   };
 }
 
 export function mapStaffPublicProfile(staff, reviews = []) {
+  const profile = mapStaffProfile({
+    ...staff.user,
+    staff,
+  });
+
+  if (!profile || !profile.staff) {
+    return {
+      average_rating: staff.averageRating,
+      total_reviews: staff.reviewCount,
+      reviews: reviews.map(mapStaffReview),
+      staff: {
+        id: staff.id,
+        name: staff.user?.name ?? "",
+        profileImageUrl: staff.profileImageUrl ?? null,
+        staffRole: staff.staffRole,
+        isActive: staff.isActive,
+      },
+    };
+  }
+
   return {
     average_rating: staff.averageRating,
     total_reviews: staff.reviewCount,
     reviews: reviews.map(mapStaffReview),
     staff: {
-      id: staff.id,
-      name: staff.user.name,
-      profileImageUrl: staff.profileImageUrl,
-      staffRole: staff.staffRole,
-      isActive: staff.isActive,
+      id: profile.staff.id,
+      name: profile.name,
+      profileImageUrl: profile.staff.profileImageUrl,
+      staffRole: profile.staff.staffRole,
+      isActive: profile.staff.isActive,
     },
   };
 }
@@ -293,16 +299,9 @@ export function mapStaffPublicProfile(staff, reviews = []) {
 export function mapClientProfile(user) {
   if (!user) return null;
   return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    role: user.role,
-    status: user.status,
+    ...mapUserCore(user),
     emailVerified: user.emailVerified,
     phoneVerified: user.phoneVerified,
-    createdAt: toIsoString(user.createdAt),
-    updatedAt: toIsoString(user.updatedAt),
     client: user.client
       ? {
         id: user.client.id,
@@ -317,16 +316,9 @@ export function mapClientProfile(user) {
 export function mapAdminUserProfile(user) {
   return {
     user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      status: user.status,
+      ...mapUserCore(user),
       emailVerified: user.emailVerified,
       phoneVerified: user.phoneVerified,
-      createdAt: toIsoString(user.createdAt),
-      updatedAt: toIsoString(user.updatedAt),
       branchAdmin: user.branchAdmin ? mapBranchAdminSummary(user.branchAdmin) : null,
       staff: user.staff ? mapStaffSummary(user.staff) : null,
     },
