@@ -29,6 +29,30 @@ export async function seedServices(seededBranchAdmins) {
           categoryName: "Shaving & Treatments",
           description: "Full gray coverage or custom hair coloring service using top-grade products.",
           status: ServiceApprovalStatus.REJECTED,
+        },
+        {
+          name: "Buzz Cut & Lineup",
+          categoryName: "Haircuts",
+          description: "Quick, clean buzz cut with razor edge lineup for sharp contours.",
+          status: ServiceApprovalStatus.APPROVED,
+        },
+        {
+          name: "Beard Styling & Oil Treatment",
+          categoryName: "Beard Grooming",
+          description: "Shaping, trimming, and premium beard oil massage to nourish facial hair.",
+          status: ServiceApprovalStatus.APPROVED,
+        },
+        {
+          name: "Scalp Treatment & Head Wash",
+          categoryName: "Shaving & Treatments",
+          description: "Exfoliating scalp scrub and therapeutic massage to clean and vitalize hair roots.",
+          status: ServiceApprovalStatus.APPROVED,
+        },
+        {
+          name: "Kids Haircut & Style",
+          categoryName: "Haircuts",
+          description: "Trendy, quick haircut for kids under 12 in a friendly, relaxed setting.",
+          status: ServiceApprovalStatus.APPROVED,
         }
       ]
     },
@@ -52,6 +76,30 @@ export async function seedServices(seededBranchAdmins) {
           categoryName: "Body Treatments",
           description: "Therapeutic massage using heated basalt stones to soothe sore muscles and release stress.",
           status: ServiceApprovalStatus.REJECTED,
+        },
+        {
+          name: "Aromatherapy Stress Relief",
+          categoryName: "Massages",
+          description: "Relaxing massage using customized organic essential oils to target stress zones.",
+          status: ServiceApprovalStatus.APPROVED,
+        },
+        {
+          name: "Hydrating Facial Treatment",
+          categoryName: "Facial Care",
+          description: "Intense moisture-lock facial targeting dry skin to restore natural glow.",
+          status: ServiceApprovalStatus.APPROVED,
+        },
+        {
+          name: "Dead Sea Mud Body Wrap",
+          categoryName: "Body Treatments",
+          description: "Full-body detoxifying mud wrap to nourish, smooth, and tighten skin.",
+          status: ServiceApprovalStatus.APPROVED,
+        },
+        {
+          name: "Foot Reflexology Session",
+          categoryName: "Massages",
+          description: "Focused pressure-point therapy on feet to restore energy flow and soothe tired muscles.",
+          status: ServiceApprovalStatus.APPROVED,
         }
       ]
     },
@@ -75,6 +123,30 @@ export async function seedServices(seededBranchAdmins) {
           categoryName: "Specialized Treatments",
           description: "Advanced non-invasive laser treatment for skin rejuvenation and correction.",
           status: ServiceApprovalStatus.REJECTED,
+        },
+        {
+          name: "Cardiology Specialist Check",
+          categoryName: "Consultations",
+          description: "Targeted cardiac screening and advisor meeting with our consultant cardiologist.",
+          status: ServiceApprovalStatus.APPROVED,
+        },
+        {
+          name: "Standard Blood Test Panel",
+          categoryName: "Diagnostics",
+          description: "Comprehensive lab test screening for core metabolic markers and vitamins.",
+          status: ServiceApprovalStatus.APPROVED,
+        },
+        {
+          name: "Flu & Wellness Vaccination",
+          categoryName: "Specialized Treatments",
+          description: "Seasonal influenza vaccine shot and general immune system booster advice.",
+          status: ServiceApprovalStatus.APPROVED,
+        },
+        {
+          name: "Nutrition & Lifestyle Advisory",
+          categoryName: "Consultations",
+          description: "Personalized dietary planning and medical lifestyle consulting with our nutritionist.",
+          status: ServiceApprovalStatus.APPROVED,
         }
       ]
     }

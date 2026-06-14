@@ -12,7 +12,6 @@ const reviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
   comment: z.string().min(1).max(500),
   reviewerRole: z.literal(Role.client),
-  isVisible: z.boolean(),
   createdAt: z.date(),
 });
 

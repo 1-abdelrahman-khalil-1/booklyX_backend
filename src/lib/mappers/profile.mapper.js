@@ -210,7 +210,7 @@ export function mapBranchAdminProfile(branchAdmin) {
   };
 }
 
-export function mapBranchPublicProfile(branch, reviews = []) {
+export function mapBranchPublicProfile(/** @type {import("../../generated/prisma/index.js").BranchAdmin} */branch, reviews = []) {
   const adminProfile = mapBranchAdminProfile(branch);
   return {
     branch: {

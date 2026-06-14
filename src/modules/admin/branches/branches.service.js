@@ -76,6 +76,9 @@ export async function getBranchDetails(id) {
           createdAt: true,
         },
       },
+      branchAvailabilities: true,
+      
+
     },
   });
 

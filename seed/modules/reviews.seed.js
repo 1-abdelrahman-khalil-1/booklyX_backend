@@ -6,7 +6,7 @@ import { validateReviewSeed } from "../factories/review.factory.js";
 
 async function refreshStaffRating(staffId) {
   const aggregate = await prisma.review.aggregate({
-    where: { staffId, isVisible: true },
+    where: { staffId },
     _avg: { rating: true },
     _count: { rating: true },
   });
@@ -22,7 +22,7 @@ async function refreshStaffRating(staffId) {
 
 async function refreshBranchRating(branchId) {
   const aggregate = await prisma.review.aggregate({
-    where: { branchId, isVisible: true },
+    where: { branchId },
     _avg: { rating: true },
     _count: { rating: true },
   });
@@ -51,7 +51,6 @@ export async function seedReviews(reviewTargets) {
       rating,
       comment,
       reviewerRole: target.reviewerRole,
-      isVisible: index % 2 === 0,
       createdAt: dayjs(target.scheduledAt).add(1, "hour").toDate(),
     });
 

@@ -458,7 +458,6 @@ model Review {
   appointmentId Int      @unique
   rating        Int
   comment       String?
-  isVisible     Boolean  @default(true)
   reviewerRole  Role?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

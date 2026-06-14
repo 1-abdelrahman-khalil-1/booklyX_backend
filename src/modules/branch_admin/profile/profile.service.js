@@ -103,7 +103,7 @@ export async function getBranchPublicProfile(branchId, authUser) {
   }
 
   const reviews = /** @type {any} */ (await prisma.review.findMany({
-    where: { branchId: branch.id, isVisible: true },
+    where: { branchId: branch.id },
     take: 5,
     orderBy: { createdAt: "desc" },
     select: {
