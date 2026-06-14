@@ -9,6 +9,12 @@ export async function getBranchProfile(branchId) {
     include: {
       plan: true,
       branchAvailabilities: true,
+      services: {
+        select: {
+          name: true,
+          imageUrl: true,
+        }
+      }
     },
   });
 

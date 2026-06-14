@@ -1155,6 +1155,16 @@ components:
                     example: "17:00"
                   status:
                     type: string
+            services:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  image_url:
+                    type: string
+                    nullable: true
         reviews:
           type: array
           items:

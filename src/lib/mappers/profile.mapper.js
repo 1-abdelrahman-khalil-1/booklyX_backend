@@ -227,6 +227,10 @@ export function mapBranchPublicProfile(/** @type {import("../../generated/prisma
         const { createdAt, updatedAt, ...rest } = avail;
         return rest;
       }),
+      services: (/** @type {any} */ (branch).services ?? []).map(s => ({
+        name: s.name,
+        imageUrl: s.imageUrl,
+      })),
     },
     reviews: reviews.map(mapBranchReview),
   };
