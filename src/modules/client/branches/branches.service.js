@@ -3,13 +3,14 @@ import prisma from "../../../lib/prisma.js";
 import { mapBranchPublicProfile } from "../../../lib/mappers/profile.mapper.js";
 import { BranchNotFoundError } from "../errors.js";
 
-export async function getBranchProfile(branchId) {
+export async function getBranchProfile(branchId, authUser) {
   const branch = await prisma.branchAdmin.findUnique({
     where: { id: branchId },
     include: {
       plan: true,
       branchAvailabilities: true,
       services: {
+        where: { status: ServiceApprovalStatus.APPROVED },
         select: {
           name: true,
           imageUrl: true,
@@ -20,6 +21,26 @@ export async function getBranchProfile(branchId) {
 
   if (!branch || branch.status !== BranchStatus.APPROVED || !branch.isSubscriptionActive) {
     throw new BranchNotFoundError();
+  }
+
+  let isFavourite = false;
+  if (authUser) {
+    const client = await prisma.client.findUnique({
+      where: { userId: authUser.sub },
+      select: { id: true },
+    });
+    if (client) {
+      const fav = await prisma.favoriteBranch.findUnique({
+        where: {
+          clientId_branchId: {
+            clientId: client.id,
+            branchId,
+          },
+        },
+     
+      });
+      isFavourite = !!fav;
+    }
   }
 
   // Get recent 10 reviews
@@ -44,7 +65,7 @@ export async function getBranchProfile(branchId) {
     orderBy: { createdAt: "desc" },
   });
 
-  return mapBranchPublicProfile(branch, reviews);
+  return mapBranchPublicProfile(branch, reviews, isFavourite);
 }
 
 export async function getBranchServices(branchId) {

@@ -200,6 +200,7 @@ describe("profile.mapper", () => {
         branchAvailabilities: [],
       },
       [],
+      true,
     );
 
     const staffResult = mapStaffPublicProfile(
@@ -213,17 +214,22 @@ describe("profile.mapper", () => {
         user: { name: "Mazen Tamer" },
       },
       [],
+      true,
     );
 
     expect(branchResult.branch).toMatchObject({
       businessName: "Prime Salon",
+      is_favourite: true,
       currentSubscription: {
         isSubscriptionActive: true,
       },
     });
-    expect(staffResult.staff).toMatchObject({
-      name: "Mazen Tamer",
-      isActive: true,
+    expect(staffResult).toMatchObject({
+      is_favourite: true,
+      staff: {
+        name: "Mazen Tamer",
+        isActive: true,
+      },
     });
   });
 

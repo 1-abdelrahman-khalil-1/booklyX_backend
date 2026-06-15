@@ -36,6 +36,7 @@ jest.unstable_mockModule("bcrypt", () => ({
 jest.unstable_mockModule("jsonwebtoken", () => ({
   default: {
     sign: jest.fn(),
+    decode: jest.fn(() => ({ iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 })),
   },
 }));
 

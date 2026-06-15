@@ -21,7 +21,7 @@ export const getServiceStaffHandler = asyncHandler(async (req, res) => {
 export const getStaffProfileHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { id } = validateClientInput(zIdParamSchema, req.params);
-  const result = await getStaffProfile(id);
+  const result = await getStaffProfile(id, req.user);
   successResponse(res, 200, t(tr.PROFILE_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 

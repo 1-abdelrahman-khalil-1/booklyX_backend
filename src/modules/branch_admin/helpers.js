@@ -174,6 +174,7 @@ export function buildStaffUserSelect() {
     phoneVerified: true,
     createdAt: true,
     updatedAt: true,
+    isActive: true,
     staff: {
       include: {
         services: {

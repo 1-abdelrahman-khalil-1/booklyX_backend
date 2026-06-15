@@ -101,7 +101,9 @@ export async function authenticate(req, res, next) {
 
     req.user = decoded;
     next();
-  } catch {
+  } catch (/** @type {any} */ err) {
+    console.error("Authentication error : ",err.name);
+    console.error(err.message);
     errorResponse(res, 401, t(tr.INVALID_OR_EXPIRED_TOKEN, lang));
   }
 }

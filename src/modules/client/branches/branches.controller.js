@@ -8,7 +8,7 @@ import { validateClientInput } from "../client.validation.js";
 export const getBranchProfileHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { id } = validateClientInput(zIdParamSchema, req.params);
-  const result = await getBranchProfile(id);
+  const result = await getBranchProfile(id, req.user);
   successResponse(res, 200, t(tr.BRANCH_PROFILE_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 

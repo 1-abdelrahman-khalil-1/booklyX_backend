@@ -210,12 +210,11 @@ export function mapBranchAdminProfile(branchAdmin) {
   };
 }
 
-export function mapBranchPublicProfile(/** @type {import("../../generated/prisma/index.js").BranchAdmin} */branch, reviews = []) {
+export function mapBranchPublicProfile(/** @type {import("../../generated/prisma/index.js").BranchAdmin} */branch, reviews = [], isFavourite = false) {
   const adminProfile = mapBranchAdminProfile(branch);
   return {
     branch: {
       ...adminProfile,
-      selectedPlan: adminProfile.plan,
       currentSubscription: {
         plan: adminProfile.plan,
         isSubscriptionActive: adminProfile.isSubscriptionActive,
@@ -223,6 +222,7 @@ export function mapBranchPublicProfile(/** @type {import("../../generated/prisma
       },
       average_rating: branch.averageRating,
       total_reviews: branch.reviewCount,
+      is_favourite: isFavourite,
       branchAvailability: adminProfile.branchAvailability.map(avail => {
         const { createdAt, updatedAt, ...rest } = avail;
         return rest;
@@ -253,8 +253,12 @@ export function mapStaffProfile(user) {
         category: user.staff.branch.category,
       } : null,
       certificates: (user.staff.certificates || []).map(mapStaffCertificate),
-      availabilities: (user.staff.availabilities || []).map(mapStaffAvailability),
-      services: (user.staff.services || []).map(mapStaffServiceLink),
+      availabilities: (user.staff.availabilities || [])
+        .filter((avail) => avail.status === "AVAILABLE")
+        .map(mapStaffAvailability),
+      services: (user.staff.services || [])
+        .filter((link) => link.service && link.service.status === "APPROVED")
+        .map(mapStaffServiceLink),
       reviews: (user.staff.reviews || []).map(mapStaffReview),
     };
   }
@@ -265,7 +269,7 @@ export function mapStaffProfile(user) {
   };
 }
 
-export function mapStaffPublicProfile(staff, reviews = []) {
+export function mapStaffPublicProfile(staff, reviews = [], isFavourite = false) {
   const profile = mapStaffProfile({
     ...staff.user,
     staff,
@@ -275,6 +279,7 @@ export function mapStaffPublicProfile(staff, reviews = []) {
     return {
       average_rating: staff.averageRating,
       total_reviews: staff.reviewCount,
+      is_favourite: isFavourite,
       reviews: reviews.map(mapStaffReview),
       staff: {
         id: staff.id,
@@ -286,16 +291,28 @@ export function mapStaffPublicProfile(staff, reviews = []) {
     };
   }
 
+  const { reviews: staffReviews, ...staffDetails } = profile.staff;
+
   return {
     average_rating: staff.averageRating,
     total_reviews: staff.reviewCount,
+    is_favourite: isFavourite,
     reviews: reviews.map(mapStaffReview),
     staff: {
-      id: profile.staff.id,
+      id: staffDetails.id,
       name: profile.name,
-      profileImageUrl: profile.staff.profileImageUrl,
-      staffRole: profile.staff.staffRole,
-      isActive: profile.staff.isActive,
+      profileImageUrl: staffDetails.profileImageUrl,
+      age: staffDetails.age,
+      staffRole: staffDetails.staffRole,
+      commissionPercentage: staffDetails.commissionPercentage,
+      isActive: staffDetails.isActive,
+      createdAt: staffDetails.createdAt,
+      updatedAt: staffDetails.updatedAt,
+      professionalProfile: staffDetails.professionalProfile,
+      branch: staffDetails.branch,
+      availabilities: staffDetails.availabilities,
+      certificates: staffDetails.certificates,
+      services: staffDetails.services,
     },
   };
 }

@@ -3,6 +3,7 @@ import prisma from "../../../lib/prisma.js";
 import dayjs from "dayjs";
 import { mapStaffPublicProfile } from "../../../lib/mappers/profile.mapper.js";
 import { StaffNotFoundError, ServiceNotFoundError } from "../errors.js";
+import { buildStaffUserSelect } from "../helpers.js";
 
 export async function getServiceStaff(serviceId) {
   const service = await prisma.service.findUnique({
@@ -47,35 +48,36 @@ export async function getServiceStaff(serviceId) {
   }));
 }
 
-export async function getStaffProfile(staffId) {
+export async function getStaffProfile(staffId, authUser) {
   const staff = await prisma.staff.findUnique({
     where: { id: staffId },
-    include: {
-      user: {
-        select: { name: true },
-      },
-    },
+    select: buildStaffUserSelect(),
   });
 
   if (!staff || !staff.isActive) {
     throw new StaffNotFoundError();
   }
 
-  const reviews = await prisma.review.findMany({
-    where: { staffId },
-    include: {
-      client: {
-        include: {
-          user: { select: { id: true, name: true, phone: true } },
+  let isFavourite = false;
+  if (authUser) {
+    const client = await prisma.client.findUnique({
+      where: { userId: authUser.sub },
+      select: { id: true },
+    });
+    if (client) {
+      const fav = await prisma.favoriteStaff.findUnique({
+        where: {
+          clientId_staffId: {
+            clientId: client.id,
+            staffId,
+          },
         },
-      },
-      service: { select: { id: true, name: true } },
-    },
-    take: 10,
-    orderBy: { createdAt: "desc" },
-  });
+      });
+      isFavourite = !!fav;
+    }
+  }
 
-  return mapStaffPublicProfile(staff, reviews);
+  return mapStaffPublicProfile(staff, staff.reviews, isFavourite);
 }
 
 export async function getStaffAvailableDays(staffId, serviceId) {
