@@ -343,27 +343,105 @@ describe("Staff Service", () => {
       });
 
       const now = new Date();
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-      prisma.appointment.findMany.mockResolvedValueOnce([
+      const mockAppointments = [
         {
           id: 1,
-          service: { price: 100 },
+          service: { price: 100, name: "Hair Cut", durationMinutes: 30 },
           scheduledAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+          client: { user: { name: "Ahmed Mohamed" } },
         },
         {
           id: 2,
-          service: { price: 200 },
+          service: { price: 200, name: "Hair Cut", durationMinutes: 60 },
           scheduledAt: now,
+          client: { user: { name: "Ahmed Mohamed" } },
         },
-      ]);
+      ];
+
+      prisma.appointment.findMany
+        .mockResolvedValueOnce(mockAppointments) // for allAppointments
+        .mockResolvedValueOnce(mockAppointments); // for recentCompletedAppointments
 
       const result = await staffService.getIncomeStats(1, "weekly", "en");
 
       expect(result).toHaveProperty("totalEarnings");
       expect(result.totalEarnings).toBe(60); // (100 * 0.2) + (200 * 0.2) = 60
       expect(result).toHaveProperty("serviceCount", 2);
+      expect(result).toHaveProperty("totalHours", 1.5); // (30 + 60) / 60 = 1.5 hours
       expect(result).toHaveProperty("range", "weekly");
+      expect(result).toHaveProperty("growth");
+      expect(result.growth).toHaveProperty("percentageChange");
+      expect(result.growth).toHaveProperty("isIncrease");
+      expect(result).toHaveProperty("dailyStats");
+      expect(result.dailyStats.length).toBe(7);
+      expect(result).toHaveProperty("recentServices");
+      expect(result.recentServices[0]).toHaveProperty("appointmentId", 1);
+      expect(result.recentServices[0]).toHaveProperty("clientName", "Ahmed Mohamed");
+      expect(result.recentServices[0]).toHaveProperty("commission", 20);
+      expect(result).not.toHaveProperty("incomeHistory");
+    });
+
+    it("should calculate income for monthly range", async () => {
+      prisma.staff.findUnique.mockResolvedValueOnce({
+        id: 5,
+        commissionPercentage: 20,
+        branchId: 10,
+      });
+
+      const now = new Date();
+      const mockAppointments = [
+        {
+          id: 1,
+          service: { price: 150, name: "Shave", durationMinutes: 45 },
+          scheduledAt: now,
+          client: { user: { name: "Ali Reda" } },
+        },
+      ];
+
+      prisma.appointment.findMany
+        .mockResolvedValueOnce(mockAppointments) // for allAppointments
+        .mockResolvedValueOnce(mockAppointments); // for recentCompletedAppointments
+
+      const result = await staffService.getIncomeStats(1, "monthly", "en");
+
+      expect(result).toHaveProperty("totalEarnings");
+      expect(result.totalEarnings).toBe(30); // 150 * 0.2
+      expect(result).toHaveProperty("serviceCount", 1);
+      expect(result).toHaveProperty("totalHours", 0.8); // 45 / 60 = 0.75 -> 0.8
+      expect(result).toHaveProperty("range", "monthly");
+      expect(result).toHaveProperty("growth");
+      expect(result.growth).toHaveProperty("percentageChange", 100);
+      expect(result.growth).toHaveProperty("isIncrease", true);
+      expect(result).toHaveProperty("weeklyStats");
+      expect(result.weeklyStats.length).toBeGreaterThanOrEqual(4);
+      expect(result).toHaveProperty("recentServices");
+      expect(result.recentServices[0]).toHaveProperty("serviceName", "Shave");
+      expect(result).not.toHaveProperty("incomeHistory");
+    });
+  });
+
+  describe("getIncomeHistory", () => {
+    it("should fetch staff completed appointments history", async () => {
+      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
+
+      const now = new Date();
+      prisma.appointment.findMany.mockResolvedValueOnce([
+        {
+          scheduledAt: now,
+          service: { name: "Hair Cut", price: 100 },
+          client: { user: { name: "Ahmed Mohamed" } },
+        },
+      ]);
+
+      const result = await staffService.getIncomeHistory(1);
+      expect(result).toBeInstanceOf(Array);
+      expect(result.length).toBe(1);
+      expect(result[0]).toEqual({
+        clientName: "Ahmed Mohamed",
+        serviceName: "Hair Cut",
+        price: 100,
+        time: now,
+      });
     });
   });
 
@@ -429,7 +507,7 @@ describe("Staff Service", () => {
       expect(prisma.appointment.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            status: "PENDING",
+            status: "CONFIRMED",
           }),
         })
       );
@@ -439,12 +517,12 @@ describe("Staff Service", () => {
       prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
       prisma.appointment.findMany.mockResolvedValueOnce([]);
 
-      await staffService.getAppointments(1, "CONFIRMED");
+      await staffService.getAppointments(1, "open");
 
       expect(prisma.appointment.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            status: "CONFIRMED",
+            status: "IN_PROGRESS",
           }),
         })
       );

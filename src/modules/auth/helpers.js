@@ -51,12 +51,6 @@ export async function issueAuthTokens(userId, role, platform, loginSequence, tx 
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) throw new Error("JWT_SECRET is not set.");
   const accessToken = jwt.sign({ sub: userId, role, platform }, jwtSecret, { expiresIn: "24h" });
-  const decoded = jwt.decode(accessToken);
-  console.log({
-    now: new Date(),
-    issuedAt: new Date(decoded.iat * 1000),
-    expiresAt: new Date(decoded.exp * 1000),
-  });
   const prefixedAccessToken = `${loginSequence}|${accessToken}`;
   const refreshTokenString = crypto.randomBytes(40).toString("hex");
   const tokenHash = crypto.createHash("sha256").update(refreshTokenString).digest("hex");

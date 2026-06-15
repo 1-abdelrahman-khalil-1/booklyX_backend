@@ -12,11 +12,6 @@ info:
     - Access token format is `<loginSequence>|<jwt>` (example: `15|eyJ...`).
     - In development, OTP is commonly `333333`.
     - Response payload keys are returned in `snake_case`.
-servers:
-  - url: http://localhost:3000
-    description: Local development server
-  - url: https://booklyxbackend-production.up.railway.app
-    description: Production server
 
 tags:
   - name: Auth/Verification
@@ -40,7 +35,6 @@ tags:
   - name: Client/Services
   - name: Client/Offers
   - name: Super_admin/Branches
-  - name: Super_admin/Users
   - name: Super_admin/Services
   - name: Super_admin/Analytics
   - name: Super_admin/Payments
@@ -663,6 +657,73 @@ components:
         service_count:
           type: integer
           example: 2
+
+    StaffIncomeGrowth:
+      type: object
+      required: [percentage_change, is_increase]
+      properties:
+        percentage_change:
+          type: number
+          example: 15.4
+        is_increase:
+          type: boolean
+          example: true
+
+    StaffIncomeWeeklyStat:
+      type: object
+      required: [week, earnings, service_count]
+      properties:
+        week:
+          type: string
+          example: "Week 1"
+        earnings:
+          type: number
+          example: 1200
+        service_count:
+          type: integer
+          example: 15
+
+    StaffRecentService:
+      type: object
+      required: [appointment_id, client_name, service_name, price, commission, time]
+      properties:
+        appointment_id:
+          type: integer
+          example: 15
+        client_name:
+          type: string
+          example: "Ahmed Mohamed"
+        service_name:
+          type: string
+          example: "Hair Cut"
+        price:
+          type: number
+          example: 150
+        commission:
+          type: number
+          example: 30
+        time:
+          type: string
+          format: date-time
+          example: "2026-06-15T12:00:00Z"
+
+    StaffIncomeHistoryEntry:
+      type: object
+      required: [client_name, service_name, price, time]
+      properties:
+        client_name:
+          type: string
+          example: "Ahmed Mohamed"
+        service_name:
+          type: string
+          example: "Hair Cut"
+        price:
+          type: number
+          example: 150
+        time:
+          type: string
+          format: date-time
+          example: "2026-06-15T12:00:00Z"
 
     StaffAppointment:
       type: object
@@ -3437,7 +3498,11 @@ components:
         data:
           total_earnings: 560
           service_count: 14
+          total_hours: 7.5
           range: weekly
+          growth:
+            percentage_change: 15.4
+            is_increase: true
           daily_stats:
             - date: 2026-04-15
               earnings: 80
@@ -3451,6 +3516,13 @@ components:
             - date: 2026-04-20
               earnings: 160
               service_count: 4
+          recent_services:
+            - appointment_id: 15
+              client_name: Ahmed Mohamed
+              service_name: Hair Cut
+              price: 150
+              commission: 30
+              time: 2026-06-15T12:00:00Z
     StaffServicesResponse:
       value:
         status: 200
@@ -6866,7 +6938,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELED]
+            enum: [pending, open, closed]
       responses:
         "200":
           description: Requests fetched
@@ -7067,14 +7139,58 @@ paths:
                             type: number
                           service_count:
                             type: integer
+                          total_hours:
+                            type: number
                           range:
                             type: string
                           daily_stats:
                             type: array
                             items:
                               $ref: "#/components/schemas/StaffIncomeDailyStat"
+                            description: Present if range is weekly
+                          weekly_stats:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/StaffIncomeWeeklyStat"
+                            description: Present if range is monthly
+                          growth:
+                            $ref: "#/components/schemas/StaffIncomeGrowth"
+                          recent_services:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/StaffRecentService"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /staff/income/history:
+    get:
+      tags: [Staff/Income]
+      summary: Income history
+      description: Complete historical listing of completed appointments and income entries for the authenticated staff.
+      operationId: getStaffIncomeHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Income history retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/StaffIncomeHistoryEntry"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -7828,93 +7944,6 @@ paths:
               examples:
                 default:
                   $ref: "#/components/examples/BranchRejectedResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
-  /admin/users/{id}:
-    get:
-      tags: [Super_admin/Users]
-      summary: User profile
-      description: Get a user profile by ID (e.g., branch admin profile).
-      operationId: getAdminUserProfile
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-        - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
-      responses:
-        "200":
-          description: User profile retrieved successfully
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiSuccess"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/AdminUserProfile"
-              examples:
-                default:
-                  value:
-                    status: 200
-                    error: false
-                    message: Profile retrieved successfully
-                    data:
-                      user:
-                        id: 1
-                        name: Prime Salon Admin
-                        email: admin@booklyx.com
-                        phone: "01000000030"
-                        role: super_admin
-                        status: ACTIVE
-                        email_verified: true
-                        phone_verified: true
-                        created_at: "2026-04-09T10:15:00.000Z"
-                        updated_at: "2026-04-09T10:15:00.000Z"
-                        branchAdmin:
-                          id: 1
-                          business_name: Prime Salon
-                          status: APPROVED
-                          is_subscription_active: true
-                          subscription_started_at: "2026-05-25T12:00:00.000Z"
-                          plan:
-                            id: 1
-                            name: Basic Plan
-                            price: 199
-                            max_staff: 5
-                            max_services: 10
-                            loyalty_enabled: true
-                            offers_enabled: true
-                        staff:
-                          id: 7
-                          branch_id: 1
-                          profile_image_url: https://cdn.booklyx.com/staff/mazen-tamer.png
-                          age: 28
-                          staff_role: BARBER
-                          commission_percentage: 15
-                          professional_profile:
-                            id: 3
-                            bio: Senior stylist focused on modern cuts and beard shaping.
-                            experience: 6
-                            license_number: BARB-7845
-                            specialization: BARBER
-                            created_at: "2026-04-02T10:00:00.000Z"
-                            updated_at: "2026-05-02T10:00:00.000Z"
-                          average_rating: 4.7
-                          review_count: 34
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":

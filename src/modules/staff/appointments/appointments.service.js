@@ -1,23 +1,18 @@
 import { AppointmentStatus, StaffRole } from "../../../generated/prisma/client.js";
 import prisma from "../../../lib/prisma.js";
 import {
-    AppointmentAccessError,
-    AppointmentNotFoundError,
-    InvalidAppointmentStatusError,
-    StaffNotFoundError,
+  AppointmentAccessError,
+  AppointmentNotFoundError,
+  InvalidAppointmentStatusError,
+  StaffNotFoundError,
 } from "../errors.js";
 import { getStaffIdByUserId } from "../helpers.js";
 
-export async function getAppointments(userId, statusFilter) {
+export async function getAppointments(userId, statusFilter = "pending") {
   const staffId = await getStaffIdByUserId(userId);
   let statusCondition;
-
-  if (!statusFilter) {
-    statusCondition = AppointmentStatus.PENDING;
-  } else if (Object.values(AppointmentStatus).includes(statusFilter)) {
-    statusCondition = statusFilter;
-  } else if (statusFilter === "pending") {
-    statusCondition = AppointmentStatus.PENDING;
+  if (statusFilter === "pending") {
+    statusCondition = AppointmentStatus.CONFIRMED;
   } else if (statusFilter === "open") {
     statusCondition = AppointmentStatus.IN_PROGRESS;
   } else if (statusFilter === "closed") {
@@ -67,25 +62,25 @@ export async function getAppointments(userId, statusFilter) {
       id: apt.id,
       client: apt.client
         ? {
-            user: {
-              id: ((/** @type {any} */ (apt.client.user))?.id),
-              name: ((/** @type {any} */ (apt.client.user))?.name),
-              phone: ((/** @type {any} */ (apt.client.user))?.phone),
-              avatar_url:
-                ((/** @type {any} */ (apt.client.user))?.profileImageUrl) ?? ((/** @type {any} */ (apt.client.user))?.avatarUrl) ?? null,
-            },
-          }
+          user: {
+            id: ((/** @type {any} */ (apt.client.user))?.id),
+            name: ((/** @type {any} */ (apt.client.user))?.name),
+            phone: ((/** @type {any} */ (apt.client.user))?.phone),
+            avatar_url:
+              ((/** @type {any} */ (apt.client.user))?.profileImageUrl) ?? ((/** @type {any} */ (apt.client.user))?.avatarUrl) ?? null,
+          },
+        }
         : null,
       status: (apt.status || "").toLowerCase(),
       service: apt.service
         ? {
-            id: ((/** @type {any} */ (apt.service))?.id),
-            name: ((/** @type {any} */ (apt.service))?.name),
-            description: ((/** @type {any} */ (apt.service))?.description) ?? null,
-            price: ((/** @type {any} */ (apt.service))?.price) ?? null,
-            duration_minutes:
-              ((/** @type {any} */ (apt.service))?.durationMinutes) ?? ((/** @type {any} */ (apt.service))?.duration_minutes) ?? null,
-          }
+          id: ((/** @type {any} */ (apt.service))?.id),
+          name: ((/** @type {any} */ (apt.service))?.name),
+          description: ((/** @type {any} */ (apt.service))?.description) ?? null,
+          price: ((/** @type {any} */ (apt.service))?.price) ?? null,
+          duration_minutes:
+            ((/** @type {any} */ (apt.service))?.durationMinutes) ?? ((/** @type {any} */ (apt.service))?.duration_minutes) ?? null,
+        }
         : null,
       scheduled_at: apt.scheduledAt ? new Date(apt.scheduledAt).toISOString() : null,
       notes: aptAny.notes ?? null,

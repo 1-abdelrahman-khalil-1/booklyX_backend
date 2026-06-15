@@ -21,7 +21,7 @@ export function validateSchema(schema, data, ValidationErrorClass, fallbackMessa
   }
 
   if (isEnumValidationIssue(firstIssue)) {
-    throw new ValidationErrorClass(tr.INVALID_ENUM_VALUE, {
+    throw new ValidationErrorClass(tr.INVALID_ENUM_VALUE, 400, {
       values: getEnumValues(firstIssue),
     });
   }
