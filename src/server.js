@@ -72,6 +72,9 @@ app.use(
   cors({
     origin: (origin, callback) => callback(null, true),
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "platform", "accept-language"],
+    optionsSuccessStatus: 200,
   })
 );
 //app.use(cors(corsOptions));
