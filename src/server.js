@@ -70,7 +70,7 @@ app.use(cookieParser());
 app.set("trust proxy", 1);
 app.use(
   cors({
-    origin: true,
+    origin: (origin, callback) => callback(null, true),
     credentials: true,
   })
 );
