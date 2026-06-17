@@ -1,19 +1,18 @@
 import { z } from "zod";
 import {
-    AppointmentStatus,
-    AvailabilityStatus,
-    BusinessCategory,
-    PaymentStatus,
-    ServiceApprovalStatus,
-    StaffRole,
-    VerificationType,
+  AvailabilityStatus,
+  BusinessCategory,
+  PaymentStatus,
+  ServiceApprovalStatus,
+  StaffRole,
+  VerificationType
 } from "../../generated/prisma/client.js";
 import { tr } from "../../lib/i18n/index.js";
 import {
-    createValidationInputValidator,
-    requireAtLeastOneField,
-    validatePasswordChange,
-    validateTimeRange,
+  createValidationInputValidator,
+  requireAtLeastOneField,
+  validatePasswordChange,
+  validateTimeRange,
 } from "../../lib/validation/helpers.js";
 import { zEmail, zId, zImageUrl, zIsoDate, zPassword, zPhone } from "../../lib/validation/primitives.js";
 import { BranchAdminValidationError } from "./errors.js";
@@ -314,7 +313,7 @@ export const updateNotificationSettingsSchema = z
 
 export const branchAppointmentsQuerySchema = z.object({
   date: z.coerce.date().optional(),
-  status: z.enum(Object.values(AppointmentStatus), {
+  status: z.enum(["pending", "open", "closed"], {
     error: tr.INVALID_ENUM_VALUE,
   }).optional(),
   staffId: zId.optional(),
@@ -350,6 +349,4 @@ export const rejectBranchSchema = z.object({
   reason: z.string({ error: tr.REJECTION_REASON_REQUIRED }),
 });
 
-export function validateBranchAdminInput(schema, data) {
-  return createValidationInputValidator(BranchAdminValidationError)(schema, data);
-}
+export const validateBranchAdminInput = createValidationInputValidator(BranchAdminValidationError);

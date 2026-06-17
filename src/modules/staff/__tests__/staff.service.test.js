@@ -422,7 +422,7 @@ describe("Staff Service", () => {
 
   describe("getIncomeHistory", () => {
     it("should fetch staff completed appointments history", async () => {
-      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
+      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5, commissionPercentage: 20 });
 
       const now = new Date();
       prisma.appointment.findMany.mockResolvedValueOnce([
@@ -439,7 +439,7 @@ describe("Staff Service", () => {
       expect(result[0]).toEqual({
         clientName: "Ahmed Mohamed",
         serviceName: "Hair Cut",
-        price: 100,
+        price: 20, // 100 * 0.20
         time: now,
       });
     });
@@ -483,19 +483,19 @@ describe("Staff Service", () => {
   // ─── Pending Requests Tests ─────────────────────────────────────────
   describe("getAppointments", () => {
     it("should retrieve only PENDING appointments", async () => {
-      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
+      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5, commissionPercentage: 20 });
 
       prisma.appointment.findMany.mockResolvedValueOnce([
         {
           id: 1,
           client: { user: { name: "Client 1" } },
-          service: { name: "Service 1", durationMinutes: 30 },
+          service: { name: "Service 1", price: 100, durationMinutes: 30 },
           scheduledAt: new Date("2026-04-21T10:00:00"),
         },
         {
           id: 2,
           client: { user: { name: "Client 2" } },
-          service: { name: "Service 2", durationMinutes: 60 },
+          service: { name: "Service 2", price: 200, durationMinutes: 60 },
           scheduledAt: new Date("2026-04-22T14:00:00"),
         },
       ]);
@@ -504,6 +504,8 @@ describe("Staff Service", () => {
 
       expect(result).toHaveLength(2);
       expect(result[0]).toHaveProperty("client.user.name", "Client 1");
+      expect(result[0]).toHaveProperty("service.price", 20); // 100 * 0.20
+      expect(result[1]).toHaveProperty("service.price", 40); // 200 * 0.20
       expect(prisma.appointment.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
@@ -514,7 +516,7 @@ describe("Staff Service", () => {
     });
 
     it("should use the provided appointment status filter", async () => {
-      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
+      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5, commissionPercentage: 20 });
       prisma.appointment.findMany.mockResolvedValueOnce([]);
 
       await staffService.getAppointments(1, "open");
@@ -532,7 +534,7 @@ describe("Staff Service", () => {
   // ─── Appointment Details Tests ───
   describe("getAppointmentDetails", () => {
     it("should retrieve appointment details successfully if owned by the staff", async () => {
-      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5 });
+      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5, commissionPercentage: 20 });
       prisma.appointment.findUnique.mockResolvedValueOnce({
         id: 1,
         staffId: 5,
@@ -557,6 +559,7 @@ describe("Staff Service", () => {
       const result = await staffService.getAppointmentDetails(1, 1);
 
       expect(result).toHaveProperty("id", 1);
+      expect(result.service).toHaveProperty("price", 10); // 50 * 0.2
       expect(result).not.toHaveProperty("staffId");
       expect(prisma.appointment.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },

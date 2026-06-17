@@ -3456,7 +3456,7 @@ components:
               id: 11
               name: Haircut
               description: Classic haircut
-              price: 150
+              price: 30
               duration_minutes: 30
             scheduled_at: 2026-04-22T11:00:00.000Z
             status: CONFIRMED
@@ -3470,7 +3470,7 @@ components:
               id: 12
               name: Hair Coloring
               description: Full color
-              price: 300
+              price: 60
               duration_minutes: 60
             scheduled_at: 2026-04-22T14:00:00.000Z
             status: COMPLETED
@@ -8526,7 +8526,8 @@ paths:
           required: false
           schema:
             type: string
-        - name: staff_id
+            enum: [pending, open, closed]
+        - name: staffId
           in: query
           required: false
           schema:

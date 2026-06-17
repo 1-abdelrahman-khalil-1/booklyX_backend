@@ -15,13 +15,13 @@ export const listAppointmentsHandler = asyncHandler(async (req, res) => {
 export const getAppointmentDetailsHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
-  const result = await getAppointmentDetails(id, req.user.sub);
-  successResponse(res, 200, t(tr.APPOINTMENT_RETRIEVED_SUCCESSFULLY, lang), result);
+  const result = await getAppointmentDetails(req.user.sub, id);
+  successResponse(res, 200, t(tr.APPOINTMENT_DETAILS_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 
 export const cancelAppointmentHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
-  const result = await cancelAppointment(id, req.user.sub);
-  successResponse(res, 200, t(tr.APPOINTMENT_CANCELED_SUCCESSFULLY, lang), result);
+  const result = await cancelAppointment(req.user.sub, id);
+  successResponse(res, 200, t(tr.APPOINTMENT_CANCELED, lang), result);
 });

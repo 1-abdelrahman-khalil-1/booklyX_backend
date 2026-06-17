@@ -234,6 +234,7 @@ export async function getIncomeHistory(userId) {
     where: { userId },
     select: {
       id: true,
+      commissionPercentage: true,
     },
   });
 
@@ -269,10 +270,14 @@ export async function getIncomeHistory(userId) {
     },
   });
 
-  return completedAppointments.map((apt) => ({
-    clientName: apt.client.user.name,
-    serviceName: apt.service.name,
-    price: apt.service.price,
-    time: apt.scheduledAt,
-  }));
+  return completedAppointments.map((apt) => {
+    const rawPrice = apt.service.price;
+    const profit = Number((rawPrice * (staff.commissionPercentage / 100)).toFixed(2));
+    return {
+      clientName: apt.client.user.name,
+      serviceName: apt.service.name,
+      price: profit,
+      time: apt.scheduledAt,
+    };
+  });
 }

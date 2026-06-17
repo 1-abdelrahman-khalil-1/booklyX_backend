@@ -2,21 +2,30 @@ import dayjs from "dayjs";
 import { AppointmentStatus, PaymentStatus } from "../../../generated/prisma/client.js";
 import prisma from "../../../lib/prisma.js";
 import {
-    AppointmentAccessError,
-    AppointmentCancellationError,
-    AppointmentNotFoundError,
-    BranchNotFoundError,
+  AppointmentAccessError,
+  AppointmentCancellationError,
+  AppointmentNotFoundError,
+  BranchNotFoundError,
 } from "../errors.js";
 
 export async function listAppointments(branchAdminUserId, query = {}) {
   const branchAdmin = await prisma.branchAdmin.findUnique({ where: { userId: branchAdminUserId }, select: { id: true } });
   if (!branchAdmin) throw new BranchNotFoundError();
-
+  let statusCondition;
+  if (query.status === "pending") {
+    statusCondition = AppointmentStatus.CONFIRMED;
+  } else if (query.status === "open") {
+    statusCondition = AppointmentStatus.IN_PROGRESS;
+  } else if (query.status === "closed") {
+    statusCondition = {
+      in: [AppointmentStatus.COMPLETED, AppointmentStatus.CANCELED],
+    };
+  }
   /** @type {any} */
   const where = {
     branchId: branchAdmin.id,
-    ...(query.status ? { status: query.status } : {}),
-    ...(query.staffId ? { staffId: query.staffId } : {}),
+    ...(statusCondition ? { status: statusCondition } : {}),
+    ...(query.staffId ? { staff: { id: query.staffId } } : {}),
   };
 
   if (query.date) {
@@ -43,7 +52,10 @@ export async function listAppointments(branchAdminUserId, query = {}) {
     scheduledAt: appointment.scheduledAt,
     status: appointment.status,
     client: appointment.client?.user ?? null,
-    staff: appointment.staff?.user ?? null,
+    staff: {
+      id: appointment.staff?.id,
+      name: appointment.staff?.user?.name,
+    },
     service: appointment.service,
     paymentStatus: appointment.bookingPayment?.status ?? PaymentStatus.PENDING,
   }));

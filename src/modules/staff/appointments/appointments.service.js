@@ -9,7 +9,16 @@ import {
 import { getStaffIdByUserId } from "../helpers.js";
 
 export async function getAppointments(userId, statusFilter = "pending") {
-  const staffId = await getStaffIdByUserId(userId);
+  const staff = await prisma.staff.findUnique({
+    where: { userId },
+    select: { id: true, commissionPercentage: true },
+  });
+  if (!staff) {
+    throw new StaffNotFoundError();
+  }
+  const staffId = staff.id;
+  const commissionPercentage = staff.commissionPercentage;
+
   let statusCondition;
   if (statusFilter === "pending") {
     statusCondition = AppointmentStatus.CONFIRMED;
@@ -58,6 +67,9 @@ export async function getAppointments(userId, statusFilter = "pending") {
 
   return appointments.map((apt) => {
     const aptAny = /** @type {any} */ (apt);
+    const rawPrice = apt.service?.price ?? 0;
+    const profit = Number((rawPrice * (commissionPercentage / 100)).toFixed(2));
+
     return {
       id: apt.id,
       client: apt.client
@@ -77,7 +89,7 @@ export async function getAppointments(userId, statusFilter = "pending") {
           id: ((/** @type {any} */ (apt.service))?.id),
           name: ((/** @type {any} */ (apt.service))?.name),
           description: ((/** @type {any} */ (apt.service))?.description) ?? null,
-          price: ((/** @type {any} */ (apt.service))?.price) ?? null,
+          price: profit,
           duration_minutes:
             ((/** @type {any} */ (apt.service))?.durationMinutes) ?? ((/** @type {any} */ (apt.service))?.duration_minutes) ?? null,
         }
@@ -90,7 +102,16 @@ export async function getAppointments(userId, statusFilter = "pending") {
 }
 
 export async function getAppointmentDetails(userId, appointmentId) {
-  const staffId = await getStaffIdByUserId(userId);
+  const staff = await prisma.staff.findUnique({
+    where: { userId },
+    select: { id: true, commissionPercentage: true },
+  });
+  if (!staff) {
+    throw new StaffNotFoundError();
+  }
+  const staffId = staff.id;
+  const commissionPercentage = staff.commissionPercentage;
+
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     select: {
@@ -129,8 +150,21 @@ export async function getAppointmentDetails(userId, appointmentId) {
     throw new AppointmentAccessError();
   }
 
-  const { staffId: _, ...response } = appointment;
-  return response;
+  const rawPrice = appointment.service?.price ?? 0;
+  const profit = Number((rawPrice * (commissionPercentage / 100)).toFixed(2));
+
+  return {
+    id: appointment.id,
+    client: appointment.client,
+    service: appointment.service
+      ? {
+        ...appointment.service,
+        price: profit,
+      }
+      : null,
+    scheduledAt: appointment.scheduledAt,
+    status: appointment.status,
+  };
 }
 
 export async function startAppointment(userId, appointmentId) {

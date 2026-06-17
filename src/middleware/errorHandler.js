@@ -24,11 +24,22 @@ export const errorHandler = (
 
     if (err instanceof ZodError) {
         const firstIssue = err.issues[0];
-        const message = firstIssue?.message ?? "Invalid input";
+        let message = firstIssue?.message ?? "Invalid input";
+        let params = null;
+
+        if (firstIssue && (firstIssue.code === "invalid_enum_value" || firstIssue.code === "invalid_value")) {
+            message = tr.INVALID_ENUM_VALUE;
+            const options = firstIssue.options ?? firstIssue.values;
+            params = {
+                values: Array.isArray(options) ? options.join(", ") : "",
+            };
+        }
+
         return void errorResponse(
             res,
             400,
-            t(message, lang) || message
+            t(message, lang, params) || message,
+            params
         );
     }
 

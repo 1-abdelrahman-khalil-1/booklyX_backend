@@ -51,8 +51,8 @@ export class InvalidAppointmentStatusError extends AppError {
 }
 
 export class StaffValidationError extends AppError {
-  constructor(message, statusCode = 400, params = {}) {
-    super(message, statusCode, params);
+  constructor(message, params) {
+    super(message, 400, params);
     this.name = "StaffValidationError";
   }
 }

@@ -1,5 +1,6 @@
 import {
     afterEach,
+    beforeAll,
     beforeEach,
     describe,
     expect,
@@ -16,6 +17,9 @@ import {
 import prisma from "../../../lib/prisma.js";
 import { expectValidationError } from "../../../lib/validation/test-helpers.js";
 import {
+    AppointmentAccessError,
+    AppointmentCancellationError,
+    AppointmentNotFoundError,
     BranchAdminValidationError,
     BranchNotFoundError,
     InactivePlanError,
@@ -561,6 +565,146 @@ describe("Branch Admin Service - updateStaff", () => {
         { staffId: 5, serviceId: 100 },
         { staffId: 5, serviceId: 101 },
       ],
+    });
+  });
+});
+
+describe("Branch Admin Service - Appointments", () => {
+  const branchAdminUserId = 1;
+  const appointmentId = 123;
+  let appointmentsService;
+
+  beforeAll(async () => {
+    appointmentsService = await import("../appointments/appointments.service.js");
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  describe("getAppointmentDetails", () => {
+    it("should throw BranchNotFoundError if branch admin is not found", async () => {
+      jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(null);
+      await expect(
+        appointmentsService.getAppointmentDetails(branchAdminUserId, appointmentId)
+      ).rejects.toThrow(BranchNotFoundError);
+    });
+
+    it("should throw AppointmentNotFoundError if appointment does not exist", async () => {
+      jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 10 });
+      jest.spyOn(prisma.appointment, "findUnique").mockResolvedValue(null);
+      await expect(
+        appointmentsService.getAppointmentDetails(branchAdminUserId, appointmentId)
+      ).rejects.toThrow(AppointmentNotFoundError);
+    });
+
+    it("should throw AppointmentAccessError if appointment belongs to another branch", async () => {
+      jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 10 });
+      jest.spyOn(prisma.appointment, "findUnique").mockResolvedValue({
+        id: appointmentId,
+        branchId: 99,
+      });
+      await expect(
+        appointmentsService.getAppointmentDetails(branchAdminUserId, appointmentId)
+      ).rejects.toThrow(AppointmentAccessError);
+    });
+
+    it("should return formatted appointment details successfully", async () => {
+      jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 10 });
+      jest.spyOn(prisma.appointment, "findUnique").mockResolvedValue({
+        id: appointmentId,
+        branchId: 10,
+        scheduledAt: new Date("2026-06-20T10:00:00Z"),
+        status: "CONFIRMED",
+        client: { id: 1, user: { id: 2, name: "Ali", phone: "01111111111" } },
+        staff: { id: 5, user: { id: 6, name: "Mazen" } },
+        service: { id: 4, name: "Haircut", description: "Nice", price: 100, durationMinutes: 30 },
+        bookingPayment: { status: "PAID", paymentMethod: "CASH", paidAt: new Date("2026-06-20T10:05:00Z"), amount: 100 },
+        serviceExcutions: [{ notes: "Special request", attachments: ["http://img.jpg"] }],
+      });
+
+      const details = await appointmentsService.getAppointmentDetails(branchAdminUserId, appointmentId);
+      expect(details).toEqual({
+        id: appointmentId,
+        scheduledAt: expect.any(Date),
+        status: "CONFIRMED",
+        client: { id: 2, name: "Ali", phone: "01111111111" },
+        staff: { id: 6, name: "Mazen" },
+        service: { id: 4, name: "Haircut", description: "Nice", price: 100, durationMinutes: 30 },
+        paymentStatus: "PAID",
+        paymentMethod: "CASH",
+        paidAt: expect.any(Date),
+        amount: 100,
+        notes: "Special request",
+        attachments: ["http://img.jpg"],
+      });
+    });
+  });
+
+  describe("cancelAppointment", () => {
+    it("should throw BranchNotFoundError if branch admin is not found", async () => {
+      jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(null);
+      await expect(
+        appointmentsService.cancelAppointment(branchAdminUserId, appointmentId)
+      ).rejects.toThrow(BranchNotFoundError);
+    });
+
+    it("should throw AppointmentNotFoundError if appointment does not exist", async () => {
+      jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 10 });
+      jest.spyOn(prisma.appointment, "findUnique").mockResolvedValue(null);
+      await expect(
+        appointmentsService.cancelAppointment(branchAdminUserId, appointmentId)
+      ).rejects.toThrow(AppointmentNotFoundError);
+    });
+
+    it("should throw AppointmentAccessError if appointment belongs to another branch", async () => {
+      jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 10 });
+      jest.spyOn(prisma.appointment, "findUnique").mockResolvedValue({
+        id: appointmentId,
+        branchId: 99,
+        status: "CONFIRMED",
+      });
+      await expect(
+        appointmentsService.cancelAppointment(branchAdminUserId, appointmentId)
+      ).rejects.toThrow(AppointmentAccessError);
+    });
+
+    it("should throw AppointmentCancellationError if appointment is already completed or canceled", async () => {
+      jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 10 });
+      jest.spyOn(prisma.appointment, "findUnique").mockResolvedValue({
+        id: appointmentId,
+        branchId: 10,
+        status: "COMPLETED",
+      });
+      await expect(
+        appointmentsService.cancelAppointment(branchAdminUserId, appointmentId)
+      ).rejects.toThrow(AppointmentCancellationError);
+    });
+
+    it("should cancel appointment successfully and return updated status", async () => {
+      jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 10 });
+      jest.spyOn(prisma.appointment, "findUnique").mockResolvedValue({
+        id: appointmentId,
+        branchId: 10,
+        status: "CONFIRMED",
+      });
+      const updateSpy = jest.spyOn(prisma.appointment, "update").mockResolvedValue({
+        id: appointmentId,
+        status: "CANCELED",
+        updatedAt: new Date(),
+      });
+
+      const result = await appointmentsService.cancelAppointment(branchAdminUserId, appointmentId);
+      expect(updateSpy).toHaveBeenCalledWith({
+        where: { id: appointmentId },
+        data: { status: "CANCELED" },
+        select: { id: true, status: true, updatedAt: true },
+      });
+      expect(result.status).toBe("CANCELED");
     });
   });
 });
