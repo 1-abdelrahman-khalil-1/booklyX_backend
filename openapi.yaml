@@ -6463,6 +6463,13 @@ paths:
       parameters:
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+        - name: status
+          in: query
+          required: false
+          description: Filter by status (active or inactive). Omit to get all.
+          schema:
+            type: string
+            enum: [active, inactive]
       responses:
         "200":
           description: Staff fetched
@@ -6484,6 +6491,42 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+
+  /branch-admin/staff/{id}/restore:
+    patch:
+      tags: [Branch_admin/Staff]
+      summary: Restore deleted staff
+      description: Restore a soft-deleted staff member back to active status.
+      operationId: patchBranchAdminRestoreStaff
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      responses:
+        "200":
+          description: Staff restored successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /branch-admin/staff/{id}:
     get:
@@ -7009,7 +7052,7 @@ paths:
                         id: 2
                         name: "Haircut & Styling"
                         description: "Professional haircut tailored to your preferences."
-                        price: 150
+                        price: 30
                         duration_minutes: 30
                       scheduled_at: "2026-06-01T10:00:00.000Z"
                       notes: "Customer prefers scissors only."

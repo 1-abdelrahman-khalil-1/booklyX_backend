@@ -2,9 +2,9 @@ import { getLanguage, t, tr } from "../../../lib/i18n/index.js";
 import { zIdParamSchema } from "../../../lib/validation/primitives.js";
 import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { successResponse } from "../../../utils/response.js";
-import { createStaffSchema, updateStaffSchema, validateBranchAdminInput } from "../branch_admin.validation.js";
+import { createStaffSchema, updateStaffSchema, branchStaffQuerySchema, validateBranchAdminInput } from "../branch_admin.validation.js";
 import { buildStaffPayload } from "../helpers.js";
-import { createStaff, deleteStaff, getMyStaff, getMyStaffById, updateStaff } from "./staff.service.js";
+import { createStaff, deleteStaff, getMyStaff, getMyStaffById, restoreStaff, updateStaff } from "./staff.service.js";
 
 export const createStaffHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
@@ -15,7 +15,8 @@ export const createStaffHandler = asyncHandler(async (req, res) => {
 
 export const getMyStaffHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await getMyStaff(req.user.sub);
+  const query = validateBranchAdminInput(branchStaffQuerySchema, req.query);
+  const result = await getMyStaff(req.user.sub, query.status);
   successResponse(res, 200, t(tr.STAFF_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 
@@ -38,4 +39,11 @@ export const deleteStaffHandler = asyncHandler(async (req, res) => {
   const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
   const result = await deleteStaff(id, req.user.sub);
   successResponse(res, 200, t(result.message, lang));
+});
+
+export const restoreStaffHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
+  const result = await restoreStaff(id, req.user.sub);
+  successResponse(res, 200, t(tr.STAFF_UPDATED, lang), result);
 });

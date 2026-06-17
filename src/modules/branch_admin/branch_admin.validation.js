@@ -319,6 +319,10 @@ export const branchAppointmentsQuerySchema = z.object({
   staffId: zId.optional(),
 });
 
+export const branchStaffQuerySchema = z.object({
+  status: z.enum(["active", "inactive"]).optional(),
+});
+
 export const bookingPaymentsQuerySchema = z.object({
   date: z.coerce.date().optional(),
   status: z.enum(Object.values(PaymentStatus), {

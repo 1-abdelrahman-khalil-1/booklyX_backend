@@ -136,12 +136,19 @@ export async function createStaff(data, branchAdminUserId) {
   return safeUser;
 }
 
-export async function getMyStaff(branchAdminUserId) {
+export async function getMyStaff(branchAdminUserId, status) {
   const branchAdmin = await prisma.branchAdmin.findUnique({
     where: { userId: branchAdminUserId },
   });
 
   if (!branchAdmin) throw new BranchNotFoundError();
+
+  let activeCondition = undefined;
+  if (status === "active") {
+    activeCondition = true;
+  } else if (status === "inactive") {
+    activeCondition = false;
+  }
 
   return prisma.user.findMany({
     where: {
@@ -149,13 +156,45 @@ export async function getMyStaff(branchAdminUserId) {
       staff: {
         is: {
           branchId: branchAdmin.id,
-          isActive: true,
+          ...(activeCondition !== undefined ? { isActive: activeCondition } : {}),
         },
       },
     },
     select: buildStaffUserSelect(),
     orderBy: { createdAt: "desc" },
   });
+}
+
+export async function restoreStaff(id, branchAdminUserId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({
+    where: { userId: branchAdminUserId },
+  });
+
+  if (!branchAdmin) throw new BranchNotFoundError();
+
+  // Find the soft-deleted staff member first
+  const staff = await prisma.user.findFirst({
+    where: {
+      id,
+      role: Role.staff,
+      staff: {
+        is: {
+          branchId: branchAdmin.id,
+          isActive: false,
+        },
+      },
+    },
+    select: { id: true },
+  });
+
+  if (!staff) throw new StaffNotFoundError();
+
+  await prisma.$transaction(async (tx) => {
+    await tx.staff.update({ where: { userId: staff.id }, data: { isActive: true } });
+    await tx.user.update({ where: { id: staff.id }, data: { status: UserStatus.ACTIVE } });
+  });
+
+  return getMyStaffById(id, branchAdminUserId);
 }
 
 export async function getMyStaffById(staffId, branchAdminUserId) {

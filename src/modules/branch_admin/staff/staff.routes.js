@@ -8,6 +8,7 @@ import {
     getMyStaffByIdHandler,
     getMyStaffHandler,
     updateStaffHandler,
+    restoreStaffHandler,
 } from "./staff.controller.js";
 
 const staffRouter = Router();
@@ -30,5 +31,6 @@ staffRouter.put(
   updateStaffHandler,
 );
 staffRouter.delete("/:id", authenticate, authorize(Role.branch_admin), deleteStaffHandler);
+staffRouter.patch("/:id/restore", authenticate, authorize(Role.branch_admin), restoreStaffHandler);
 
 export default staffRouter;

@@ -24,7 +24,7 @@ export async function register(data, platform) {
 
   let user;
   try {
-    user = await prisma.user.create({ data: { name, email, password: await import("bcrypt").then(m=>m.default.hash(password,10)), phone, role: Role.client, status: "ACTIVE", client: { create: {} } } });
+    user = await prisma.user.create({ data: { name, email, password: hashedPassword, phone, role: Role.client, status: "ACTIVE", client: { create: {} } } });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       const target = error.meta?.target;

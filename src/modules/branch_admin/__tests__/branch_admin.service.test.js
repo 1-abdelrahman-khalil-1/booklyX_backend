@@ -288,7 +288,13 @@ describe("Branch Admin Service - createStaff", () => {
       },
       include: {
         staff: {
-          include: {
+          select: {
+            id: true,
+            isActive: true,
+            age: true,
+            startDate: true,
+            staffRole: true,
+            commissionPercentage: true,
             services: {
               include: {
                 service: {
@@ -407,6 +413,58 @@ describe("Branch Admin Service - deleteStaff", () => {
       data: { status: UserStatus.INACTIVE },
     });
     expect(result).toEqual({ message: "STAFF_DELETED" });
+  });
+});
+
+describe("Branch Admin Service - restoreStaff", () => {
+  const branchAdminUserId = 1;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should throw BranchNotFoundError if branch admin is not found", async () => {
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(null);
+    const { restoreStaff } = await import("../staff/staff.service.js");
+    await expect(restoreStaff(8, branchAdminUserId)).rejects.toThrow(BranchNotFoundError);
+  });
+
+  it("should throw StaffNotFoundError if inactive staff is not found", async () => {
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 1, userId: branchAdminUserId });
+    jest.spyOn(prisma.user, "findFirst").mockResolvedValue(null);
+    const { restoreStaff } = await import("../staff/staff.service.js");
+    await expect(restoreStaff(8, branchAdminUserId)).rejects.toThrow(StaffNotFoundError);
+  });
+
+  it("should restore staff successfully to active status", async () => {
+    const mockBranchAdmin = { id: 1, userId: branchAdminUserId };
+    const mockStaffUser = { id: 8, email: "staff@example.com", staff: { id: 5 } };
+
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(mockBranchAdmin);
+    jest.spyOn(prisma.user, "findFirst")
+      .mockResolvedValueOnce(mockStaffUser) // for find inactive
+      .mockResolvedValueOnce(mockStaffUser); // for final getMyStaffById
+
+    const staffUpdateSpy = jest.spyOn(prisma.staff, "update").mockResolvedValue({ id: 8, userId: 8, isActive: true });
+    const userUpdateSpy = jest.spyOn(prisma.user, "update").mockResolvedValue({ id: 8, status: UserStatus.ACTIVE });
+    jest.spyOn(prisma, "$transaction").mockImplementation(async (callback) => callback(prisma));
+
+    const { restoreStaff } = await import("../staff/staff.service.js");
+    const result = await restoreStaff(8, branchAdminUserId);
+
+    expect(staffUpdateSpy).toHaveBeenCalledWith({
+      where: { userId: 8 },
+      data: { isActive: true },
+    });
+    expect(userUpdateSpy).toHaveBeenCalledWith({
+      where: { id: 8 },
+      data: { status: UserStatus.ACTIVE },
+    });
+    expect(result).toHaveProperty("id", 8);
   });
 });
 
