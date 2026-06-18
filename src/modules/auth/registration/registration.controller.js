@@ -1,14 +1,14 @@
 import { getLanguage, t, tr } from "../../../lib/i18n/index.js";
 import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { successResponse } from "../../../utils/response.js";
-import { registerSchema, resendCodeSchema, validateAuthInput, verifyEmailSchema } from "../auth.validation.js";
+import { platformSchema, registerSchema, resendCodeSchema, validateAuthInput, verifyEmailSchema } from "../auth.validation.js";
 import { register, resendCode, verifyEmail } from "./registration.service.js";
 
 export const registerHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const platformHeader = req.headers["platform"];
   const data = validateAuthInput(registerSchema, req.body);
-  const platform = validateAuthInput(undefined, platformHeader);
+  const platform = validateAuthInput(platformSchema, platformHeader);
   await register(data, platform);
   successResponse(res, 201, t(tr.REGISTER_SUCCESS, lang));
 });
