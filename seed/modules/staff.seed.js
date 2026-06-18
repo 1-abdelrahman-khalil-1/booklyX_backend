@@ -42,7 +42,6 @@ function buildStaffCertificates(staffSeeds) {
       issuer: "BooklyX Academy",
       issueDateOffsetMonths: 30 + index,
       expiryDateOffsetMonths: index % 2 === 0 ? 18 : null,
-      verified: true,
     },
     {
       staffEmail: staff.email,
@@ -50,7 +49,6 @@ function buildStaffCertificates(staffSeeds) {
       issuer: "BooklyX QA Board",
       issueDateOffsetMonths: 12 + index,
       expiryDateOffsetMonths: null,
-      verified: index % 2 === 0,
     },
   ]);
 }
@@ -261,7 +259,6 @@ export async function seedStaff(branchSubmissions, staffSeeds = null) {
               ? monthsFromNow(cert.expiryDateOffsetMonths)
               : null,
             fileUrl: pickRandom(ASSETS.certificates, staff.id),
-            verified: cert.verified,
           },
         });
       }),

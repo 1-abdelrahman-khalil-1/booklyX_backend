@@ -51,7 +51,6 @@ export async function getStaffProfile(userId) {
               issueDate: true,
               expiryDate: true,
               fileUrl: true,
-              verified: true,
               createdAt: true,
             },
           },

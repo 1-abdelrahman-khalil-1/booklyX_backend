@@ -117,7 +117,6 @@ function mapStaffCertificate(certificate) {
     issueDate: toIsoString(certificate.issueDate),
     expiryDate: toIsoString(certificate.expiryDate),
     fileUrl: certificate.fileUrl,
-    verified: certificate.verified,
     createdAt: toIsoString(certificate.createdAt),
   };
 }

@@ -898,8 +898,6 @@ components:
         file_url:
           type: string
           nullable: true
-        verified:
-          type: boolean
         created_at:
           type: string
           format: date-time
@@ -3346,7 +3344,6 @@ components:
                 issue_date: 2025-01-10T00:00:00.000Z
                 expiry_date: 2027-01-10T00:00:00.000Z
                 file_url: https://cdn.booklyx.com/certificates/barber-cert.png
-                verified: true
                 created_at: 2025-01-10T00:00:00.000Z
             availabilities:
               - id: 1
@@ -4876,7 +4873,6 @@ paths:
                         issueDate: "2025-01-01T00:00:00.000Z"
                         expiryDate: "2030-01-01T00:00:00.000Z"
                         fileUrl: "https://cdn.booklyx.com/certificate.pdf"
-                        verified: true
                     availabilities:
                       - id: 2
                         dayOfWeek: 1

@@ -60,7 +60,6 @@ export function buildStaffUserSelect() {
         issueDate: true,
         expiryDate: true,
         fileUrl: true,
-        verified: true,
         createdAt: true,
       }
     },

@@ -223,6 +223,7 @@ const ar = {
   FINANCIAL_SUMMARY_RETRIEVED_SUCCESSFULLY: "تم استرجاع الملخص المالي بنجاح.",
   ANALYTICS_OVERVIEW_RETRIEVED_SUCCESSFULLY: "تم استرجاع نظرة عامة على التحليلات بنجاح.",
   REVENUE_CHART_RETRIEVED_SUCCESSFULLY: "تم استرجاع بيانات مخطط الإيرادات بنجاح.",
+  STAFF_RESTORED_SUCCESSFULLY: "تم استعادة الموظفين بنجاح",
 };
 
 export default ar;

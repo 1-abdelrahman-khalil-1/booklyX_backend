@@ -15,7 +15,7 @@ import {
     BranchNotFoundError,
     StaffNotFoundError,
 } from "../errors.js";
-import { buildStaffUserSelect } from "../helpers.js";
+import { buildDetailedStaffUserSelect, buildStaffUserSelect } from "../helpers.js";
 
 export async function createStaff(data, branchAdminUserId) {
   const branchAdmin = await prisma.branchAdmin.findUnique({
@@ -215,7 +215,7 @@ export async function getMyStaffById(staffId, branchAdminUserId) {
         },
       },
     },
-    select: buildStaffUserSelect(),
+    select: buildDetailedStaffUserSelect(),
   });
 
   if (!staff) throw new StaffNotFoundError();

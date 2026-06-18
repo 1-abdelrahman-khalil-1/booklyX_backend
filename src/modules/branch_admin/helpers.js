@@ -181,7 +181,82 @@ export function buildStaffUserSelect() {
         age: true,
         startDate: true,
         staffRole: true,
+        profileImageUrl: true,
         commissionPercentage: true,
+        services: {
+          include: {
+            service: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                durationMinutes: true,
+                status: true,
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+}
+
+export function buildDetailedStaffUserSelect() {
+  return {
+    id: true,
+    name: true,
+    email: true,
+    phone: true,
+    role: true,
+    status: true,
+    emailVerified: true,
+    phoneVerified: true,
+    createdAt: true,
+    updatedAt: true,
+    staff: {
+      select: {
+        id: true,
+        isActive: true,
+        age: true,
+        startDate: true,
+        staffRole: true,
+        profileImageUrl: true,
+        commissionPercentage: true,
+        averageRating: true,
+        reviewCount: true,
+        createdAt: true,
+        updatedAt: true,
+        professionalProfile: {
+          select: {
+            id: true,
+            bio: true,
+            yearsOfExperience: true,
+            licenseNumber: true,
+            specialization: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        certificates: {
+          select: {
+            id: true,
+            title: true,
+            issuer: true,
+            issueDate: true,
+            expiryDate: true,
+            fileUrl: true,
+            createdAt: true,
+          },
+        },
+        availabilities: {
+          select: {
+            id: true,
+            dayOfWeek: true,
+            startTime: true,
+            endTime: true,
+            status: true,
+          },
+        },
         services: {
           include: {
             service: {

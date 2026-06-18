@@ -336,7 +336,6 @@ model StaffCertificate {
   issueDate  DateTime
   expiryDate DateTime?
   fileUrl    String
-  verified   Boolean   @default(false)
   createdAt  DateTime  @default(now())
 
   staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)

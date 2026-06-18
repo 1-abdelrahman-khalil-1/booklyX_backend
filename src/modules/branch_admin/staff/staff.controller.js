@@ -45,5 +45,5 @@ export const restoreStaffHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
   const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
   const result = await restoreStaff(id, req.user.sub);
-  successResponse(res, 200, t(tr.STAFF_UPDATED, lang), result);
+  successResponse(res, 200, t(tr.STAFF_RESTORED_SUCCESSFULLY, lang), result);
 });

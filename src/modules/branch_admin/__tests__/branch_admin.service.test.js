@@ -294,6 +294,7 @@ describe("Branch Admin Service - createStaff", () => {
             age: true,
             startDate: true,
             staffRole: true,
+            profileImageUrl: true,
             commissionPercentage: true,
             services: {
               include: {
