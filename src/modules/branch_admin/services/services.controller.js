@@ -4,7 +4,7 @@ import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { successResponse } from "../../../utils/response.js";
 import { addServiceCategorySchema, createServiceSchema, myServicesQuerySchema, updateServiceSchema, validateBranchAdminInput } from "../branch_admin.validation.js";
 import { buildServicePayload } from "../helpers.js";
-import { addServiceCategory, createService, deleteService, getMyServiceCategories, getMyServices, updateService } from "./services.service.js";
+import { addServiceCategory, createService, deleteService, getMyServiceCategories, getMyServices, updateService, getServiceDetails } from "./services.service.js";
 
 export const addServiceCategoryHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
@@ -45,4 +45,11 @@ export const deleteServiceHandler = asyncHandler(async (req, res) => {
   const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
   const result = await deleteService(id, req.user.sub);
   successResponse(res, 200, t(result.message, lang));
+});
+
+export const getServiceDetailsHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { id } = validateBranchAdminInput(zIdParamSchema, req.params);
+  const result = await getServiceDetails(id, req.user.sub);
+  successResponse(res, 200, t(tr.SERVICES_RETRIEVED_SUCCESSFULLY, lang), result);
 });

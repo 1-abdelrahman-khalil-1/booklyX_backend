@@ -6804,6 +6804,44 @@ paths:
           $ref: "#/components/responses/Forbidden"
 
   /branch-admin/services/{id}:
+    get:
+      tags: [Branch_admin/Services]
+      summary: Service details
+      description: Get details of a specific service by ID.
+      operationId: getBranchAdminServicesById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      responses:
+        "200":
+          description: Service details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Service"
+              examples:
+                default:
+                  $ref: "#/components/examples/ServiceCreatedResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
     put:
       tags: [Branch_admin/Services]
       summary: Update service

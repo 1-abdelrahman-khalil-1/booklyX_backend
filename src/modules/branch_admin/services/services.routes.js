@@ -9,6 +9,7 @@ import {
     getMyServiceCategoriesHandler,
     getMyServicesHandler,
     updateServiceHandler,
+    getServiceDetailsHandler,
 } from "./services.controller.js";
 
 const servicesRouter = Router();
@@ -34,6 +35,7 @@ servicesRouter.post(
   authorize(Role.branch_admin),
   addServiceCategoryHandler,
 );
+servicesRouter.get("/:id", authenticate, authorize(Role.branch_admin), getServiceDetailsHandler);
 servicesRouter.put(
   "/:id",
   authenticate,

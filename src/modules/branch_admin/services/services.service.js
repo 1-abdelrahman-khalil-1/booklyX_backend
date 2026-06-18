@@ -11,6 +11,7 @@ import {
     BranchNotFoundError,
     ServiceCategoryNotFoundError,
     ServiceDependencyError,
+    ServiceNotFoundError,
 } from "../errors.js";
 import { mapServiceResponse } from "../helpers.js";
 
@@ -173,4 +174,18 @@ export async function deleteService(id, branchAdminUserId) {
   await prisma.service.delete({ where: { id: service.id } });
 
   return { message: tr.SERVICE_DELETED };
+}
+
+export async function getServiceDetails(id, branchAdminUserId) {
+  const branchAdmin = await prisma.branchAdmin.findUnique({ where: { userId: branchAdminUserId } });
+  if (!branchAdmin) throw new BranchNotFoundError();
+
+  const service = await prisma.service.findFirst({
+    where: { id, branchId: branchAdmin.id },
+    include: { category: true },
+  });
+
+  if (!service) throw new ServiceNotFoundError();
+
+  return mapServiceResponse(service);
 }

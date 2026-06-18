@@ -766,4 +766,70 @@ describe("Branch Admin Service - Appointments", () => {
       expect(result.status).toBe("CANCELED");
     });
   });
+
+  describe("Branch Admin Service - getServiceDetails", () => {
+    const branchAdminUserId = 1;
+    const serviceId = 10;
+    let servicesService;
+    let ServiceNotFoundError;
+    let BranchNotFoundError;
+
+    beforeAll(async () => {
+      servicesService = await import("../services/services.service.js");
+      const errors = await import("../errors.js");
+      ServiceNotFoundError = errors.ServiceNotFoundError;
+      BranchNotFoundError = errors.BranchNotFoundError;
+    });
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it("should throw BranchNotFoundError if branch admin is not found", async () => {
+      jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(null);
+      await expect(
+        servicesService.getServiceDetails(serviceId, branchAdminUserId)
+      ).rejects.toThrow(BranchNotFoundError);
+    });
+
+    it("should throw ServiceNotFoundError if service is not found or does not belong to branch", async () => {
+      jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 10 });
+      jest.spyOn(prisma.service, "findFirst").mockResolvedValue(null);
+
+      await expect(
+        servicesService.getServiceDetails(serviceId, branchAdminUserId)
+      ).rejects.toThrow(ServiceNotFoundError);
+    });
+
+    it("should return mapped service details on success", async () => {
+      const mockService = {
+        id: serviceId,
+        branchId: 10,
+        serviceCategoryId: 5,
+        name: "Haircut",
+        description: "Nice haircut",
+        price: 100,
+        durationMinutes: 30,
+        imageUrl: "img.png",
+        status: "APPROVED",
+        rejectionReason: null,
+        approvedAt: new Date(),
+        updatedAt: new Date(),
+        createdAt: new Date(),
+        category: { id: 5, name: "Hair Care" },
+      };
+
+      jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 10 });
+      jest.spyOn(prisma.service, "findFirst").mockResolvedValue(mockService);
+
+      const result = await servicesService.getServiceDetails(serviceId, branchAdminUserId);
+      expect(result.id).toBe(serviceId);
+      expect(result.name).toBe("Haircut");
+      expect(result.category.name).toBe("Hair Care");
+    });
+  });
 });

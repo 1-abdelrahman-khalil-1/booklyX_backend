@@ -203,3 +203,10 @@ export class OfferExpiredOrExhaustedError extends AppError {
     this.name = "OfferExpiredOrExhaustedError";
   }
 }
+
+export class ServiceNotFoundError extends AppError {
+  constructor() {
+    super(tr.SERVICE_NOT_FOUND, 404);
+    this.name = "ServiceNotFoundError";
+  }
+}
