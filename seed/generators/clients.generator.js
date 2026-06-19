@@ -5,7 +5,7 @@ import { validateClientSeed } from "../factories/client.factory.js";
 import { generateMaleName, generateEgyptianPhone } from "../helpers/male-data.js";
 import { getClientProfileImage } from "../helpers/random.js";
 
-function generateFakeClients(count = 8) {
+function generateFakeClients(count = 18) {
   return Array.from({ length: count }, (_, index) => {
     return validateClientSeed({
       name: generateMaleName(),

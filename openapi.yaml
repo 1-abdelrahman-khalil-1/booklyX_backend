@@ -4692,6 +4692,35 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - id
+                            - name
+                            - role
+                            - average_rating
+                            - review_count
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                            profile_image_url:
+                              type: string
+                              nullable: true
+                            role:
+                              type: string
+                            average_rating:
+                              type: number
+                            review_count:
+                              type: integer
+                            specialization:
+                              type: string
+                              nullable: true
               example:
                 status: 200
                 error: false
@@ -4700,6 +4729,10 @@ paths:
                   - id: 7
                     name: "Mazen Tamer"
                     profile_image_url: "https://cdn.booklyx.com/staff/mazen-tamer.png"
+                    role: "SPA_SPECIALIST"
+                    average_rating: 4.9
+                    review_count: 12
+                    specialization: "Massage Therapist"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4911,7 +4944,7 @@ paths:
             type: integer
             minimum: 1
             example: 7
-        - name: service_id
+        - name: serviceId
           in: query
           required: true
           schema:
@@ -4928,15 +4961,34 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - staff_id
+                          - service_id
+                          - available_days
+                        properties:
+                          staff_id:
+                            type: integer
+                          service_id:
+                            type: integer
+                          available_days:
+                            type: array
+                            items:
+                              type: string
+                              format: date
               example:
                 status: 200
                 error: false
                 message: "Staff availability retrieved successfully."
                 data:
-                  - date: "2026-06-01"
-                    available: true
-                  - date: "2026-06-02"
-                    available: false
+                  staff_id: 7
+                  service_id: 1
+                  available_days:
+                    - "2026-06-01"
+                    - "2026-06-02"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -4962,7 +5014,7 @@ paths:
             type: integer
             minimum: 1
             example: 7
-        - name: service_id
+        - name: serviceId
           in: query
           required: true
           schema:
@@ -4986,15 +5038,50 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - date
+                          - service_id
+                          - slots
+                          - available
+                        properties:
+                          date:
+                            type: string
+                            format: date
+                          service_id:
+                            type: integer
+                          available:
+                            type: boolean
+                          slots:
+                            type: array
+                            items:
+                              type: object
+                              required:
+                                - start_time
+                                - end_time
+                              properties:
+                                start_time:
+                                  type: string
+                                  format: date-time
+                                end_time:
+                                  type: string
+                                  format: date-time
               example:
                 status: 200
                 error: false
                 message: "Slots retrieved successfully."
                 data:
-                  - time: "09:00"
-                    available: true
-                  - time: "09:30"
-                    available: false
+                  date: "2026-06-01"
+                  service_id: 1
+                  available: true
+                  slots:
+                    - start_time: "2026-06-01T09:00:00.000Z"
+                      end_time: "2026-06-01T09:30:00.000Z"
+                    - start_time: "2026-06-01T09:30:00.000Z"
+                      end_time: "2026-06-01T10:00:00.000Z"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":

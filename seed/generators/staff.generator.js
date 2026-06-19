@@ -26,7 +26,7 @@ export function getSeedInitialStaffUsers() {
   ];
 }
 
-export function getSeedStaff(branchSubmissions, count = 8) {
+export function getSeedStaff(branchSubmissions, count = 17) {
   const approvedBranchEmails = branchSubmissions
     .filter((branch) => branch.status === BranchStatus.APPROVED)
     .map((branch) => branch.email);

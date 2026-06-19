@@ -91,6 +91,11 @@ export function buildStaffUserSelect() {
     reviewCount: true,
     reviews: {
       select: {
+        id: true,
+        rating: true,
+        comment: true,
+        appointmentId: true,
+        createdAt: true,
         client: {
           include: {
             user: { select: { id: true, name: true, phone: true } },

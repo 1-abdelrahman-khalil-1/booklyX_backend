@@ -7,7 +7,7 @@ import { BranchStatus } from "../../src/generated/prisma/client.js";
 import { validateBranchSeed } from "../factories/branch.factory.js";
 import { generateMaleName, generateEgyptianPhone } from "../helpers/male-data.js";
 
-function generateFakeBranchSubmissions(count = 10) {
+function generateFakeBranchSubmissions(count = 17) {
   const cityPool = [
     "Cairo",
     "Giza",
