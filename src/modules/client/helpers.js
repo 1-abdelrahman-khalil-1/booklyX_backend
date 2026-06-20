@@ -114,3 +114,89 @@ export function buildStaffUserSelect() {
     favoritedByClients: true,
   }
 }
+export function buildClientAppointmentPreviewSelect() {
+  return {
+    id: true,
+    scheduledAt: true,
+    status: true,
+    service: {
+      select: {
+        id: true,
+        name: true,
+        imageUrl: true,
+        price: true,
+      },
+    },
+    staff: {
+      select: {
+        id: true,
+        user: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    },
+    branch: {
+      select: {
+        id: true,
+        businessName: true,
+        logoUrl: true,
+      },
+    },
+    bookingPayment: {
+      select: {
+        status: true,
+        amount: true,
+      },
+    },
+  };
+}
+
+export function buildClientAppointmentDetailsSelect() {
+  return {
+    id: true,
+    scheduledAt: true,
+    status: true,
+    service: {
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        durationMinutes: true,
+        imageUrl: true,
+        description: true,
+      },
+    },
+    staff: {
+      select: {
+        id: true,
+        user: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    },
+    branch: {
+      select: {
+        id: true,
+        businessName: true,
+        logoUrl: true,
+        address: true,
+        phone: true,
+      },
+    },
+    bookingPayment: {
+      select: {
+        status: true,
+        paymentMethod: true,
+        paidAt: true,
+        amount: true,
+        originalAmount: true,
+        discountAmount: true,
+        appliedOfferId: true,
+      },
+    },
+  };
+}

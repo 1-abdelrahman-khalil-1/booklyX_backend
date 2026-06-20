@@ -6,7 +6,11 @@ import {
   InvalidAppointmentStatusError,
   StaffNotFoundError,
 } from "../errors.js";
-import { getStaffIdByUserId } from "../helpers.js";
+import {
+  getStaffIdByUserId,
+  buildStaffAppointmentListSelect,
+  buildStaffAppointmentDetailsSelect,
+} from "../helpers.js";
 
 export async function getAppointments(userId, statusFilter = "pending") {
   const staff = await prisma.staff.findUnique({
@@ -35,31 +39,7 @@ export async function getAppointments(userId, statusFilter = "pending") {
       staffId,
       ...(statusCondition && { status: statusCondition }),
     },
-    select: {
-      id: true,
-      client: {
-        select: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-            },
-          },
-        },
-      },
-      service: {
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          price: true,
-          durationMinutes: true,
-        },
-      },
-      scheduledAt: true,
-      status: true,
-    },
+    select: buildStaffAppointmentListSelect(),
     orderBy: {
       scheduledAt: "asc",
     },
@@ -114,32 +94,7 @@ export async function getAppointmentDetails(userId, appointmentId) {
 
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
-    select: {
-      id: true,
-      staffId: true,
-      client: {
-        select: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-            },
-          },
-        },
-      },
-      service: {
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          price: true,
-          durationMinutes: true,
-        },
-      },
-      scheduledAt: true,
-      status: true,
-    },
+    select: buildStaffAppointmentDetailsSelect(),
   });
 
   if (!appointment) {

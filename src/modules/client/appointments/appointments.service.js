@@ -8,7 +8,7 @@ import prisma from "../../../lib/prisma.js";
 import dayjs from "dayjs";
 import { AppError } from "../../../utils/AppError.js";
 import { tr } from "../../../lib/i18n/index.js";
-import { getClientByUserId } from "../helpers.js";
+import { getClientByUserId, buildClientAppointmentPreviewSelect, buildClientAppointmentDetailsSelect } from "../helpers.js";
 import {
   calculateBestOfferForService,
   safeIncrementOfferUsedCount,
@@ -214,12 +214,7 @@ export async function getClientAppointments(authUser, query = {}) {
 
   const appointments = await prisma.appointment.findMany({
     where,
-    include: {
-      service: { select: { id: true, name: true, price: true, durationMinutes: true, imageUrl: true } },
-      staff: { include: { user: { select: { name: true } } } },
-      branch: { select: { id: true, businessName: true, logoUrl: true } },
-      bookingPayment: true,
-    },
+    select: buildClientAppointmentPreviewSelect(),
     orderBy: { scheduledAt: "desc" },
   });
 
@@ -234,12 +229,7 @@ export async function getAppointmentDetails(appointmentId, authUser) {
       id: appointmentId,
       clientId: client.id,
     },
-    include: {
-      service: { select: { id: true, name: true, price: true, durationMinutes: true, imageUrl: true, description: true } },
-      staff: { include: { user: { select: { name: true } } } },
-      branch: { select: { id: true, businessName: true, logoUrl: true, address: true, phone: true } },
-      bookingPayment: true,
-    },
+    select: buildClientAppointmentDetailsSelect(),
   });
 
   if (!appointment) {
