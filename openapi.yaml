@@ -725,6 +725,245 @@ components:
           format: date-time
           example: "2026-06-15T12:00:00Z"
 
+    ClientAppointmentPreview:
+      type: object
+      properties:
+        id:
+          type: integer
+        scheduledAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          example: CONFIRMED
+        service:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            imageUrl:
+              type: string
+              nullable: true
+            price:
+              type: number
+        staff:
+          type: object
+          properties:
+            id:
+              type: integer
+            user:
+              type: object
+              properties:
+                name:
+                  type: string
+        branch:
+          type: object
+          properties:
+            id:
+              type: integer
+            businessName:
+              type: string
+            logoUrl:
+              type: string
+              nullable: true
+        bookingPayment:
+          type: object
+          properties:
+            status:
+              type: string
+              example: PAID
+            amount:
+              type: number
+
+    ClientAppointmentDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+        scheduledAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          example: CONFIRMED
+        service:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            price:
+              type: number
+            durationMinutes:
+              type: integer
+            imageUrl:
+              type: string
+              nullable: true
+            description:
+              type: string
+              nullable: true
+        staff:
+          type: object
+          properties:
+            id:
+              type: integer
+            user:
+              type: object
+              properties:
+                name:
+                  type: string
+        branch:
+          type: object
+          properties:
+            id:
+              type: integer
+            businessName:
+              type: string
+            logoUrl:
+              type: string
+              nullable: true
+            address:
+              type: string
+              nullable: true
+            phone:
+              type: string
+              nullable: true
+        bookingPayment:
+          type: object
+          properties:
+            status:
+              type: string
+              example: PAID
+            paymentMethod:
+              type: string
+              nullable: true
+            paidAt:
+              type: string
+              format: date-time
+              nullable: true
+            amount:
+              type: number
+            originalAmount:
+              type: number
+            discountAmount:
+              type: number
+            appliedOfferId:
+              type: integer
+              nullable: true
+
+    BranchAdminAppointmentPreview:
+      type: object
+      properties:
+        id:
+          type: integer
+        scheduledAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          example: CONFIRMED
+        client:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            phone:
+              type: string
+        staff:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        service:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            price:
+              type: number
+            durationMinutes:
+              type: integer
+        paymentStatus:
+          type: string
+          example: PAID
+
+    BranchAdminAppointmentDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+        scheduledAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          example: CONFIRMED
+        client:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            phone:
+              type: string
+        staff:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        service:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            description:
+              type: string
+              nullable: true
+            price:
+              type: number
+            durationMinutes:
+              type: integer
+        paymentStatus:
+          type: string
+          example: PAID
+        paymentMethod:
+          type: string
+          nullable: true
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        amount:
+          type: number
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        attachments:
+          type: array
+          nullable: true
+          items:
+            type: string
+            format: uri
+
     StaffAppointment:
       type: object
       properties:
@@ -5128,6 +5367,79 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [appointment, payment]
+                        properties:
+                          appointment:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              clientId:
+                                type: integer
+                              staffId:
+                                type: integer
+                              serviceId:
+                                type: integer
+                              branchId:
+                                type: integer
+                              scheduledAt:
+                                type: string
+                                format: date-time
+                              status:
+                                type: string
+                                example: PENDING
+                              service:
+                                type: object
+                                properties:
+                                  name:
+                                    type: string
+                                  price:
+                                    type: number
+                              staff:
+                                type: object
+                                properties:
+                                  user:
+                                    type: object
+                                    properties:
+                                      name:
+                                        type: string
+                          payment:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              branchId:
+                                type: integer
+                              appointmentId:
+                                type: integer
+                              amount:
+                                type: number
+                              originalAmount:
+                                type: number
+                              discountAmount:
+                                type: number
+                              appliedOfferId:
+                                type: integer
+                                nullable: true
+                              status:
+                                type: string
+                                example: PENDING
+                          appliedOffer:
+                            type: object
+                            nullable: true
+                            properties:
+                              id:
+                                type: integer
+                              title:
+                                type: string
+                              discountType:
+                                type: string
+                              discountValue:
+                                type: number
               example:
                 status: 201
                 error: false
@@ -5194,6 +5506,32 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [appointment, payment]
+                        properties:
+                          appointment:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              status:
+                                type: string
+                                example: CONFIRMED
+                          payment:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              status:
+                                type: string
+                                example: PAID
+                              paidAt:
+                                type: string
+                                format: date-time
+                                nullable: true
               example:
                 status: 200
                 error: false
@@ -5245,14 +5583,36 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ClientAppointmentPreview"
               example:
                 status: 200
                 error: false
                 message: "Appointments retrieved successfully."
                 data:
                   - id: 15
+                    scheduledAt: "2026-06-01T10:00:00.000Z"
                     status: "CONFIRMED"
-                    scheduled_at: "2026-06-01T10:00:00.000Z"
+                    service:
+                      id: 1
+                      name: "Haircut"
+                      imageUrl: "https://example.com/haircut.jpg"
+                      price: 150
+                    staff:
+                      id: 7
+                      user:
+                        name: "Mazen Tamer"
+                    branch:
+                      id: 3
+                      businessName: "Glow Salon"
+                      logoUrl: "https://example.com/glow.jpg"
+                    bookingPayment:
+                      status: "PAID"
+                      amount: 150
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -5284,21 +5644,43 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ClientAppointmentDetails"
               example:
                 status: 200
                 error: false
                 message: "Appointment details retrieved successfully."
                 data:
                   id: 15
+                  scheduledAt: "2026-06-01T10:00:00.000Z"
                   status: "CONFIRMED"
-                  scheduled_at: "2026-06-01T10:00:00.000Z"
-                  price: 150.00
                   service:
                     id: 1
                     name: "Haircut"
+                    price: 150
+                    durationMinutes: 30
+                    imageUrl: "https://example.com/haircut.jpg"
+                    description: "Premium hair trimming and styling."
                   staff:
                     id: 7
-                    name: "Mazen Tamer"
+                    user:
+                      name: "Mazen Tamer"
+                  branch:
+                    id: 3
+                    businessName: "Glow Salon"
+                    logoUrl: "https://example.com/glow.jpg"
+                    address: "123 Main St, New York"
+                    phone: "+123456789"
+                  bookingPayment:
+                    status: "PAID"
+                    paymentMethod: "CREDIT_CARD"
+                    paidAt: "2026-06-01T09:30:00.000Z"
+                    amount: 150
+                    originalAmount: 150
+                    discountAmount: 0
+                    appliedOfferId: null
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -5334,6 +5716,29 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [appointment]
+                        properties:
+                          appointment:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              status:
+                                type: string
+                                example: CANCELED
+                          payment:
+                            type: object
+                            nullable: true
+                            properties:
+                              id:
+                                type: integer
+                              status:
+                                type: string
+                                example: REFUNDED
               example:
                 status: 200
                 error: false
@@ -7210,7 +7615,19 @@ paths:
                 default:
                   $ref: "#/components/examples/StaffAppointmentStartedResponse"
               schema:
-                $ref: "#/components/schemas/ApiSuccess"
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [id, status]
+                        properties:
+                          id:
+                            type: integer
+                          status:
+                            type: string
+                            example: IN_PROGRESS
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -7260,7 +7677,27 @@ paths:
                 default:
                   $ref: "#/components/examples/StaffAppointmentCompletedResponse"
               schema:
-                $ref: "#/components/schemas/ApiSuccess"
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [id, status]
+                        properties:
+                          id:
+                            type: integer
+                          status:
+                            type: string
+                            example: COMPLETED
+                          notes:
+                            type: string
+                            nullable: true
+                          attachments:
+                            type: array
+                            nullable: true
+                            items:
+                              type: string
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -8710,7 +9147,28 @@ paths:
                       data:
                         type: array
                         items:
-                          type: object
+                          $ref: "#/components/schemas/BranchAdminAppointmentPreview"
+              example:
+                status: 200
+                error: false
+                message: "Appointments retrieved successfully."
+                data:
+                  - id: 15
+                    scheduledAt: "2026-06-01T10:00:00.000Z"
+                    status: "CONFIRMED"
+                    client:
+                      id: 2
+                      name: "Abdo Khalil"
+                      phone: "01000000001"
+                    staff:
+                      id: 7
+                      name: "Mazen Tamer"
+                    service:
+                      id: 1
+                      name: "Haircut"
+                      price: 150
+                      durationMinutes: 30
+                    paymentStatus: "PAID"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -8746,7 +9204,35 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
+                        $ref: "#/components/schemas/BranchAdminAppointmentDetails"
+              example:
+                status: 200
+                error: false
+                message: "Appointment details retrieved successfully."
+                data:
+                  id: 15
+                  scheduledAt: "2026-06-01T10:00:00.000Z"
+                  status: "CONFIRMED"
+                  client:
+                    id: 2
+                    name: "Abdo Khalil"
+                    phone: "01000000001"
+                  staff:
+                    id: 7
+                    name: "Mazen Tamer"
+                  service:
+                    id: 1
+                    name: "Haircut"
+                    description: "Premium haircut."
+                    price: 150
+                    durationMinutes: 30
+                  paymentStatus: "PAID"
+                  paymentMethod: "CREDIT_CARD"
+                  paidAt: "2026-06-01T09:30:00.000Z"
+                  amount: 150
+                  notes: "Layered cut."
+                  attachments:
+                    - "https://example.com/hair.jpg"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -8785,6 +9271,24 @@ paths:
                     properties:
                       data:
                         type: object
+                        required: [id, status, updatedAt]
+                        properties:
+                          id:
+                            type: integer
+                          status:
+                            type: string
+                            example: CANCELED
+                          updatedAt:
+                            type: string
+                            format: date-time
+              example:
+                status: 200
+                error: false
+                message: "Appointment canceled successfully."
+                data:
+                  id: 15
+                  status: "CANCELED"
+                  updatedAt: "2026-06-20T12:00:00.000Z"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":

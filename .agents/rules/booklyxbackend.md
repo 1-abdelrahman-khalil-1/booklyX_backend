@@ -113,6 +113,7 @@ Use `src/utils/subscriptionGuards.js` helpers: `ensureActiveSubscription`, `ensu
 - After schema changes: run `npx prisma generate`. For migrations: `npx prisma migrate dev --name <name>`. For resets: ask for confirmation first (destructive).
 - Use `select` (avoid overfetching), `include` carefully. Use transactions for multi-step operations. Avoid N+1 queries.
 - Never return raw Prisma objects containing sensitive fields (passwords, token hashes). Always use explicit `select`.
+- Move Prisma select configurations for list/details queries into the module's helper file (e.g. `helpers.js`) as exported functions (e.g., `build[Name]PreviewSelect()`) to keep service files clean, focused, and reusable.
 - Database: MySQL. Keep `@@index` and `@@map` conventions consistent.
 - Important models: `User`, `Client`, `Staff`, `BranchAdmin`, `Plan`, `Service`, `Offer`, `Review`, `Appointment`, `SubscriptionPayment`, `ServiceExecution`.
 
