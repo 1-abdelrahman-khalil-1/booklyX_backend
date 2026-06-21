@@ -67,7 +67,18 @@ export function toSafeUser(user) {
     const { passwordHash: _hash, ...safeBranchAdmin } = safeUser.branchAdmin;
     return { ...safeBranchAdmin, role: user.role };
   }
-  return safeUser;
+  let profileImageUrl = "";
+  if (user.role === "client" && user.client) {
+    profileImageUrl = user.client.profileImageUrl || "";
+  } else if (user.role === "staff" && user.staff) {
+    profileImageUrl = user.staff.profileImageUrl || "";
+  }
+  delete safeUser.client;
+  delete safeUser.staff;
+  return {
+    ...safeUser,
+    profileImageUrl,
+  };
 }
 
 export async function ensureClientProfile(user) {

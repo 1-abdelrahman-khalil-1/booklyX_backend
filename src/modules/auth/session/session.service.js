@@ -41,6 +41,16 @@ export async function login(data, platform) {
           }
         }
       } : false,
+      client: role === Role.client ? {
+        select: {
+          profileImageUrl: true,
+        }
+      } : false,
+      staff: role === Role.staff ? {
+        select: {
+          profileImageUrl: true,
+        }
+      } : false,
     },
   });
 
@@ -109,7 +119,14 @@ export async function verifyPhone(email, code, platform) {
 
   const tokens = await prisma.$transaction(async (tx) => {
     await helpers.consumeVerificationCode(user.id, VerificationType.PHONE, code, tx);
-    const updatedUser = await tx.user.update({ where: { id: user.id }, data: { phoneVerified: true } });
+    const updatedUser = await tx.user.update({
+      where: { id: user.id },
+      data: { phoneVerified: true },
+      include: {
+        client: user.role === Role.client ? { select: { profileImageUrl: true } } : false,
+        staff: user.role === Role.staff ? { select: { profileImageUrl: true } } : false,
+      }
+    });
     const loginSequence = await helpers.getNextLoginSequence(tx);
     const generatedTokens = await helpers.issueAuthTokens(updatedUser.id, updatedUser.role, platform, loginSequence, tx);
     return { ...generatedTokens, user: helpers.toSafeUser(updatedUser) };

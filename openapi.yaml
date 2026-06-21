@@ -275,6 +275,10 @@ components:
         phone_verified:
           type: boolean
           example: true
+        profile_image_url:
+          type: string
+          nullable: true
+          example: "https://cdn.booklyx.com/staff/mazen-tamer.png"
         staff:
           type: object
           nullable: true
@@ -306,6 +310,7 @@ components:
         name: Abdo Khalil
         email: abdo.khalil@booklyx.com
         phone: "01000000001"
+        profile_image_url: ""
         role: client
         status: ACTIVE
         email_verified: true

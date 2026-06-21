@@ -193,6 +193,7 @@ describe("Auth Service - login", () => {
     expect(result).toHaveProperty("refreshToken");
     expect(result.user).not.toHaveProperty("password");
     expect(result.user.email).toBe(validLoginData.email);
+    expect(result.user.profileImageUrl).toBe("");
     expect(prisma.refreshToken.create).toHaveBeenCalledWith({
       data: {
         userId: 1,
@@ -201,5 +202,29 @@ describe("Auth Service - login", () => {
         loginSequence: 5,
       },
     });
+  });
+
+  it("should return tokens and user with profileImageUrl if client profile has image", async () => {
+    const mockUser = {
+      id: 1,
+      email: validLoginData.email,
+      password: "hashed-password",
+      status: UserStatus.ACTIVE,
+      role: Role.client,
+      emailVerified: true,
+      phoneVerified: true,
+      client: {
+        profileImageUrl: "https://example.com/client.png",
+      },
+    };
+
+    prisma.user.findUnique.mockResolvedValue(mockUser);
+    prisma.systemCounter.upsert.mockResolvedValue({ value: 5 });
+    bcrypt.compare.mockResolvedValue(true);
+    jwt.sign.mockReturnValue("mock-jwt-token");
+
+    const result = await login(validLoginData, validPlatform);
+
+    expect(result.user.profileImageUrl).toBe("https://example.com/client.png");
   });
 });
