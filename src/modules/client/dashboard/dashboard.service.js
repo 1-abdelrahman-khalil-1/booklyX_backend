@@ -4,7 +4,7 @@ import prisma from "../../../lib/prisma.js";
 export async function getHomeDashboard(query) {
   const lat = query.lat ? parseFloat(query.lat) : 30.0444;
   const lng = query.lng ? parseFloat(query.lng) : 31.2357;
-  const radius = query.radius ? parseFloat(query.radius) : 20.0;
+  const radius = query.radius ? parseFloat(query.radius) : 40.0;
   const radiusMeters = radius * 1000;
   const categoryFilter = query.category || null;
 
