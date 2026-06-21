@@ -84,7 +84,18 @@ export async function getBranchAdminProfile(branchAdminUserId) {
 
   if (!branchAdmin) throw new BranchNotFoundError();
 
-  return { user: await import("../../../lib/mappers/profile.mapper.js").then((m) => m.mapBranchAdminProfile(branchAdmin)) };
+  const bookingsCount = await prisma.appointment.count({
+    where: { branchId: branchAdmin.id },
+  });
+
+  const mappedUser = await import("../../../lib/mappers/profile.mapper.js").then((m) => m.mapBranchAdminProfile(branchAdmin));
+
+  return {
+    user: {
+      ...mappedUser,
+      bookingsCount,
+    },
+  };
 }
 
 export async function getBranchPublicProfile(branchId, authUser) {

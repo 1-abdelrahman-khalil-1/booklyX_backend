@@ -285,9 +285,11 @@ describe("Admin Service - getBranchDetails", () => {
   it("should retrieve branch details successfully", async () => {
     const mockBranch = { id: 1, ownerName: "Owner A", email: "owner@a.com", phone: "0100", businessName: "Branch A", plan: { name: "Starter" }, documents: [] };
     jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(mockBranch);
+    jest.spyOn(prisma.appointment, "count").mockResolvedValue(5);
 
     const result = await getBranchDetails(1);
     expect(result.businessName).toBe("Branch A");
+    expect(result.bookingsCount).toBe(5);
   });
 
   it("should throw BranchNotFound when branch does not exist", async () => {

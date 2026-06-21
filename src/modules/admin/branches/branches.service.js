@@ -83,7 +83,15 @@ export async function getBranchDetails(id) {
   });
 
   if (!branch) throw new BranchNotFound();
-  return branch;
+
+  const bookingsCount = await prisma.appointment.count({
+    where: { branchId: branch.id },
+  });
+
+  return {
+    ...branch,
+    bookingsCount,
+  };
 }
 
 export async function approveBranch(id) {

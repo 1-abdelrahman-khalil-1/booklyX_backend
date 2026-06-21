@@ -1318,6 +1318,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BranchAvailability"
+        bookings_count:
+          type: integer
+          example: 42
 
     BranchAdminProfileResponse:
       type: object
@@ -2698,6 +2701,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BranchDocument"
+        bookings_count:
+          type: integer
+          example: 42
         verificationCodes:
           type: array
           items:
@@ -2724,6 +2730,7 @@ components:
         rejectionReason: null
         created_at: 2026-04-09T09:45:00.000Z
         updated_at: 2026-04-09T10:20:00.000Z
+        bookings_count: 42
 
   examples:
     BranchAvailabilityResponse:
@@ -4258,6 +4265,7 @@ components:
           rejection_reason: null
           created_at: 2026-04-09T09:45:00.000Z
           updated_at: 2026-04-09T10:20:00.000Z
+          bookings_count: 42
           documents:
             - id: 1
               type: COMMERCIAL_REGISTER
@@ -6816,6 +6824,7 @@ paths:
                             status: AVAILABLE
                             created_at: 2026-05-25T12:00:00.000Z
                             updated_at: 2026-05-25T12:00:00.000Z
+                        bookings_count: 42
 
   /branch-admin/availability:
     put:
