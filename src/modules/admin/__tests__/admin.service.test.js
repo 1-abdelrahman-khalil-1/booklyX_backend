@@ -281,7 +281,9 @@ describe("Admin Service - listBranches", () => {
     expect(prisma.branchAdmin.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: {
         status: BranchStatus.APPROVED,
-        isSubscriptionActive: false,
+        user: {
+          status: UserStatus.SUSPENDED,
+        },
       },
     }));
   });
@@ -297,13 +299,14 @@ describe("Admin Service - getBranchDetails", () => {
   });
 
   it("should retrieve branch details successfully", async () => {
-    const mockBranch = { id: 1, ownerName: "Owner A", email: "owner@a.com", phone: "0100", businessName: "Branch A", plan: { name: "Starter" }, documents: [] };
+    const mockBranch = { id: 1, ownerName: "Owner A", email: "owner@a.com", phone: "0100", businessName: "Branch A", plan: { name: "Starter" }, documents: [], user: { status: "ACTIVE" } };
     jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(mockBranch);
     jest.spyOn(prisma.appointment, "count").mockResolvedValue(5);
 
     const result = await getBranchDetails(1);
     expect(result.businessName).toBe("Branch A");
     expect(result.bookingsCount).toBe(5);
+    expect(result.user.status).toBe("ACTIVE");
   });
 
   it("should throw BranchNotFound when branch does not exist", async () => {
@@ -396,8 +399,9 @@ describe("Admin Service - toggleBlockBranch", () => {
   });
 
   it("should block an approved active branch successfully and suspend the user", async () => {
-    const mockBranch = { id: 1, status: BranchStatus.APPROVED, isSubscriptionActive: true, userId: 10 };
+    const mockBranch = { id: 1, status: BranchStatus.APPROVED, isSubscriptionActive: true, userId: 10, subscriptionStartedAt: new Date() };
     jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(mockBranch);
+    jest.spyOn(prisma.user, "findUnique").mockResolvedValue({ id: 10, status: UserStatus.ACTIVE });
     jest.spyOn(prisma, "$transaction").mockImplementation(async (callback) => callback(prisma));
     const updateBranchSpy = jest.spyOn(prisma.branchAdmin, "update").mockResolvedValue({});
     const updateUserSpy = jest.spyOn(prisma.user, "update").mockResolvedValue({});
@@ -416,8 +420,9 @@ describe("Admin Service - toggleBlockBranch", () => {
   });
 
   it("should unblock an approved inactive branch successfully and activate the user", async () => {
-    const mockBranch = { id: 1, status: BranchStatus.APPROVED, isSubscriptionActive: false, userId: 10 };
+    const mockBranch = { id: 1, status: BranchStatus.APPROVED, isSubscriptionActive: false, userId: 10, subscriptionStartedAt: new Date() };
     jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(mockBranch);
+    jest.spyOn(prisma.user, "findUnique").mockResolvedValue({ id: 10, status: UserStatus.SUSPENDED });
     jest.spyOn(prisma, "$transaction").mockImplementation(async (callback) => callback(prisma));
     const updateBranchSpy = jest.spyOn(prisma.branchAdmin, "update").mockResolvedValue({});
     const updateUserSpy = jest.spyOn(prisma.user, "update").mockResolvedValue({});
@@ -436,7 +441,7 @@ describe("Admin Service - toggleBlockBranch", () => {
   });
 
   it("should block successfully even if userId is null", async () => {
-    const mockBranch = { id: 1, status: BranchStatus.APPROVED, isSubscriptionActive: true, userId: null };
+    const mockBranch = { id: 1, status: BranchStatus.APPROVED, isSubscriptionActive: true, userId: null, subscriptionStartedAt: null };
     jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(mockBranch);
     jest.spyOn(prisma, "$transaction").mockImplementation(async (callback) => callback(prisma));
     const updateBranchSpy = jest.spyOn(prisma.branchAdmin, "update").mockResolvedValue({});
@@ -449,6 +454,27 @@ describe("Admin Service - toggleBlockBranch", () => {
       data: { isSubscriptionActive: false },
     });
     expect(updateUserSpy).not.toHaveBeenCalled();
+    expect(result.message).toBe("BRANCH_BLOCKED");
+  });
+
+  it("should block an approved unsubscribed branch and set user to suspended", async () => {
+    const mockBranch = { id: 1, status: BranchStatus.APPROVED, isSubscriptionActive: false, userId: 10, subscriptionStartedAt: null };
+    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(mockBranch);
+    jest.spyOn(prisma.user, "findUnique").mockResolvedValue({ id: 10, status: UserStatus.ACTIVE });
+    jest.spyOn(prisma, "$transaction").mockImplementation(async (callback) => callback(prisma));
+    const updateBranchSpy = jest.spyOn(prisma.branchAdmin, "update").mockResolvedValue({});
+    const updateUserSpy = jest.spyOn(prisma.user, "update").mockResolvedValue({});
+
+    const result = await toggleBlockBranch(1);
+
+    expect(updateBranchSpy).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { isSubscriptionActive: false },
+    });
+    expect(updateUserSpy).toHaveBeenCalledWith({
+      where: { id: 10 },
+      data: { status: UserStatus.SUSPENDED },
+    });
     expect(result.message).toBe("BRANCH_BLOCKED");
   });
 });

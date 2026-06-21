@@ -8,7 +8,9 @@ export async function listBranches(status) {
   if (status === "SUSPENDED") {
     where = {
       status: BranchStatus.APPROVED,
-      isSubscriptionActive: false,
+      user: {
+        status: UserStatus.SUSPENDED,
+      },
     };
   } else if (status) {
     where = { status };
@@ -28,6 +30,12 @@ export async function listBranches(status) {
       status: true,
       rejectionReason: true,
       createdAt: true,
+      isSubscriptionActive: true,
+      user: {
+        select: {
+          status: true,
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -69,6 +77,11 @@ export async function getBranchDetails(id) {
       rejectionReason: true,
       createdAt: true,
       updatedAt: true,
+      user: {
+        select: {
+          status: true,
+        },
+      },
       plan: {
         select: {
           id: true,
@@ -127,7 +140,7 @@ export async function rejectBranch(id, reason) {
 export async function toggleBlockBranch(id) {
   const branch = await prisma.branchAdmin.findUnique({
     where: { id },
-    select: { id: true, status: true, isSubscriptionActive: true, userId: true },
+    select: { id: true, status: true, isSubscriptionActive: true, userId: true, subscriptionStartedAt: true },
   });
 
   if (!branch) throw new BranchNotFound();
@@ -135,12 +148,16 @@ export async function toggleBlockBranch(id) {
     throw new BranchCannotBeBlockedUnapprovedError();
   }
 
-  const willBlock = branch.isSubscriptionActive;
+  const user = branch.userId ? await prisma.user.findUnique({ where: { id: branch.userId } }) : null;
+  const isBlocked = user ? user.status === UserStatus.SUSPENDED : false;
+  const willBlock = !isBlocked;
 
   await prisma.$transaction(async (tx) => {
     await tx.branchAdmin.update({
       where: { id: branch.id },
-      data: { isSubscriptionActive: !willBlock },
+      data: {
+        isSubscriptionActive: willBlock ? false : (branch.subscriptionStartedAt !== null),
+      },
     });
 
     if (branch.userId) {

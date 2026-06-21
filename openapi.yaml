@@ -2704,6 +2704,17 @@ components:
         bookings_count:
           type: integer
           example: 42
+        is_subscription_active:
+          type: boolean
+          example: true
+        user:
+          type: object
+          nullable: true
+          properties:
+            status:
+              type: string
+              enum: [ACTIVE, INACTIVE, SUSPENDED]
+              example: ACTIVE
         verificationCodes:
           type: array
           items:
