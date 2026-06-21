@@ -232,7 +232,10 @@ const en = {
   FINANCIAL_SUMMARY_RETRIEVED_SUCCESSFULLY: "Financial summary retrieved successfully.",
   ANALYTICS_OVERVIEW_RETRIEVED_SUCCESSFULLY: "Analytics overview retrieved successfully.",
   REVENUE_CHART_RETRIEVED_SUCCESSFULLY: "Revenue chart data retrieved successfully.",
-  STAFF_RESTORED_SUCCESSFULLY: "STAFF_RESTORED_SUCCESSFULLY",
+  STAFF_RESTORED_SUCCESSFULLY: "Staff restored successfully.",
+  BRANCH_BLOCKED: "Branch blocked successfully.",
+  BRANCH_UNBLOCKED: "Branch unblocked successfully.",
+  BRANCH_CANNOT_BE_BLOCKED_UNAPPROVED: "Only approved branches can be blocked or unblocked.",
 };
 
 export default en;

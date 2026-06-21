@@ -224,6 +224,9 @@ const ar = {
   ANALYTICS_OVERVIEW_RETRIEVED_SUCCESSFULLY: "تم استرجاع نظرة عامة على التحليلات بنجاح.",
   REVENUE_CHART_RETRIEVED_SUCCESSFULLY: "تم استرجاع بيانات مخطط الإيرادات بنجاح.",
   STAFF_RESTORED_SUCCESSFULLY: "تم استعادة الموظفين بنجاح",
+  BRANCH_BLOCKED: "تم حظر الفرع بنجاح.",
+  BRANCH_UNBLOCKED: "تم إلغاء حظر الفرع بنجاح.",
+  BRANCH_CANNOT_BE_BLOCKED_UNAPPROVED: "يمكن فقط حظر أو إلغاء حظر الفروع المعتمدة.",
 };
 
 export default ar;

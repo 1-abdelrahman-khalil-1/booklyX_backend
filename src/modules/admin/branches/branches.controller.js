@@ -3,7 +3,7 @@ import { zIdParamSchema } from "../../../lib/validation/primitives.js";
 import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { successResponse } from "../../../utils/response.js";
 import { listBranchesQuerySchema, rejectReasonSchema, validateAdminInput } from "../admin.validation.js";
-import { approveBranch, getBranchDetails, listBranches, rejectBranch } from "./branches.service.js";
+import { approveBranch, getBranchDetails, listBranches, rejectBranch, toggleBlockBranch } from "./branches.service.js";
 
 export const listBranchesHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
@@ -31,5 +31,12 @@ export const rejectBranchHandler = asyncHandler(async (req, res) => {
   const { id } = validateAdminInput(zIdParamSchema, req.params);
   const { reason } = validateAdminInput(rejectReasonSchema, req.body);
   const result = await rejectBranch(id, reason);
+  successResponse(res, 200, t(result.message, lang));
+});
+
+export const toggleBlockBranchHandler = asyncHandler(async (req, res) => {
+  const lang = getLanguage(req);
+  const { id } = validateAdminInput(zIdParamSchema, req.params);
+  const result = await toggleBlockBranch(id);
   successResponse(res, 200, t(result.message, lang));
 });

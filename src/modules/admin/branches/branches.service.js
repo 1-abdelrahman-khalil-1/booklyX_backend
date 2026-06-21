@@ -1,11 +1,23 @@
-import { BranchStatus } from "../../../generated/prisma/client.js";
+import { BranchStatus, UserStatus } from "../../../generated/prisma/client.js";
 import { tr } from "../../../lib/i18n/index.js";
 import prisma from "../../../lib/prisma.js";
-import { BranchIsNotPendingError, BranchNotFound } from "../errors.js";
+import { BranchIsNotPendingError, BranchNotFound, BranchCannotBeBlockedUnapprovedError } from "../errors.js";
 
 export async function listBranches(status) {
+  let where = {};
+  if (status === "SUSPENDED") {
+    where = {
+      status: BranchStatus.APPROVED,
+      isSubscriptionActive: false,
+    };
+  } else if (status) {
+    where = { status };
+  } else {
+    where = { status: BranchStatus.PENDING_APPROVAL };
+  }
+
   const branches = await prisma.branchAdmin.findMany({
-    where: status ? { status } : { status: BranchStatus.PENDING_APPROVAL },
+    where,
     select: {
       id: true,
       businessName: true,
@@ -110,4 +122,36 @@ export async function rejectBranch(id, reason) {
 
   await prisma.branchAdmin.update({ where: { id: branch.id }, data: { status: BranchStatus.REJECTED, rejectionReason: reason } });
   return { message: tr.BRANCH_REJECTED };
+}
+
+export async function toggleBlockBranch(id) {
+  const branch = await prisma.branchAdmin.findUnique({
+    where: { id },
+    select: { id: true, status: true, isSubscriptionActive: true, userId: true },
+  });
+
+  if (!branch) throw new BranchNotFound();
+  if (branch.status !== BranchStatus.APPROVED) {
+    throw new BranchCannotBeBlockedUnapprovedError();
+  }
+
+  const willBlock = branch.isSubscriptionActive;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.branchAdmin.update({
+      where: { id: branch.id },
+      data: { isSubscriptionActive: !willBlock },
+    });
+
+    if (branch.userId) {
+      await tx.user.update({
+        where: { id: branch.userId },
+        data: { status: willBlock ? UserStatus.SUSPENDED : UserStatus.ACTIVE },
+      });
+    }
+  });
+
+  return {
+    message: willBlock ? tr.BRANCH_BLOCKED : tr.BRANCH_UNBLOCKED,
+  };
 }

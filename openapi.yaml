@@ -8496,7 +8496,7 @@ paths:
           schema:
             type: string
             default: PENDING_APPROVAL
-            enum: [PENDING_APPROVAL, APPROVED, REJECTED]
+            enum: [PENDING_APPROVAL, APPROVED, REJECTED, SUSPENDED]
           description: Filter branches by status
       responses:
         "200":
@@ -8636,6 +8636,45 @@ paths:
               examples:
                 default:
                   $ref: "#/components/examples/BranchRejectedResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /admin/branches/{id}/toggle-block:
+    patch:
+      tags: [Super_admin/Branches]
+      summary: Toggle block branch
+      description: Block or unblock an approved branch.
+      operationId: patchAdminBranchesByIdToggleBlock
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeaderWebOnly"
+      responses:
+        "200":
+          description: Branch blocked or unblocked successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSuccess"
+              examples:
+                default:
+                  value:
+                    status: 200
+                    error: false
+                    message: Branch blocked successfully.
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":

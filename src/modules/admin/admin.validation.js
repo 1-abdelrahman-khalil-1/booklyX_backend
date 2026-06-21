@@ -9,7 +9,7 @@ export const validateAdminInput = createValidationInputValidator(AdminValidation
 export { zIdParamSchema };
 
 export const listBranchesQuerySchema = z.object({
-    status: z.enum(["PENDING_APPROVAL", "APPROVED", "REJECTED"]).optional(),
+    status: z.enum(["PENDING_APPROVAL", "APPROVED", "REJECTED", "SUSPENDED"]).optional(),
 });
 
 export const listServicesQuerySchema = z.object({

@@ -56,3 +56,11 @@ export class PaymentAlreadyRefundedError extends AppError {
     this.name = "PaymentAlreadyRefundedError";
   }
 }
+
+export class BranchCannotBeBlockedUnapprovedError extends AppError {
+  constructor() {
+    super(tr.BRANCH_CANNOT_BE_BLOCKED_UNAPPROVED, 400);
+    this.name = "BranchCannotBeBlockedUnapprovedError";
+  }
+}
+
