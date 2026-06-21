@@ -23,7 +23,26 @@ export async function login(data, platform) {
 
   const { email, role, password } = data;
 
-  const user = await prisma.user.findUnique({ where: { email, role }, include: { branchAdmin: role === Role.branch_admin ? { include: { plan: { select: { id: true, name: true, price: true, maxStaff: true, maxServices: true, loyaltyEnabled: true, offersEnabled: true } } } } : false } });
+  const user = await prisma.user.findUnique({
+    where: { email, role },
+    include: {
+      branchAdmin: role === Role.branch_admin ? {
+        include: {
+          plan: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              maxStaff: true,
+              maxServices: true,
+              loyaltyEnabled: true,
+              offersEnabled: true
+            }
+          }
+        }
+      } : false,
+    },
+  });
 
   const branchAdminRecord = !user ? await prisma.branchAdmin.findFirst({ where: { email } }) : null;
 

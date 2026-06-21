@@ -1,5 +1,10 @@
+import { faker } from "../config/faker.js";
 import { ASSETS } from "../config/assets.js";
 import { BusinessCategory, StaffRole } from "../../src/generated/prisma/client.js";
+
+const seenProfileImages = new Set();
+const seenBranchImages = new Set();
+const seenServiceImages = new Set();
 
 export function pickRandom(arr, seed = 0) {
   if (!arr?.length) return null;
@@ -8,20 +13,25 @@ export function pickRandom(arr, seed = 0) {
 }
 
 export function getStaffProfileImage(role, index = 0) {
-  switch (role) {
-    case StaffRole.DOCTOR:
-      return ASSETS.profileImages.doctors[index % ASSETS.profileImages.doctors.length];
-    case StaffRole.BARBER:
-      return ASSETS.profileImages.barbers[index % ASSETS.profileImages.barbers.length];
-    case StaffRole.SPA_SPECIALIST:
-      return ASSETS.profileImages.spa[index % ASSETS.profileImages.spa.length];
-    default:
-      return pickRandom(ASSETS.profileImages.spa, index);
+  let url = faker.image.personPortrait({ sex: "male" });
+  let attempts = 0;
+  while (seenProfileImages.has(url) && attempts < 1000) {
+    url = faker.image.personPortrait({ sex: "male" });
+    attempts++;
   }
+  seenProfileImages.add(url);
+  return url;
 }
 
 export function getClientProfileImage(index = 0) {
-  return ASSETS.profileImages.clients[index % ASSETS.profileImages.clients.length];
+  let url = faker.image.personPortrait({ sex: "male" });
+  let attempts = 0;
+  while (seenProfileImages.has(url) && attempts < 1000) {
+    url = faker.image.personPortrait({ sex: "male" });
+    attempts++;
+  }
+  seenProfileImages.add(url);
+  return url;
 }
 
 export function getBranchDocumentUrl() {

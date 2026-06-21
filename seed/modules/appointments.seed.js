@@ -3,42 +3,10 @@ import { buildAppointmentSeeds } from "../generators/appointments.generator.js";
 import { AppointmentStatus, Role } from "../../src/generated/prisma/client.js";
 
 async function resetSeededAppointmentsAndReviews(seedClientEmails) {
-  const seededClients = await prisma.client.findMany({
-    where: { user: { email: { in: seedClientEmails } } },
-    select: { id: true },
-  });
-
-  const clientIds = seededClients.map((client) => client.id);
-  if (clientIds.length === 0) {
-    return;
-  }
-
-  const appointments = await prisma.appointment.findMany({
-    where: { clientId: { in: clientIds } },
-    select: { id: true },
-  });
-  const appointmentIds = appointments.map((appointment) => appointment.id);
-
-  await prisma.review.deleteMany({
-    where: {
-      OR: [
-        { clientId: { in: clientIds } },
-        { appointmentId: { in: appointmentIds } },
-      ],
-    },
-  });
-
-  await prisma.bookingPayment.deleteMany({
-    where: { appointmentId: { in: appointmentIds } },
-  });
-
-  await prisma.serviceExecution.deleteMany({
-    where: { appointmentId: { in: appointmentIds } },
-  });
-
-  await prisma.appointment.deleteMany({
-    where: { id: { in: appointmentIds } },
-  });
+  await prisma.review.deleteMany({});
+  await prisma.bookingPayment.deleteMany({});
+  await prisma.serviceExecution.deleteMany({});
+  await prisma.appointment.deleteMany({});
 }
 
 /**
@@ -105,27 +73,27 @@ export async function seedAppointments(seedClientEmails, seedStaffEmails) {
     return { reviewTargets: [] };
   }
 
-  const staffServiceMap = new Map();
+  const staffServicesMap = new Map();
   for (const staff of staffMembers) {
-    const staffService = await prisma.staffService.findFirst({
+    const staffServices = await prisma.staffService.findMany({
       where: { staffId: staff.id },
       include: { service: true },
       orderBy: { serviceId: "asc" },
     });
 
-    if (staffService) {
-      staffServiceMap.set(staff.id, staffService);
+    if (staffServices.length > 0) {
+      staffServicesMap.set(staff.id, staffServices);
     }
   }
 
   const appointmentSeeds = buildAppointmentSeeds(clients, staffMembers, (staff) => {
-    const staffService = staffServiceMap.get(staff.id);
-    if (!staffService) return null;
+    const staffServices = staffServicesMap.get(staff.id);
+    if (!staffServices || staffServices.length === 0) return null;
 
-    return {
-      serviceId: staffService.serviceId,
-      branchId: staffService.service.branchId,
-    };
+    return staffServices.map(link => ({
+      serviceId: link.serviceId,
+      branchId: link.service.branchId,
+    }));
   });
 
   const reviewTargets = [];
@@ -143,7 +111,8 @@ export async function seedAppointments(seedClientEmails, seedStaffEmails) {
     });
 
     // Seed corresponding BookingPayment record for every appointment
-    const staffService = staffServiceMap.get(seed.staffId);
+    const staffServices = staffServicesMap.get(seed.staffId);
+    const staffService = staffServices ? staffServices.find(s => s.serviceId === seed.serviceId) : null;
     const basePrice = staffService ? Math.round(staffService.service.price) : 150;
 
     // Apply an offer to paid appointments so the demo data reflects the new pricing fields

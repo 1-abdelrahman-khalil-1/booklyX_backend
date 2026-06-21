@@ -65,7 +65,35 @@ export async function getBranchProfile(branchId, authUser) {
     orderBy: { createdAt: "desc" },
   });
 
-  return mapBranchPublicProfile(branch, reviews, isFavourite);
+  // Get active staff members of the branch
+  const staffs = await prisma.staff.findMany({
+    where: {
+      branchId,
+      isActive: true,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          role: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
+      professionalProfile: true,
+      availabilities: true,
+      services: {
+        include: {
+          service: true,
+        },
+      },
+    },
+  });
+
+  return mapBranchPublicProfile(branch, reviews, isFavourite, staffs);
 }
 
 export async function getBranchServices(branchId) {

@@ -608,12 +608,112 @@ describe("Client Service", () => {
       prisma.client.findUnique.mockResolvedValueOnce(mockClient);
       prisma.branchAdmin.findUnique.mockResolvedValueOnce({ id: 4, status: "APPROVED" });
       prisma.favoriteBranch.findUnique.mockResolvedValueOnce(null); // Not already added
-
+ 
       prisma.favoriteBranch.create.mockResolvedValueOnce({ clientId: 1, branchId: 4 });
-
+ 
       const result = await clientService.addFavoriteBranch(4, authUser);
-
+ 
       expect(result).toHaveProperty("branchId", 4);
+    });
+  });
+
+  // --- Branch Profile with Staffs ---
+  describe("getBranchProfile", () => {
+    it("should retrieve approved branch profile along with mapped staffs (excluding reviews and certificates)", async () => {
+      const mockBranch = {
+        id: 1,
+        ownerName: "Owner A",
+        email: "owner@a.com",
+        phone: "0100",
+        businessName: "Salon A",
+        category: "SPA",
+        status: "APPROVED",
+        isSubscriptionActive: true,
+        averageRating: 4.5,
+        reviewCount: 10,
+        city: "Cairo",
+        district: "Nasr City",
+        address: "Street 1",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        branchAvailabilities: [],
+        services: [],
+      };
+
+      const mockStaffs = [
+        {
+          id: 10,
+          branchId: 1,
+          profileImageUrl: "https://example.com/staff.jpg",
+          age: 30,
+          staffRole: "BARBER",
+          commissionPercentage: 10,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          averageRating: 4.8,
+          reviewCount: 15,
+          user: {
+            id: 20,
+            name: "John Doe",
+            email: "john@example.com",
+            phone: "01100000000",
+            role: "staff",
+          },
+          professionalProfile: {
+            id: 100,
+            bio: "Expert Barber",
+            yearsOfExperience: 5,
+            specialization: "Fade Cut",
+          },
+          availabilities: [
+            {
+              id: 200,
+              dayOfWeek: 1,
+              startTime: "09:00",
+              endTime: "17:00",
+              status: "AVAILABLE",
+            },
+          ],
+          services: [
+            {
+              service: {
+                id: 300,
+                name: "Haircut",
+                price: 50,
+                durationMinutes: 30,
+                status: "APPROVED",
+                imageUrl: "https://example.com/haircut.jpg",
+              },
+            },
+          ],
+        },
+      ];
+
+      prisma.branchAdmin.findUnique.mockResolvedValueOnce(mockBranch);
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.favoriteBranch.findUnique.mockResolvedValueOnce(null);
+      prisma.review.findMany.mockResolvedValueOnce([]);
+      prisma.staff.findMany.mockResolvedValueOnce(mockStaffs);
+
+      const result = await clientService.getBranchProfile(1, authUser);
+
+      expect(result.branch).toBeDefined();
+      expect(result.branch.businessName).toBe("Salon A");
+      expect(result.branch.staffs).toHaveLength(1);
+      expect(result.branch.staffs[0]).toEqual(
+        expect.objectContaining({
+          id: 10,
+          name: "John Doe",
+          staffRole: "BARBER",
+          professionalProfile: expect.objectContaining({
+            specialization: "Fade Cut",
+          }),
+        })
+      );
+      // Ensure reviews and certificates are NOT present
+      expect(result.branch.staffs[0].reviews).toBeUndefined();
+      expect(result.branch.staffs[0].certificates).toBeUndefined();
     });
   });
 });

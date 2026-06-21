@@ -209,7 +209,35 @@ export function mapBranchAdminProfile(branchAdmin) {
   };
 }
 
-export function mapBranchPublicProfile(/** @type {import("../../generated/prisma/index.js").BranchAdmin} */branch, reviews = [], isFavourite = false) {
+export function mapBranchStaffProfile(staff) {
+  if (!staff) return null;
+  return {
+    id: staff.id,
+    name: staff.user?.name ?? "",
+    profileImageUrl: staff.profileImageUrl ?? null,
+    age: staff.age,
+    staffRole: staff.staffRole,
+    commissionPercentage: staff.commissionPercentage,
+    isActive: staff.isActive,
+    createdAt: toIsoString(staff.createdAt),
+    updatedAt: toIsoString(staff.updatedAt),
+    professionalProfile: mapStaffProfessionalProfile(staff.professionalProfile),
+    availabilities: (staff.availabilities || [])
+      .filter((avail) => avail.status === "AVAILABLE")
+      .map(mapStaffAvailability),
+    services: (staff.services || [])
+      .filter((link) => link.service && link.service.status === "APPROVED")
+      .map(mapStaffServiceLink),
+    averageRating: staff.averageRating,
+    reviewCount: staff.reviewCount,
+  };
+}
+
+export function mapBranchPublicProfile(/** @type {import("../../generated/prisma/index.js").BranchAdmin} */branch,
+  reviews = [],
+  isFavourite = false,
+  staffs = []
+) {
   const adminProfile = mapBranchAdminProfile(branch);
   return {
     branch: {
@@ -230,6 +258,7 @@ export function mapBranchPublicProfile(/** @type {import("../../generated/prisma
         name: s.name,
         imageUrl: s.imageUrl,
       })),
+      staffs: staffs.length > 0 ? staffs.map(staff => mapBranchStaffProfile(staff)) : [],
     },
     reviews: reviews.map(mapBranchReview),
   };

@@ -1465,10 +1465,56 @@ components:
                   image_url:
                     type: string
                     nullable: true
+            staffs:
+              type: array
+              items:
+                $ref: "#/components/schemas/BranchStaffProfile"
         reviews:
           type: array
           items:
             $ref: "#/components/schemas/BranchReview"
+
+    BranchStaffProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        profile_image_url:
+          type: string
+          nullable: true
+        age:
+          type: integer
+        staff_role:
+          type: string
+          enum: [DOCTOR, BARBER, SPA_SPECIALIST]
+        commission_percentage:
+          type: number
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        professional_profile:
+          allOf:
+            - $ref: "#/components/schemas/StaffProfessionalProfile"
+          nullable: true
+        availabilities:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffAvailability"
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffServiceLink"
+        average_rating:
+          type: number
+        review_count:
+          type: integer
 
     StaffProfile:
       type: object
@@ -4790,6 +4836,37 @@ paths:
                         image_url: "https://cdn.booklyx.com/services/massage.png"
                       - name: "Classic Men's Haircut"
                         image_url: "https://cdn.booklyx.com/services/haircut.png"
+                    staffs:
+                      - id: 7
+                        name: "Mazen Tamer"
+                        profile_image_url: "https://cdn.booklyx.com/staff/mazen-tamer.png"
+                        age: 28
+                        staff_role: "BARBER"
+                        commission_percentage: 15
+                        is_active: true
+                        created_at: "2026-04-01T10:00:00.000Z"
+                        updated_at: "2026-05-01T10:00:00.000Z"
+                        average_rating: 4.7
+                        review_count: 34
+                        professional_profile:
+                          id: 3
+                          bio: "Senior stylist"
+                          experience: 6
+                          licenseNumber: "BARB-7845"
+                          specialization: "BARBER"
+                        availabilities:
+                          - id: 1
+                            day_of_week: 1
+                            start_time: "09:00"
+                            end_time: "17:00"
+                            status: "AVAILABLE"
+                        services:
+                          - id: 1
+                            name: "Haircut"
+                            price: 150.00
+                            duration_minutes: 30
+                            status: "APPROVED"
+                            imageUrl: "https://cdn.booklyx.com/services/haircut.png"
                   reviews:
                     - id: 31
                       rating: 5

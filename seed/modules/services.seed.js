@@ -222,6 +222,7 @@ export async function seedServices(seededBranchAdmins) {
       });
     }
 
+    let serviceIndex = 0;
     for (const serviceSpec of dataSpec.services) {
       const category = await prisma.serviceCategory.findFirst({
         where: {
@@ -250,7 +251,7 @@ export async function seedServices(seededBranchAdmins) {
         description: serviceSpec.description,
         price: serviceSpec.price,
         durationMinutes: serviceSpec.durationMinutes,
-        imageUrl: getServiceImage(branchSubmission.category, branchAdmin.id % 2),
+        imageUrl: getServiceImage(branchSubmission.category, serviceIndex),
         status: serviceSpec.status,
         approvedAt:
           serviceSpec.status === ServiceApprovalStatus.APPROVED
@@ -272,6 +273,7 @@ export async function seedServices(seededBranchAdmins) {
           data: serviceData,
         });
       }
+      serviceIndex++;
     }
 
     const approvedService = await prisma.service.findFirst({
