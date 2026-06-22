@@ -5082,22 +5082,15 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  "/client/services/{id}/offers":
+  "/client/offers":
     get:
       tags: [Client/Offers]
-      summary: Service offers
-      description: Returns valid offers for the specified service id, including discounts and dates.
-      operationId: getClientServicesByIdOffers
+      summary: List valid unclaimed offers
+      description: Returns valid offers (not yet claimed by the client) including branch details and applicable services.
+      operationId: getClientOffers
       security:
         - bearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-            example: 1
         - $ref: "#/components/parameters/AcceptLanguageHeader"
         - $ref: "#/components/parameters/PlatformHeader"
       responses:
@@ -5122,6 +5115,8 @@ paths:
                             - start_date
                             - end_date
                             - used_count
+                            - branch
+                            - services
                           properties:
                             id:
                               type: integer
@@ -5150,10 +5145,39 @@ paths:
                               nullable: true
                             used_count:
                               type: integer
+                            branch:
+                              type: object
+                              required:
+                                - id
+                                - business_name
+                              properties:
+                                id:
+                                  type: integer
+                                business_name:
+                                  type: string
+                                logo_url:
+                                  type: string
+                                  format: uri
+                                  nullable: true
+                            services:
+                              type: array
+                              items:
+                                type: object
+                                required:
+                                  - id
+                                  - name
+                                  - price
+                                properties:
+                                  id:
+                                    type: integer
+                                  name:
+                                    type: string
+                                  price:
+                                    type: number
               example:
                 status: 200
                 error: false
-                message: "Service offers retrieved successfully."
+                message: "Offers retrieved successfully."
                 data:
                   - id: 7
                     title: "Weekend Offer"
@@ -5165,14 +5189,20 @@ paths:
                     end_date: "2026-04-26T23:59:59.000Z"
                     usage_limit: 100
                     used_count: 0
+                    branch:
+                      id: 1
+                      business_name: "Salon A"
+                      logo_url: "https://example.com/logo.jpg"
+                    services:
+                      - id: 15
+                        name: "Haircut"
+                        price: 300
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
 
   "/client/offers/{id}/claim":
     post:

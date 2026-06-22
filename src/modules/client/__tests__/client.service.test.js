@@ -867,6 +867,52 @@ describe("Client Service", () => {
       expect(result[0]).toHaveProperty("id", 1);
       expect(result[0].offer).toHaveProperty("title", "Claim Offer Test");
     });
+
+    it("should successfully retrieve valid offers that are not claimed by the client", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.offer.findMany.mockResolvedValueOnce([
+        {
+          id: 101,
+          title: "Offer A",
+          description: "Desc A",
+          imageUrl: "imgA",
+          discountType: "PERCENTAGE",
+          discountValue: 10,
+          startDate: new Date(),
+          endDate: new Date(),
+          usageLimit: null,
+          usedCount: 0,
+          branch: { id: 1, businessName: "Branch A", logoUrl: "logoA" },
+          services: [
+            {
+              service: { id: 15, name: "Haircut", price: 100 }
+            }
+          ]
+        },
+        {
+          id: 102,
+          title: "Offer B",
+          description: "Desc B",
+          imageUrl: "imgB",
+          discountType: "FIXED",
+          discountValue: 20,
+          startDate: new Date(),
+          endDate: new Date(),
+          usageLimit: 10,
+          usedCount: 10,
+          branch: { id: 1, businessName: "Branch A", logoUrl: "logoA" },
+          services: []
+        }
+      ]);
+
+      const result = await clientService.getValidOffers(authUser.sub);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toHaveProperty("id", 101);
+      expect(result[0]).toHaveProperty("title", "Offer A");
+      expect(result[0].services).toHaveLength(1);
+      expect(result[0].services[0]).toHaveProperty("name", "Haircut");
+    });
   });
 
   describe("reserveAppointment with Claimed Offer Validation", () => {

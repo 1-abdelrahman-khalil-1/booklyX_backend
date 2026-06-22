@@ -13,18 +13,53 @@ import {
   ServiceNotFoundError,
 } from "../errors.js";
 
-/**
- * Return the currently valid offers for a service, shaped for client UI consumption.
- * Re-uses the shared eligibility logic from the branch_admin offers service so
- * validity rules (isActive, date window, usageLimit) stay in one place.
- *
- * @param {number} serviceId
- * @returns {Promise<Array<{ id, title, discountType, discountValue, endDate }>>}
- */
-export async function getServiceOffers(serviceId) {
-  const offers = await getValidOffersForService(serviceId);
+export async function getValidOffers(userId) {
+  const client = await getClientByUserId(userId);
+  const now = new Date();
 
-  return offers.map((o) => ({
+  const offers = await prisma.offer.findMany({
+    where: {
+      isActive: true,
+      startDate: { lte: now },
+      endDate: { gte: now },
+      branch: {
+        status: BranchStatus.APPROVED,
+        isSubscriptionActive: true,
+      },
+      claimedOffers: {
+        none: {
+          clientId: client.id,
+        },
+      },
+    },
+    include: {
+      branch: {
+        select: {
+          id: true,
+          businessName: true,
+          logoUrl: true,
+        },
+      },
+      services: {
+        include: {
+          service: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const validOffers = offers.filter(
+    (offer) => offer.usageLimit === null || offer.usedCount < offer.usageLimit,
+  );
+
+  return validOffers.map((o) => ({
     id: o.id,
     title: o.title,
     description: o.description,
@@ -35,6 +70,8 @@ export async function getServiceOffers(serviceId) {
     endDate: o.endDate,
     usageLimit: o.usageLimit,
     usedCount: o.usedCount,
+    branch: o.branch,
+    services: o.services.map((s) => s.service),
   }));
 }
 

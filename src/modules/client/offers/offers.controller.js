@@ -2,14 +2,13 @@ import { getLanguage, t, tr } from "../../../lib/i18n/index.js";
 import { zIdParamSchema } from "../../../lib/validation/primitives.js";
 import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { successResponse } from "../../../utils/response.js";
-import { getServiceOffers, claimOffer, getClaimedOffers } from "./offers.service.js";
+import { getValidOffers, claimOffer, getClaimedOffers } from "./offers.service.js";
 import { validateClientInput, getClaimedOffersQuerySchema } from "../client.validation.js";
 
-export const getServiceOffersHandler = asyncHandler(async (req, res) => {
+export const getValidOffersHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const { id } = validateClientInput(zIdParamSchema, req.params);
-  const result = await getServiceOffers(id);
-  successResponse(res, 200, t(tr.SERVICE_OFFERS_RETRIEVED, lang), result);
+  const result = await getValidOffers(req.user.sub);
+  successResponse(res, 200, t(tr.OFFERS_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 
 export const claimOfferHandler = asyncHandler(async (req, res) => {
