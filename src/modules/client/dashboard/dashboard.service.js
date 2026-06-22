@@ -1,19 +1,25 @@
 import { BranchStatus, BusinessCategory } from "../../../generated/prisma/client.js";
 import prisma from "../../../lib/prisma.js";
+import { getClientByUserId } from "../helpers.js";
 
-export async function getHomeDashboard(query) {
+export async function getHomeDashboard(query, userId) {
   const lat = query.lat ? parseFloat(query.lat) : 30.0444;
   const lng = query.lng ? parseFloat(query.lng) : 31.2357;
   const radius = query.radius ? parseFloat(query.radius) : 40.0;
   const radiusMeters = radius * 1000;
   const categoryFilter = query.category || null;
-
+  const client = await getClientByUserId(userId);
   // Active Offers Carousel (belonging to APPROVED visible branches)
   const offers = await prisma.offer.findMany({
     where: {
       isActive: true,
       startDate: { lte: new Date() },
       endDate: { gte: new Date() },
+      claimedOffers: {
+        none: {
+          clientId: client.id,
+        },
+      },
       branch: {
         status: BranchStatus.APPROVED,
         isSubscriptionActive: true,
