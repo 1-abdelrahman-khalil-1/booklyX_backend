@@ -16,11 +16,9 @@ import {
     OffersValidationError,
 } from "../../errors.js";
 import {
-    calculateBestOfferForService,
     createOffer,
     deleteOffer,
     listBranchOffers,
-    safeIncrementOfferUsedCount,
     toggleOffer,
     updateOffer,
 } from "../offers.service.js";
@@ -98,55 +96,6 @@ describe("Offers Service", () => {
         1,
       ),
     ).rejects.toThrow(OffersValidationError);
-  });
-
-  it("should return best offer with highest saving", async () => {
-    jest.spyOn(prisma.service, "findUnique").mockResolvedValue({
-      id: 50,
-      price: 200,
-      status: ServiceApprovalStatus.APPROVED,
-      branch: { status: BranchStatus.APPROVED, isSubscriptionActive: true },
-    });
-
-    jest.spyOn(prisma.offer, "findMany").mockResolvedValue([
-      {
-        id: "a",
-        title: "10%",
-        discountType: OfferDiscountType.PERCENTAGE,
-        discountValue: 10,
-        startDate: new Date("2026-04-01T00:00:00.000Z"),
-        endDate: new Date("2026-04-30T23:59:59.000Z"),
-        usageLimit: null,
-        usedCount: 0,
-      },
-      {
-        id: "b",
-        title: "50 fixed",
-        discountType: OfferDiscountType.FIXED,
-        discountValue: 50,
-        startDate: new Date("2026-04-01T00:00:00.000Z"),
-        endDate: new Date("2026-04-30T23:59:59.000Z"),
-        usageLimit: null,
-        usedCount: 0,
-      },
-    ]);
-
-    const result = await calculateBestOfferForService(50);
-
-    expect(result.basePrice).toBe(200);
-    expect(result.savingsAmount).toBe(50);
-    expect(result.finalPrice).toBe(150);
-    expect(result.appliedOffer.id).toBe("b");
-  });
-
-  it("should increment usage count for an offer inside a transaction using raw query", async () => {
-    const mockTx = {
-      $executeRaw: jest.fn().mockResolvedValue(1),
-    };
-
-    await safeIncrementOfferUsedCount("offer-id", mockTx);
-
-    expect(mockTx.$executeRaw).toHaveBeenCalled();
   });
 
   describe("updateOffer", () => {

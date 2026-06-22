@@ -13,6 +13,7 @@ const branchesService = await import("../branches/branches.service.js");
 const staffService = await import("../staff/staff.service.js");
 const appointmentsService = await import("../appointments/appointments.service.js");
 const favouritesService = await import("../favourites/favourites.service.js");
+const offersService = await import("../offers/offers.service.js");
 
 const clientService = {
   ...dashboardService,
@@ -21,6 +22,7 @@ const clientService = {
   ...staffService,
   ...appointmentsService,
   ...favouritesService,
+  ...offersService,
 };
 
 beforeEach(() => {
@@ -50,6 +52,13 @@ beforeEach(() => {
   prisma.offer = {
     findMany: jest.fn(),
     findUnique: jest.fn(),
+    update: jest.fn(),
+  };
+
+  prisma.claimedOffer = {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
     update: jest.fn(),
   };
 
@@ -303,6 +312,9 @@ describe("Client Service", () => {
       ]);
 
       prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.claimedOffer.findUnique.mockResolvedValueOnce({ id: 1, clientId: 1, offerId: 7, isUsed: false });
+      prisma.appointment.findFirst.mockResolvedValueOnce(null); // No overlap bookings using the offer
+
       const mockService = {
         id: 15,
         price: 300,
@@ -319,7 +331,7 @@ describe("Client Service", () => {
 
       const targetDate = new Date(Date.now() + 1000 * 60 * 60 * 3);
       const result = await clientService.reserveAppointment(
-        { serviceId: 15, staffId: 5, scheduledAt: targetDate.toISOString() },
+        { serviceId: 15, staffId: 5, scheduledAt: targetDate.toISOString(), appliedOfferId: 7 },
         authUser
       );
 
@@ -714,6 +726,290 @@ describe("Client Service", () => {
       // Ensure reviews and certificates are NOT present
       expect(result.branch.staffs[0].reviews).toBeUndefined();
       expect(result.branch.staffs[0].certificates).toBeUndefined();
+    });
+  });
+
+  // --- Claimed Offers Flow ---
+  describe("Claimed Offers Flow", () => {
+    const offerId = 50;
+
+    it("should successfully claim an active offer", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.offer.findUnique.mockResolvedValueOnce({
+        id: offerId,
+        isActive: true,
+        startDate: new Date(Date.now() - 10000),
+        endDate: new Date(Date.now() + 10000),
+        usageLimit: 10,
+        usedCount: 5,
+      });
+      prisma.claimedOffer.findUnique.mockResolvedValueOnce(null); // Not claimed yet
+      prisma.claimedOffer.create.mockResolvedValueOnce({
+        id: 1,
+        clientId: mockClient.id,
+        offerId,
+        isUsed: false,
+        claimedAt: new Date(),
+        usedAt: null,
+        offer: {
+          id: offerId,
+          title: "Claim Offer Test",
+          description: "Desc",
+          imageUrl: "img",
+          discountType: "PERCENTAGE",
+          discountValue: 15,
+          startDate: new Date(),
+          endDate: new Date(),
+        },
+      });
+
+      const result = await clientService.claimOffer(authUser.sub, offerId);
+
+      expect(result).toHaveProperty("id", 1);
+      expect(result).toHaveProperty("offerId", offerId);
+      expect(result.offer).toHaveProperty("discountValue", 15);
+      expect(prisma.claimedOffer.create).toHaveBeenCalled();
+    });
+
+    it("should reject claim if offer does not exist", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.offer.findUnique.mockResolvedValueOnce(null);
+
+      await expect(clientService.claimOffer(authUser.sub, offerId)).rejects.toThrow();
+    });
+
+    it("should reject claim if offer is inactive", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.offer.findUnique.mockResolvedValueOnce({
+        id: offerId,
+        isActive: false,
+        startDate: new Date(Date.now() - 10000),
+        endDate: new Date(Date.now() + 10000),
+        usageLimit: 10,
+        usedCount: 5,
+      });
+
+      await expect(clientService.claimOffer(authUser.sub, offerId)).rejects.toThrow();
+    });
+
+    it("should reject claim if offer is expired", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.offer.findUnique.mockResolvedValueOnce({
+        id: offerId,
+        isActive: true,
+        startDate: new Date(Date.now() - 20000),
+        endDate: new Date(Date.now() - 10000),
+        usageLimit: 10,
+        usedCount: 5,
+      });
+
+      await expect(clientService.claimOffer(authUser.sub, offerId)).rejects.toThrow();
+    });
+
+    it("should reject claim if offer is exhausted", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.offer.findUnique.mockResolvedValueOnce({
+        id: offerId,
+        isActive: true,
+        startDate: new Date(Date.now() - 10000),
+        endDate: new Date(Date.now() + 10000),
+        usageLimit: 10,
+        usedCount: 10,
+      });
+
+      await expect(clientService.claimOffer(authUser.sub, offerId)).rejects.toThrow();
+    });
+
+    it("should reject claim if offer is already claimed", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.offer.findUnique.mockResolvedValueOnce({
+        id: offerId,
+        isActive: true,
+        startDate: new Date(Date.now() - 10000),
+        endDate: new Date(Date.now() + 10000),
+        usageLimit: 10,
+        usedCount: 5,
+      });
+      prisma.claimedOffer.findUnique.mockResolvedValueOnce({
+        id: 1,
+        clientId: mockClient.id,
+        offerId,
+        isUsed: false,
+      });
+
+      await expect(clientService.claimOffer(authUser.sub, offerId)).rejects.toThrow();
+    });
+
+    it("should retrieve claimed offers with filters", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      const claimedOfferMock = {
+        id: 1,
+        isUsed: false,
+        claimedAt: new Date(),
+        usedAt: null,
+        offer: {
+          id: offerId,
+          title: "Claim Offer Test",
+          description: "Desc",
+          imageUrl: "img",
+          discountType: "PERCENTAGE",
+          discountValue: 15,
+          startDate: new Date(),
+          endDate: new Date(),
+          branch: { id: 1, businessName: "Branch A" },
+        },
+      };
+      prisma.claimedOffer.findMany.mockResolvedValueOnce([claimedOfferMock]);
+
+      const result = await clientService.getClaimedOffers(authUser.sub, { status: "unused" });
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toHaveProperty("id", 1);
+      expect(result[0].offer).toHaveProperty("title", "Claim Offer Test");
+    });
+  });
+
+  describe("reserveAppointment with Claimed Offer Validation", () => {
+    it("should reject reservation if client has not claimed the offer", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.service.findUnique.mockResolvedValueOnce({
+        id: 15,
+        price: 300,
+        durationMinutes: 45,
+        status: "APPROVED",
+        branchId: 8,
+        branch: { status: "APPROVED", isSubscriptionActive: true },
+      });
+      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5, isActive: true, branchId: 8 });
+      prisma.appointment.findMany.mockResolvedValueOnce([]); // No overlaps
+      
+      // ClaimedOffer lookup returns null (unclaimed)
+      prisma.claimedOffer.findUnique.mockResolvedValueOnce(null);
+
+      const targetDate = new Date(Date.now() + 1000 * 60 * 60 * 3);
+      await expect(
+        clientService.reserveAppointment(
+          { serviceId: 15, staffId: 5, scheduledAt: targetDate.toISOString(), appliedOfferId: 99 },
+          authUser
+        )
+      ).rejects.toThrow();
+    });
+
+    it("should reject reservation if client already used the claimed offer", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.service.findUnique.mockResolvedValueOnce({
+        id: 15,
+        price: 300,
+        durationMinutes: 45,
+        status: "APPROVED",
+        branchId: 8,
+        branch: { status: "APPROVED", isSubscriptionActive: true },
+      });
+      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5, isActive: true, branchId: 8 });
+      prisma.appointment.findMany.mockResolvedValueOnce([]); // No overlaps
+
+      // ClaimedOffer lookup returns isUsed: true
+      prisma.claimedOffer.findUnique.mockResolvedValueOnce({ id: 1, clientId: 1, offerId: 99, isUsed: true });
+
+      const targetDate = new Date(Date.now() + 1000 * 60 * 60 * 3);
+      await expect(
+        clientService.reserveAppointment(
+          { serviceId: 15, staffId: 5, scheduledAt: targetDate.toISOString(), appliedOfferId: 99 },
+          authUser
+        )
+      ).rejects.toThrow();
+    });
+
+    it("should reject reservation if client already has an active reservation using this offer", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
+      prisma.service.findUnique.mockResolvedValueOnce({
+        id: 15,
+        price: 300,
+        durationMinutes: 45,
+        status: "APPROVED",
+        branchId: 8,
+        branch: { status: "APPROVED", isSubscriptionActive: true },
+      });
+      prisma.staff.findUnique.mockResolvedValueOnce({ id: 5, isActive: true, branchId: 8 });
+      prisma.appointment.findMany.mockResolvedValueOnce([]); // No overlaps
+
+      prisma.claimedOffer.findUnique.mockResolvedValueOnce({ id: 1, clientId: 1, offerId: 7, isUsed: false });
+      
+      // Mock valid offers to include this offer
+      prisma.offer.findMany.mockResolvedValueOnce([
+        {
+          id: 7,
+          title: "20% Summer Sale",
+          discountType: "PERCENTAGE",
+          discountValue: 20,
+          startDate: new Date(Date.now() - 1000),
+          endDate: new Date(Date.now() + 86400000),
+          usageLimit: null,
+          usedCount: 0,
+        },
+      ]);
+
+      // Mock finding an active booking using the offer
+      prisma.appointment.findFirst.mockResolvedValueOnce({ id: 101, status: "PENDING" });
+
+      const targetDate = new Date(Date.now() + 1000 * 60 * 60 * 3);
+      await expect(
+        clientService.reserveAppointment(
+          { serviceId: 15, staffId: 5, scheduledAt: targetDate.toISOString(), appliedOfferId: 7 },
+          authUser
+        )
+      ).rejects.toThrow();
+    });
+  });
+
+  describe("calculateBestOfferForService & safeIncrementOfferUsedCount", () => {
+    it("should return best offer with highest saving", async () => {
+      prisma.service.findUnique.mockResolvedValue({
+        id: 50,
+        price: 200,
+        status: "APPROVED",
+        branch: { status: "APPROVED", isSubscriptionActive: true },
+      });
+
+      prisma.offer.findMany.mockResolvedValueOnce([
+        {
+          id: 1,
+          title: "10%",
+          discountType: "PERCENTAGE",
+          discountValue: 10,
+          startDate: new Date("2026-04-01T00:00:00.000Z"),
+          endDate: new Date("2026-04-30T23:59:59.000Z"),
+          usageLimit: null,
+          usedCount: 0,
+        },
+        {
+          id: 2,
+          title: "50 fixed",
+          discountType: "FIXED",
+          discountValue: 50,
+          startDate: new Date("2026-04-01T00:00:00.000Z"),
+          endDate: new Date("2026-04-30T23:59:59.000Z"),
+          usageLimit: null,
+          usedCount: 0,
+        },
+      ]);
+
+      const result = await clientService.calculateBestOfferForService(50);
+
+      expect(result.basePrice).toBe(200);
+      expect(result.savingsAmount).toBe(50);
+      expect(result.finalPrice).toBe(150);
+      expect(result.appliedOffer.id).toBe(2);
+    });
+
+    it("should increment usage count for an offer inside a transaction using raw query", async () => {
+      const mockTx = {
+        $executeRaw: jest.fn().mockResolvedValue(1),
+      };
+
+      await clientService.safeIncrementOfferUsedCount(7, mockTx);
+
+      expect(mockTx.$executeRaw).toHaveBeenCalled();
     });
   });
 });

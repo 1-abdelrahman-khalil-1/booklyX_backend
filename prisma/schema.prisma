@@ -136,6 +136,7 @@ model Client {
   reviews          Review[]
   favoriteBranches FavoriteBranch[]
   favoriteStaffs   FavoriteStaff[]
+  claimedOffers    ClaimedOffer[]
 
   @@index([userId])
 }
@@ -429,6 +430,7 @@ model Offer {
   branch          BranchAdmin      @relation(fields: [branchId], references: [id], onDelete: Cascade)
   services        OfferService[]
   bookingPayments BookingPayment[]
+  claimedOffers   ClaimedOffer[]
 
   @@index([branchId])
   @@index([branchId, isActive])
@@ -592,3 +594,20 @@ model FavoriteStaff {
   @@index([clientId])
   @@index([staffId])
 }
+
+model ClaimedOffer {
+  id        Int       @id @default(autoincrement())
+  clientId  Int
+  offerId   Int
+  isUsed    Boolean   @default(false)
+  claimedAt DateTime  @default(now())
+  usedAt    DateTime?
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  offer  Offer  @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, offerId])
+  @@index([clientId])
+  @@index([offerId])
+}
+

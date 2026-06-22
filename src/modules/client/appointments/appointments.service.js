@@ -10,10 +10,13 @@ import { AppError } from "../../../utils/AppError.js";
 import { tr } from "../../../lib/i18n/index.js";
 import { getClientByUserId, buildClientAppointmentPreviewSelect, buildClientAppointmentDetailsSelect } from "../helpers.js";
 import {
-  calculateBestOfferForService,
+  getValidOffersForService,
+  resolveDiscountAmount,
   safeIncrementOfferUsedCount,
-} from "../../branch_admin/offers/offers.service.js";
+} from "../offers/offers.service.js";
 import {
+  OfferAlreadyInUseError,
+  OfferNotAvailableError,
   AppointmentCancellationNotAllowedError,
   AppointmentNotFoundError,
   DoubleBookingError,
@@ -83,11 +86,63 @@ export async function reserveAppointment(data, authUser) {
     throw new DoubleBookingError();
   }
 
-  const offerCalc = await calculateBestOfferForService(serviceId);
+  let discountAmount = 0;
+  let appliedOffer = null;
+
+  if (data.appliedOfferId) {
+    const claimedOffer = await prisma.claimedOffer.findUnique({
+      where: {
+        clientId_offerId: {
+          clientId: client.id,
+          offerId: data.appliedOfferId,
+        },
+      },
+    });
+
+    if (!claimedOffer || claimedOffer.isUsed) {
+      throw new OfferNotAvailableError();
+    }
+
+    const validOffers = await getValidOffersForService(serviceId);
+    const matchedOffer = validOffers.find((o) => o.id === data.appliedOfferId);
+
+    if (!matchedOffer) {
+      throw new OfferNotAvailableError();
+    }
+
+    // Check if user already has an active booking using this offer
+    const alreadyUsing = await prisma.appointment.findFirst({
+      where: {
+        clientId: client.id,
+        status: {
+          in: [
+            AppointmentStatus.PENDING,
+            AppointmentStatus.CONFIRMED,
+            AppointmentStatus.IN_PROGRESS,
+          ],
+        },
+        bookingPayment: {
+          appliedOfferId: data.appliedOfferId,
+        },
+      },
+    });
+
+    if (alreadyUsing) {
+      throw new OfferAlreadyInUseError();
+    }
+
+    discountAmount = Math.round(resolveDiscountAmount(service.price, matchedOffer));
+    appliedOffer = {
+      id: matchedOffer.id,
+      title: matchedOffer.title,
+      discountType: matchedOffer.discountType,
+      discountValue: matchedOffer.discountValue,
+    };
+  }
+
   const originalAmount = Math.round(service.price);
-  const discountAmount = Math.round(offerCalc.savingsAmount);
   const finalAmount = Math.max(0, originalAmount - discountAmount);
-  const appliedOfferId = offerCalc.appliedOffer?.id ?? null;
+  const appliedOfferId = data.appliedOfferId ?? null;
 
   const result = await prisma.$transaction(async (tx) => {
     const appointment = await tx.appointment.create({
@@ -120,14 +175,7 @@ export async function reserveAppointment(data, authUser) {
     return {
       appointment,
       payment,
-      appliedOffer: offerCalc.appliedOffer
-        ? {
-            id: offerCalc.appliedOffer.id,
-            title: offerCalc.appliedOffer.title,
-            discountType: offerCalc.appliedOffer.discountType,
-            discountValue: offerCalc.appliedOffer.discountValue,
-          }
-        : null,
+      appliedOffer,
     };
   });
 
@@ -171,6 +219,18 @@ export async function confirmAppointmentPayment(appointmentId, data, authUser) {
 
       if (appointment.bookingPayment?.appliedOfferId) {
         await safeIncrementOfferUsedCount(appointment.bookingPayment.appliedOfferId, tx);
+        await tx.claimedOffer.update({
+          where: {
+            clientId_offerId: {
+              clientId: client.id,
+              offerId: appointment.bookingPayment.appliedOfferId,
+            },
+          },
+          data: {
+            isUsed: true,
+            usedAt: new Date(),
+          },
+        });
       }
 
       return {
@@ -296,6 +356,18 @@ export async function cancelAppointment(appointmentId, authUser) {
             data: { usedCount: { decrement: 1 } },
           });
         }
+        await tx.claimedOffer.update({
+          where: {
+            clientId_offerId: {
+              clientId: client.id,
+              offerId: appointment.bookingPayment.appliedOfferId,
+            },
+          },
+          data: {
+            isUsed: false,
+            usedAt: null,
+          },
+        });
       }
     }
 

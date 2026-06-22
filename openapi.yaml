@@ -5174,6 +5174,247 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  "/client/offers/{id}/claim":
+    post:
+      tags: [Client/Offers]
+      summary: Claim offer
+      description: Claims an active branch offer for the client.
+      operationId: postClientOffersByIdClaim
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            example: 7
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Offer claimed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - id
+                          - client_id
+                          - offer_id
+                          - is_used
+                          - claimed_at
+                          - offer
+                        properties:
+                          id:
+                            type: integer
+                          client_id:
+                            type: integer
+                          offer_id:
+                            type: integer
+                          is_used:
+                            type: boolean
+                          claimed_at:
+                            type: string
+                            format: date-time
+                          used_at:
+                            type: string
+                            format: date-time
+                            nullable: true
+                          offer:
+                            type: object
+                            required:
+                              - id
+                              - title
+                              - discount_type
+                              - discount_value
+                              - start_date
+                              - end_date
+                            properties:
+                              id:
+                                type: integer
+                              title:
+                                type: string
+                              description:
+                                type: string
+                                nullable: true
+                              image_url:
+                                type: string
+                                format: uri
+                                nullable: true
+                              discount_type:
+                                type: string
+                                enum: [PERCENTAGE, FIXED]
+                              discount_value:
+                                type: number
+                              start_date:
+                                type: string
+                                format: date-time
+                              end_date:
+                                type: string
+                                format: date-time
+              example:
+                status: 200
+                error: false
+                message: "Offer claimed successfully."
+                data:
+                  id: 1
+                  client_id: 10
+                  offer_id: 7
+                  is_used: false
+                  claimed_at: "2026-06-22T10:00:00.000Z"
+                  used_at: null
+                  offer:
+                    id: 7
+                    title: "20% Summer Sale"
+                    description: "Get 20% discount on haircuts"
+                    image_url: "https://example.com/images/summer-sale.jpg"
+                    discount_type: "PERCENTAGE"
+                    discount_value: 20
+                    start_date: "2026-06-20T00:00:00.000Z"
+                    end_date: "2026-06-25T23:59:59.000Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  "/client/offers/claimed":
+    get:
+      tags: [Client/Offers]
+      summary: List claimed offers
+      description: Returns list of offers claimed by the client, with optional filtering by status.
+      operationId: getClientOffersClaimed
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [unused, used, expired]
+            example: unused
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+      responses:
+        "200":
+          description: Claimed offers retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - id
+                            - is_used
+                            - claimed_at
+                            - offer
+                          properties:
+                            id:
+                              type: integer
+                            is_used:
+                              type: boolean
+                            claimed_at:
+                              type: string
+                              format: date-time
+                            used_at:
+                              type: string
+                              format: date-time
+                              nullable: true
+                            offer:
+                              type: object
+                              required:
+                                - id
+                                - title
+                                - discount_type
+                                - discount_value
+                                - start_date
+                                - end_date
+                                - branch
+                              properties:
+                                id:
+                                  type: integer
+                                title:
+                                  type: string
+                                description:
+                                  type: string
+                                  nullable: true
+                                image_url:
+                                  type: string
+                                  format: uri
+                                  nullable: true
+                                discount_type:
+                                  type: string
+                                  enum: [PERCENTAGE, FIXED]
+                                discount_value:
+                                  type: number
+                                start_date:
+                                  type: string
+                                  format: date-time
+                                end_date:
+                                  type: string
+                                  format: date-time
+                                branch:
+                                  type: object
+                                  required:
+                                    - id
+                                    - business_name
+                                  properties:
+                                    id:
+                                      type: integer
+                                    business_name:
+                                      type: string
+                                    logo_url:
+                                      type: string
+                                      format: uri
+                                      nullable: true
+              example:
+                status: 200
+                error: false
+                message: "Claimed offers retrieved successfully."
+                data:
+                  - id: 1
+                    is_used: false
+                    claimed_at: "2026-06-22T10:00:00.000Z"
+                    used_at: null
+                    offer:
+                      id: 7
+                      title: "20% Summer Sale"
+                      description: "Get 20% discount on haircuts"
+                      image_url: "https://example.com/images/summer-sale.jpg"
+                      discount_type: "PERCENTAGE"
+                      discount_value: 20
+                      start_date: "2026-06-20T00:00:00.000Z"
+                      end_date: "2026-06-25T23:59:59.000Z"
+                      branch:
+                        id: 1
+                        business_name: "Grooming Lounge"
+                        logo_url: "https://example.com/images/logo.png"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   "/client/staff/{id}/profile":
     get:
       tags: [Client/Discovery]
@@ -5460,6 +5701,10 @@ paths:
                   type: string
                   format: date-time
                   example: "2026-06-01T10:00:00.000Z"
+                appliedOfferId:
+                  type: integer
+                  nullable: true
+                  example: 7
       responses:
         "201":
           description: Booking slot locked successfully

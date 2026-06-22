@@ -46,7 +46,9 @@ export const reserveAppointmentSchema = z.object({
   scheduledAt: zIsoDate().refine((val) => new Date(val) > new Date(), {
     message: tr.PAST_BOOKING_ERROR,
   }),
+  appliedOfferId: zId.optional().nullable(),
 });
+
 
 // 4. Favourites Filter Validation
 export const favouritesQuerySchema = z.object({
@@ -64,6 +66,12 @@ export const getAppointmentsQuerySchema = z.object({
 export const updateClientProfileSchema = z.object({
   name: z.string({ error: tr.NAME_REQUIRED }).min(1, { message: tr.NAME_REQUIRED }).optional(),
   profileImageUrl: z.string().url().optional().nullable(),
+});
+
+export const getClaimedOffersQuerySchema = z.object({
+  status: z.enum(["unused", "used", "expired", "all"], {
+    error: tr.INVALID_ENUM_VALUE,
+  }).optional().default("unused"),
 });
 
 // Wrapper helper

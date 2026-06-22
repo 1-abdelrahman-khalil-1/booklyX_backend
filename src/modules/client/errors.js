@@ -85,3 +85,38 @@ export class FavouriteNotFoundError extends AppError {
     this.name = "FavouriteNotFoundError";
   }
 }
+
+export class OfferAlreadyClaimedError extends AppError {
+  constructor() {
+    super(tr.OFFER_ALREADY_CLAIMED, 409);
+    this.name = "OfferAlreadyClaimedError";
+  }
+}
+
+export class OfferAlreadyInUseError extends AppError {
+  constructor() {
+    super(tr.OFFER_ALREADY_IN_USE, 409);
+    this.name = "OfferAlreadyInUseError";
+  }
+}
+
+export class OfferNotFoundError extends AppError {
+  constructor() {
+    super(tr.OFFER_NOT_FOUND, 404);
+    this.name = "OfferNotFoundError";
+  }
+}
+
+export class OfferNotAvailableError extends AppError {
+  constructor() {
+    super(tr.OFFER_NOT_AVAILABLE, 409);
+    this.name = "OfferNotAvailableError";
+  }
+}
+
+export class OfferExpiredOrExhaustedError extends AppError {
+  constructor() {
+    super(tr.OFFER_EXPIRED_OR_EXHAUSTED, 409);
+    this.name = "OfferExpiredOrExhaustedError";
+  }
+}

@@ -92,9 +92,9 @@ export const ASSETS = {
     ],
 
     spa: [
-      "https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?auto=format&fit=crop&w=500&q=80",
+      "https://static.vecteezy.com/system/resources/previews/023/701/997/non_2x/spa-natural-background-illustration-ai-generative-free-photo.jpg?auto=format&fit=crop&w=500&q=80",
       "https://images.unsplash.com/photo-1596178065887-1198b6148b2b?auto=format&fit=crop&w=500&q=80",
-      "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=500&q=80",
+      "https://static.vecteezy.com/system/resources/previews/005/195/778/non_2x/spa-products-with-orchids-free-photo.jpg?auto=format&fit=crop&w=500&q=80",
       "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=500&q=80",
       "https://images.unsplash.com/photo-1549576490-b0b4831ef60a?auto=format&fit=crop&w=500&q=80",
       "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=500&q=80",
