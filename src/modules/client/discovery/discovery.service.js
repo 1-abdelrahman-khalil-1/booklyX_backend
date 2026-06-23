@@ -10,7 +10,6 @@ function normalizeDiscoveryQuery(query) {
     lat: Number(query.lat),
     lng: Number(query.lng),
     category: query.category ?? null,
-    serviceCategoryId: query.serviceCategoryId ? Number(query.serviceCategoryId) : null,
     search: query.search?.trim() || null,
     type: query.type ?? DISCOVERY_SEARCH_TYPES.BRANCHES,
   };
@@ -65,7 +64,7 @@ export async function searchDiscovery(query) {
 }
 
 export async function searchBranches(query) {
-  const { lat, lng, category, serviceCategoryId, search } = normalizeDiscoveryQuery(query);
+  const { lat, lng, category, search } = normalizeDiscoveryQuery(query);
 
   const branches = await prisma.$queryRaw`
       SELECT id, businessName as name, category, description, logoUrl as profileImage, averageRating as rating, reviewCount as totalReviews, latitude, longitude,
@@ -75,16 +74,6 @@ export async function searchBranches(query) {
         status = 'APPROVED'
         AND isSubscriptionActive = 1
         AND (${category} IS NULL OR category = ${category})
-        AND (
-          ${serviceCategoryId} IS NULL
-          OR EXISTS (
-            SELECT 1
-            FROM Service s
-            WHERE s.branchId = BranchAdmin.id
-              AND s.status = 'APPROVED'
-              AND s.serviceCategoryId = ${serviceCategoryId}
-          )
-        )
         AND (
           ${search} IS NULL
           OR LOWER(businessName) LIKE CONCAT('%', LOWER(${search}), '%')
@@ -99,7 +88,7 @@ export async function searchBranches(query) {
 
 
 export async function searchServices(query) {
-  const { lat, lng, category, serviceCategoryId, search } = normalizeDiscoveryQuery(query);
+  const { lat, lng, category, search } = normalizeDiscoveryQuery(query);
 
   const services = await prisma.$queryRaw`
     SELECT
@@ -127,7 +116,6 @@ export async function searchServices(query) {
       AND b.status = 'APPROVED'
       AND b.isSubscriptionActive = 1
       AND (${category} IS NULL OR b.category = ${category})
-      AND (${serviceCategoryId} IS NULL OR s.serviceCategoryId = ${serviceCategoryId})
       AND (
         ${search} IS NULL
         OR LOWER(s.name) LIKE CONCAT('%', LOWER(${search}), '%')

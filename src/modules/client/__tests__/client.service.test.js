@@ -191,22 +191,6 @@ describe("Client Service", () => {
       });
     });
 
-    it("should accept serviceCategoryId in discovery validation", () => {
-      const query = clientValidation.discoverySearchSchema.parse({
-        lat: "30.04",
-        lng: "31.23",
-        serviceCategoryId: "5",
-      });
-
-      expect(query).toEqual({
-        lat: 30.04,
-        lng: 31.23,
-        radius: 5,
-        serviceCategoryId: 5,
-        type: "branches",
-      });
-    });
-
     it("should list branches ordered by distance and rating within a specific radius", async () => {
       prisma.$queryRaw.mockResolvedValueOnce([
         {
@@ -226,30 +210,6 @@ describe("Client Service", () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toHaveProperty("name", "Zen Spa");
       expect(result[0].location).toEqual({ lat: 30.06, lng: 31.25 });
-    });
-
-    it("should search branches with serviceCategoryId filter", async () => {
-      prisma.$queryRaw.mockResolvedValueOnce([
-        {
-          id: 3,
-          name: "Zen Spa",
-          category: "SPA",
-          latitude: 30.06,
-          longitude: 31.25,
-          rating: 4.8,
-          totalReviews: 120,
-          distance: 2500,
-        },
-      ]);
-
-      const result = await clientService.searchBranches({
-        lat: "30.04",
-        lng: "31.23",
-        serviceCategoryId: 5,
-      });
-
-      expect(result).toHaveLength(1);
-      expect(prisma.$queryRaw).toHaveBeenCalled();
     });
 
     it("should dispatch discovery search to services when type is services", async () => {
@@ -288,36 +248,6 @@ describe("Client Service", () => {
         },
       });
       expect(result[0].distance).toBe(2.5);
-    });
-
-    it("should search services with serviceCategoryId filter", async () => {
-      prisma.$queryRaw.mockResolvedValueOnce([
-        {
-          id: 7,
-          name: "Haircut",
-          price: 150,
-          durationMinutes: 30,
-          imageUrl: "haircut.jpg",
-          branchId: 3,
-          branchName: "Zen Spa",
-          category: "SPA",
-          rating: 4.8,
-          totalReviews: 120,
-          latitude: 30.06,
-          longitude: 31.25,
-          distance: 2500,
-        },
-      ]);
-
-      const result = await clientService.searchServices({
-        lat: "30.04",
-        lng: "31.23",
-        serviceCategoryId: 5,
-      });
-
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe("Haircut");
-      expect(prisma.$queryRaw).toHaveBeenCalled();
     });
   });
 

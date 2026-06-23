@@ -1912,6 +1912,68 @@ components:
           type: number
           example: 1.8
 
+    DiscoveryService:
+      type: object
+      required:
+        - id
+        - name
+        - price
+        - durationMinutes
+        - branch
+        - location
+        - distance
+      properties:
+        id:
+          type: integer
+          example: 7
+        name:
+          type: string
+          example: "Haircut"
+        price:
+          type: number
+          example: 150
+        durationMinutes:
+          type: integer
+          example: 30
+        imageUrl:
+          type: string
+          nullable: true
+          format: uri
+          example: "https://cdn.booklyx.com/services/haircut.png"
+        branch:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            name:
+              type: string
+              example: "Hassan Beauty Salon"
+            category:
+              type: string
+              example: "SPA"
+            rating:
+              type: number
+              example: 4.8
+            totalReviews:
+              type: integer
+              example: 24
+        location:
+          type: object
+          required:
+            - lat
+            - lng
+          properties:
+            lat:
+              type: number
+              example: 30.0626
+            lng:
+              type: number
+              example: 31.3368
+        distance:
+          type: number
+          example: 1.8
+
     BranchAdminApplyRequestJson:
       type: object
       required:
@@ -4846,13 +4908,6 @@ paths:
             type: string
             enum: [SPA, CLINIC, BARBER]
             example: "spa"
-        - name: serviceCategoryId
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            example: 5
         - name: type
           in: query
           required: false
@@ -4949,13 +5004,6 @@ paths:
             type: string
             enum: [SPA, CLINIC, BARBER]
             example: "spa"
-        - name: serviceCategoryId
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            example: 5
       responses:
         "200":
           description: Service search completed successfully
