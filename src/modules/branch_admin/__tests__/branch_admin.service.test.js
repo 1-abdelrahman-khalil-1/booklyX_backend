@@ -828,6 +828,8 @@ describe("Branch Admin Service - Appointments", () => {
               userId: 31,
               profileImageUrl: "https://cdn.booklyx.com/staff/mazen.png",
               staffRole: "BARBER",
+              averageRating: 4.8,
+              reviewCount: 12,
               isActive: true,
               user: {
                 name: "Mazen Tamer",
@@ -851,6 +853,8 @@ describe("Branch Admin Service - Appointments", () => {
           name: "Mazen Tamer",
           profileImageUrl: "https://cdn.booklyx.com/staff/mazen.png",
           staffRole: "BARBER",
+          averageRating: 4.8,
+          totalReviews: 12,
           isActive: true,
         },
       ]);

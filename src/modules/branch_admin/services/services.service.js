@@ -193,7 +193,7 @@ export async function getServiceDetails(id, branchAdminUserId) {
               profileImageUrl: true,
               staffRole: true,
               averageRating: true,
-              totalReviews: true,
+              reviewCount: true,
               isActive: true,
               user: {
                 select: {

@@ -79,7 +79,7 @@ export function mapServiceResponse(service) {
           profileImageUrl: staffLink.staff.profileImageUrl ?? null,
           staffRole: staffLink.staff.staffRole,
           averageRating: staffLink.staff.averageRating,
-          totalReviews: staffLink.staff.totalReviews,
+          totalReviews: staffLink.staff.reviewCount,
           isActive: staffLink.staff.isActive,
         }))
       : undefined,
