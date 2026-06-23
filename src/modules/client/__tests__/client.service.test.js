@@ -14,6 +14,7 @@ const staffService = await import("../staff/staff.service.js");
 const appointmentsService = await import("../appointments/appointments.service.js");
 const favouritesService = await import("../favourites/favourites.service.js");
 const offersService = await import("../offers/offers.service.js");
+const clientValidation = await import("../client.validation.js");
 
 const clientService = {
   ...dashboardService,
@@ -119,6 +120,7 @@ describe("Client Service", () => {
   // --- Home Dashboard Feeds ---
   describe("getHomeDashboard", () => {
     it("should retrieve home feeds including active offers, categories, and nearby providers", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
       prisma.offer.findMany.mockResolvedValueOnce([
         {
           id: 1,
@@ -147,6 +149,7 @@ describe("Client Service", () => {
     });
 
     it("should filter nearby providers by category when category parameter is passed", async () => {
+      prisma.client.findUnique.mockResolvedValueOnce(mockClient);
       prisma.offer.findMany.mockResolvedValueOnce([]);
       prisma.$queryRaw.mockResolvedValueOnce([
         {
@@ -169,6 +172,41 @@ describe("Client Service", () => {
 
   // --- Discovery Map Search ---
   describe("searchBranches", () => {
+    it("should normalize lowercase category and singular search type", () => {
+      const query = clientValidation.discoverySearchSchema.parse({
+        lat: "30.04",
+        lng: "31.23",
+        category: "spa",
+        type: "service",
+        search: "HaIr",
+      });
+
+      expect(query).toEqual({
+        lat: 30.04,
+        lng: 31.23,
+        radius: 5,
+        category: "SPA",
+        type: "services",
+        search: "HaIr",
+      });
+    });
+
+    it("should accept serviceCategoryId in discovery validation", () => {
+      const query = clientValidation.discoverySearchSchema.parse({
+        lat: "30.04",
+        lng: "31.23",
+        serviceCategoryId: "5",
+      });
+
+      expect(query).toEqual({
+        lat: 30.04,
+        lng: 31.23,
+        radius: 5,
+        serviceCategoryId: 5,
+        type: "branches",
+      });
+    });
+
     it("should list branches ordered by distance and rating within a specific radius", async () => {
       prisma.$queryRaw.mockResolvedValueOnce([
         {
@@ -188,6 +226,98 @@ describe("Client Service", () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toHaveProperty("name", "Zen Spa");
       expect(result[0].location).toEqual({ lat: 30.06, lng: 31.25 });
+    });
+
+    it("should search branches with serviceCategoryId filter", async () => {
+      prisma.$queryRaw.mockResolvedValueOnce([
+        {
+          id: 3,
+          name: "Zen Spa",
+          category: "SPA",
+          latitude: 30.06,
+          longitude: 31.25,
+          rating: 4.8,
+          totalReviews: 120,
+          distance: 2500,
+        },
+      ]);
+
+      const result = await clientService.searchBranches({
+        lat: "30.04",
+        lng: "31.23",
+        serviceCategoryId: 5,
+      });
+
+      expect(result).toHaveLength(1);
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it("should dispatch discovery search to services when type is services", async () => {
+      prisma.$queryRaw.mockResolvedValueOnce([
+        {
+          id: 7,
+          name: "Haircut",
+          price: 150,
+          durationMinutes: 30,
+          imageUrl: "haircut.jpg",
+          branchId: 3,
+          branchName: "Zen Spa",
+          category: "SPA",
+          rating: 4.8,
+          totalReviews: 120,
+          latitude: 30.06,
+          longitude: 31.25,
+          distance: 2500,
+        },
+      ]);
+
+      const result = await clientService.searchDiscovery({
+        lat: "30.04",
+        lng: "31.23",
+        type: "services",
+        search: "hair",
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        id: 7,
+        name: "Haircut",
+        branch: {
+          id: 3,
+          name: "Zen Spa",
+        },
+      });
+      expect(result[0].distance).toBe(2.5);
+    });
+
+    it("should search services with serviceCategoryId filter", async () => {
+      prisma.$queryRaw.mockResolvedValueOnce([
+        {
+          id: 7,
+          name: "Haircut",
+          price: 150,
+          durationMinutes: 30,
+          imageUrl: "haircut.jpg",
+          branchId: 3,
+          branchName: "Zen Spa",
+          category: "SPA",
+          rating: 4.8,
+          totalReviews: 120,
+          latitude: 30.06,
+          longitude: 31.25,
+          distance: 2500,
+        },
+      ]);
+
+      const result = await clientService.searchServices({
+        lat: "30.04",
+        lng: "31.23",
+        serviceCategoryId: 5,
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe("Haircut");
+      expect(prisma.$queryRaw).toHaveBeenCalled();
     });
   });
 

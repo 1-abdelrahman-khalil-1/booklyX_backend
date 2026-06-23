@@ -69,6 +69,20 @@ export function mapServiceResponse(service) {
     updatedAt: service.updatedAt ?? null,
     createdAt: service.createdAt ?? null,
     category: service.category ?? null,
+    staff: Array.isArray(service.staffLinks)
+      ? service.staffLinks
+        .filter((staffLink) => staffLink.staff?.user)
+        .map((staffLink) => ({
+          id: staffLink.staff.id,
+          userId: staffLink.staff.userId,
+          name: staffLink.staff.user.name,
+          profileImageUrl: staffLink.staff.profileImageUrl ?? null,
+          staffRole: staffLink.staff.staffRole,
+          averageRating: staffLink.staff.averageRating,
+          totalReviews: staffLink.staff.totalReviews,
+          isActive: staffLink.staff.isActive,
+        }))
+      : undefined,
   };
 }
 

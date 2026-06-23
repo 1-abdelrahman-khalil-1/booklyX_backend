@@ -1,38 +1,144 @@
 import dayjs from "dayjs";
 import { AppointmentStatus, PaymentStatus, ServiceApprovalStatus } from "../../../generated/prisma/client.js";
 import prisma from "../../../lib/prisma.js";
-import { toRangeWhere } from "../../../utils/period.js";
+import { resolvePeriod, toRangeWhere } from "../../../utils/period.js";
 import { ensureActiveSubscription } from "../../../utils/subscriptionGuards.js";
 import { BranchNotFoundError } from "../errors.js";
+
+function calculateTrend(current, previous) {
+  if (previous === 0) {
+    return current > 0 ? 100 : 0;
+  }
+  const diff = current - previous;
+  const percentage = (diff / previous) * 100;
+  return Number(percentage.toFixed(1));
+}
+
+function roundMoney(value) {
+  return Number(value.toFixed(2));
+}
+
+function getPreviousPeriodRange(period = "this_month") {
+  if (period === "today") {
+    return {
+      startDate: dayjs().subtract(1, "day").startOf("day").toDate(),
+      endDate: dayjs().subtract(1, "day").endOf("day").toDate(),
+    };
+  }
+
+  if (period === "this_year") {
+    return {
+      startDate: dayjs().subtract(1, "year").startOf("year").toDate(),
+      endDate: dayjs().subtract(1, "year").endOf("year").toDate(),
+    };
+  }
+
+  return {
+    startDate: dayjs().subtract(1, "month").startOf("month").toDate(),
+    endDate: dayjs().subtract(1, "month").endOf("month").toDate(),
+  };
+}
+
+function toDateRangeWhere(fieldName, range) {
+  return {
+    [fieldName]: {
+      gte: range.startDate,
+      lte: range.endDate,
+    },
+  };
+}
 
 export async function getBranchDashboardStats(branchAdminUserId, period = "this_month") {
   const branchAdmin = await prisma.branchAdmin.findUnique({ where: { userId: branchAdminUserId }, select: { id: true } });
   if (!branchAdmin) throw new BranchNotFoundError();
   await ensureActiveSubscription(branchAdmin.id);
 
-  const dateWhere = toRangeWhere(period, "scheduledAt");
-  const paymentDateWhere = toRangeWhere(period, "paidAt");
+  const currentPeriod = resolvePeriod(period);
+  const previousPeriod = getPreviousPeriodRange(currentPeriod.period);
+  const dateWhere = toDateRangeWhere("scheduledAt", currentPeriod);
+  const previousDateWhere = toDateRangeWhere("scheduledAt", previousPeriod);
+  const paymentDateWhere = toDateRangeWhere("paidAt", currentPeriod);
+  const previousPaymentDateWhere = toDateRangeWhere("paidAt", previousPeriod);
 
-  const [totalBookings, completedBookings, canceledBookings, paidPayments, clientsGroup, totalStaff, totalServices] = await Promise.all([
+  const [
+    totalBookings,
+    previousTotalBookings,
+    completedBookings,
+    previousCompletedBookings,
+    canceledBookings,
+    previousCanceledBookings,
+    currentRevenueAgg,
+    previousRevenueAgg,
+    clientsGroup,
+    previousClientsGroup,
+    totalStaff,
+    previousStaff,
+    totalServices,
+    previousServices,
+  ] = await Promise.all([
     prisma.appointment.count({ where: { branchId: branchAdmin.id, ...dateWhere } }),
+    prisma.appointment.count({ where: { branchId: branchAdmin.id, ...previousDateWhere } }),
     prisma.appointment.count({ where: { branchId: branchAdmin.id, status: AppointmentStatus.COMPLETED, ...dateWhere } }),
+    prisma.appointment.count({ where: { branchId: branchAdmin.id, status: AppointmentStatus.COMPLETED, ...previousDateWhere } }),
     prisma.appointment.count({ where: { branchId: branchAdmin.id, status: AppointmentStatus.CANCELED, ...dateWhere } }),
-    prisma.bookingPayment.findMany({ where: { branchId: branchAdmin.id, status: PaymentStatus.PAID, ...paymentDateWhere }, select: { amount: true } }),
+    prisma.appointment.count({ where: { branchId: branchAdmin.id, status: AppointmentStatus.CANCELED, ...previousDateWhere } }),
+    prisma.bookingPayment.aggregate({
+      where: { branchId: branchAdmin.id, status: PaymentStatus.PAID, ...paymentDateWhere },
+      _sum: { amount: true },
+    }),
+    prisma.bookingPayment.aggregate({
+      where: { branchId: branchAdmin.id, status: PaymentStatus.PAID, ...previousPaymentDateWhere },
+      _sum: { amount: true },
+    }),
     prisma.appointment.groupBy({ by: ["clientId"], where: { branchId: branchAdmin.id, ...dateWhere } }),
+    prisma.appointment.groupBy({ by: ["clientId"], where: { branchId: branchAdmin.id, ...previousDateWhere } }),
     prisma.staff.count({ where: { branchId: branchAdmin.id, isActive: true } }),
+    prisma.staff.count({ where: { branchId: branchAdmin.id, isActive: true, createdAt: { lte: previousPeriod.endDate } } }),
     prisma.service.count({ where: { branchId: branchAdmin.id, status: ServiceApprovalStatus.APPROVED } }),
+    prisma.service.count({
+      where: {
+        branchId: branchAdmin.id,
+        status: ServiceApprovalStatus.APPROVED,
+        OR: [
+          { approvedAt: { lte: previousPeriod.endDate } },
+          { approvedAt: null, createdAt: { lte: previousPeriod.endDate } },
+        ],
+      },
+    }),
   ]);
 
-  const totalRevenue = paidPayments.reduce((sum, payment) => sum + payment.amount, 0);
+  const totalRevenue = Number(currentRevenueAgg._sum.amount ?? 0);
+  const previousTotalRevenue = Number(previousRevenueAgg._sum.amount ?? 0);
 
   return {
-    totalBookings,
-    completedBookings,
-    canceledBookings,
-    totalRevenue: Number(totalRevenue.toFixed(2)),
-    totalClients: clientsGroup.length,
-    totalStaff,
-    totalServices,
+    totalBookings: {
+      value: totalBookings,
+      trend: calculateTrend(totalBookings, previousTotalBookings),
+    },
+    completedBookings: {
+      value: completedBookings,
+      trend: calculateTrend(completedBookings, previousCompletedBookings),
+    },
+    canceledBookings: {
+      value: canceledBookings,
+      trend: calculateTrend(canceledBookings, previousCanceledBookings),
+    },
+    totalRevenue: {
+      value: roundMoney(totalRevenue),
+      trend: calculateTrend(totalRevenue, previousTotalRevenue),
+    },
+    totalClients: {
+      value: clientsGroup.length,
+      trend: calculateTrend(clientsGroup.length, previousClientsGroup.length),
+    },
+    totalStaff: {
+      value: totalStaff,
+      trend: calculateTrend(totalStaff, previousStaff),
+    },
+    totalServices: {
+      value: totalServices,
+      trend: calculateTrend(totalServices, previousServices),
+    },
   };
 }
 
