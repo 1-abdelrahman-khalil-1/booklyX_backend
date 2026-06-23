@@ -1850,6 +1850,68 @@ components:
           type: number
           example: 1.8
 
+    DiscoveryService:
+      type: object
+      required:
+        - id
+        - name
+        - price
+        - durationMinutes
+        - branch
+        - location
+        - distance
+      properties:
+        id:
+          type: integer
+          example: 7
+        name:
+          type: string
+          example: "Haircut"
+        price:
+          type: number
+          example: 150
+        durationMinutes:
+          type: integer
+          example: 30
+        imageUrl:
+          type: string
+          nullable: true
+          format: uri
+          example: "https://cdn.booklyx.com/services/haircut.png"
+        branch:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            name:
+              type: string
+              example: "Hassan Beauty Salon"
+            category:
+              type: string
+              example: "SPA"
+            rating:
+              type: number
+              example: 4.8
+            totalReviews:
+              type: integer
+              example: 24
+        location:
+          type: object
+          required:
+            - lat
+            - lng
+          properties:
+            lat:
+              type: number
+              example: 30.0626
+            lng:
+              type: number
+              example: 31.3368
+        distance:
+          type: number
+          example: 1.8
+
     BranchAdminApplyRequestJson:
       type: object
       required:
@@ -2518,6 +2580,37 @@ components:
               enum: [PENDING_VERIFICATION, PENDING_APPROVAL, APPROVED, REJECTED]
               default: PENDING_VERIFICATION
               example: APPROVED
+        staff:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 21
+              userId:
+                type: integer
+                example: 31
+              name:
+                type: string
+                example: Mazen Tamer
+              profileImageUrl:
+                type: string
+                nullable: true
+                format: uri
+                example: https://cdn.booklyx.com/staff/mazen-tamer.png
+              staffRole:
+                type: string
+                example: BARBER
+              averageRating:
+                type: number
+                example: 4.8
+              totalReviews:
+                type: integer
+                example: 24
+              isActive:
+                type: boolean
+                example: true
       example:
         id: 1
         branch_id: 1
@@ -2531,6 +2624,15 @@ components:
         rejection_reason: null
         created_at: 2026-04-09T10:15:00.000Z
         updated_at: 2026-04-09T10:15:00.000Z
+        staff:
+          - id: 21
+            userId: 31
+            name: Mazen Tamer
+            profileImageUrl: https://cdn.booklyx.com/staff/mazen-tamer.png
+            staffRole: BARBER
+            averageRating: 4.8
+            totalReviews: 24
+            isActive: true
         category:
           id: 1
           name: Hair Care
@@ -3029,10 +3131,13 @@ components:
           "message": "Dashboard analytics retrieved successfully.",
           "data":
             {
-              "totalRevenue": 15230.5,
-              "totalBookings": 84,
-              "activeServices": 12,
-              "activeStaff": 5,
+              "totalBookings": { "value": 84, "trend": 12.5 },
+              "completedBookings": { "value": 72, "trend": 20 },
+              "canceledBookings": { "value": 3, "trend": -25 },
+              "totalRevenue": { "value": 15230.5, "trend": 18.4 },
+              "totalClients": { "value": 38, "trend": 8.6 },
+              "totalStaff": { "value": 5, "trend": 0 },
+              "totalServices": { "value": 12, "trend": 9.1 },
             },
         }
     BranchStaffEarningsAnalyticsResponse:
@@ -3138,10 +3243,10 @@ components:
           "message": "Finance stats retrieved successfully.",
           "data":
             {
-              "grossRevenue": 15230.5,
-              "netRevenue": 14468.97,
-              "platformFees": 761.53,
-              "refunds": 500,
+              "monthlyRevenue": { "value": 15230.5, "trend": 18.4 },
+              "totalPayments": { "value": 96, "trend": 14.3 },
+              "activeServices": { "value": 12, "trend": 9.1 },
+              "completedBookings": { "value": 72, "trend": 20 },
             },
         }
     BranchFinancePaymentsResponse:
@@ -3194,6 +3299,17 @@ components:
               "rejection_reason": null,
               "created_at": "2026-04-09T10:15:00.000Z",
               "updated_at": "2026-04-09T10:15:00.000Z",
+              "staff":
+                [
+                  {
+                    "id": 21,
+                    "userId": 31,
+                    "name": "Mazen Tamer",
+                    "profileImageUrl": "https://cdn.booklyx.com/staff/mazen-tamer.png",
+                    "staffRole": "BARBER",
+                    "isActive": true,
+                  },
+                ],
             },
         }
     BranchPublicProfileResponse:
@@ -4688,8 +4804,8 @@ paths:
   /client/discovery/search:
     get:
       tags: [Client/Discovery]
-      summary: Search branches
-      description: Geolocation map search engine filtered strictly by category and ordered by distance and rating.
+      summary: Search branches or services
+      description: Geolocation map search engine for branches or services, filtered by category and ordered by distance and rating. Search text and category are case-insensitive.
       operationId: getClientDiscoverySearch
       security:
         - bearerAuth: []
@@ -4729,7 +4845,15 @@ paths:
           schema:
             type: string
             enum: [SPA, CLINIC, BARBER]
-            example: "SPA"
+            example: "spa"
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [branches, services]
+            default: branches
+            example: "services"
       responses:
         "200":
           description: Map search completed successfully
@@ -4743,23 +4867,95 @@ paths:
                       data:
                         type: array
                         items:
-                          $ref: "#/components/schemas/DiscoveryBranch"
+                          oneOf:
+                            - $ref: "#/components/schemas/DiscoveryBranch"
+                            - $ref: "#/components/schemas/DiscoveryService"
               example:
                 status: 200
                 error: false
                 message: "Search completed successfully."
                 data:
-                  - id: 1
-                    name: "Hassan Beauty Salon"
-                    rating: 4.8
-                    total_reviews: 24
-                    profile_image: "https://cdn.booklyx.com/branch/logo.png"
-                    top_service_categories:
-                      - "SPA"
+                  - id: 7
+                    name: "Haircut"
+                    price: 150
+                    durationMinutes: 30
+                    imageUrl: "https://cdn.booklyx.com/services/haircut.png"
+                    branch:
+                      id: 1
+                      name: "Hassan Beauty Salon"
+                      category: "SPA"
+                      rating: 4.8
+                      totalReviews: 24
                     location:
                       lat: 30.0626
                       lng: 31.3368
                     distance: 1.8
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /client/discovery/search-services:
+    get:
+      tags: [Client/Discovery]
+      summary: Search services
+      description: Compatibility endpoint for service discovery. Prefer /client/discovery/search with type=services for new clients.
+      operationId: getClientDiscoverySearchServices
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/AcceptLanguageHeader"
+        - $ref: "#/components/parameters/PlatformHeader"
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+            example: 30.0444
+        - name: lng
+          in: query
+          required: true
+          schema:
+            type: number
+            example: 31.2357
+        - name: radius
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 1
+            maximum: 50
+            default: 5
+            example: 5
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "hair"
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [SPA, CLINIC, BARBER]
+            example: "spa"
+      responses:
+        "200":
+          description: Service search completed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/DiscoveryService"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -8638,6 +8834,38 @@ paths:
                 allOf:
                   - $ref: "#/components/schemas/ApiSuccess"
                   - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          monthlyRevenue:
+                            type: object
+                            properties:
+                              value:
+                                type: number
+                              trend:
+                                type: number
+                          totalPayments:
+                            type: object
+                            properties:
+                              value:
+                                type: integer
+                              trend:
+                                type: number
+                          activeServices:
+                            type: object
+                            properties:
+                              value:
+                                type: integer
+                              trend:
+                                type: number
+                          completedBookings:
+                            type: object
+                            properties:
+                              value:
+                                type: integer
+                              trend:
+                                type: number
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -9330,6 +9558,56 @@ paths:
                     properties:
                       data:
                         type: object
+                        properties:
+                          totalBookings:
+                            type: object
+                            properties:
+                              value:
+                                type: integer
+                              trend:
+                                type: number
+                          completedBookings:
+                            type: object
+                            properties:
+                              value:
+                                type: integer
+                              trend:
+                                type: number
+                          canceledBookings:
+                            type: object
+                            properties:
+                              value:
+                                type: integer
+                              trend:
+                                type: number
+                          totalRevenue:
+                            type: object
+                            properties:
+                              value:
+                                type: number
+                              trend:
+                                type: number
+                          totalClients:
+                            type: object
+                            properties:
+                              value:
+                                type: integer
+                              trend:
+                                type: number
+                          totalStaff:
+                            type: object
+                            properties:
+                              value:
+                                type: integer
+                              trend:
+                                type: number
+                          totalServices:
+                            type: object
+                            properties:
+                              value:
+                                type: integer
+                              trend:
+                                type: number
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":

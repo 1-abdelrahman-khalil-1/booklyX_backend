@@ -10,9 +10,12 @@ export { ClientValidationError };
 
 // 1. Discovery/Search Validation
 export const discoverySearchSchema = z.object({
-  category: z.enum(Object.values(BusinessCategory), {
-    error: tr.INVALID_ENUM_VALUE,
-  }).optional(),
+  category: z.preprocess(
+    (value) => typeof value === "string" ? value.toUpperCase() : value,
+    z.enum(Object.values(BusinessCategory), {
+      error: tr.INVALID_ENUM_VALUE,
+    }).optional(),
+  ),
   lat: z.coerce.number({
     message: tr.LATITUDE_REQUIRED,
   }).min(-90).max(90),
@@ -21,6 +24,18 @@ export const discoverySearchSchema = z.object({
   }).min(-180).max(180),
   radius: z.coerce.number().min(1).max(50).optional().default(5),
   search: z.string().optional(),
+  type: z.preprocess(
+    (value) => {
+      if (typeof value !== "string") return value;
+      const normalizedValue = value.toLowerCase();
+      if (normalizedValue === "branch") return "branches";
+      if (normalizedValue === "service") return "services";
+      return normalizedValue;
+    },
+    z.enum(["branches", "services"], {
+      error: tr.INVALID_ENUM_VALUE,
+    }).optional().default("branches"),
+  ),
 });
 
 export const homeDashboardQuerySchema = z.object({

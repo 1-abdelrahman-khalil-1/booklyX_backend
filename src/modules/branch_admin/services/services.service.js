@@ -182,7 +182,29 @@ export async function getServiceDetails(id, branchAdminUserId) {
 
   const service = await prisma.service.findFirst({
     where: { id, branchId: branchAdmin.id },
-    include: { category: true },
+    include: {
+      category: true,
+      staffLinks: {
+        select: {
+          staff: {
+            select: {
+              id: true,
+              userId: true,
+              profileImageUrl: true,
+              staffRole: true,
+              averageRating: true,
+              totalReviews: true,
+              isActive: true,
+              user: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!service) throw new ServiceNotFoundError();

@@ -1,62 +1,130 @@
 import prisma from "../../../lib/prisma.js";
 
-export async function searchBranches(query) {
-  const lat = parseFloat(query.lat);
-  const lng = parseFloat(query.lng);
-  const category = query.category;
-  const search = query.search;
+const DISCOVERY_SEARCH_TYPES = {
+  BRANCHES: "branches",
+  SERVICES: "services",
+};
 
-  // Search branches utilizing spatial distance calculations (ST_Distance_Sphere)
-  // Filter by category and search text. Strictly sorted by less distance first, then high rating.
-  let branches;
-  if (category && search) {
-    branches = await prisma.$queryRaw`
-      SELECT id, businessName as name, category, description, logoUrl as profileImage, averageRating as rating, reviewCount as totalReviews, latitude, longitude,
-             ST_Distance_Sphere(point(longitude, latitude), point(${lng}, ${lat})) as distance
-      FROM BranchAdmin
-      WHERE status = 'APPROVED' AND isSubscriptionActive = 1 AND category = ${category} AND businessName LIKE CONCAT('%', ${search}, '%')
-      ORDER BY distance ASC, rating DESC
-    `;
-  } else if (category && !search) {
-    branches = await prisma.$queryRaw`
-      SELECT id, businessName as name, category, description, logoUrl as profileImage, averageRating as rating, reviewCount as totalReviews, latitude, longitude,
-             ST_Distance_Sphere(point(longitude, latitude), point(${lng}, ${lat})) as distance
-      FROM BranchAdmin
-      WHERE status = 'APPROVED' AND isSubscriptionActive = 1 AND category = ${category}
-      ORDER BY distance ASC, rating DESC
-    `;
-  } else if (!category && search) {
-    branches = await prisma.$queryRaw`
-      SELECT id, businessName as name, category, description, logoUrl as profileImage, averageRating as rating, reviewCount as totalReviews, latitude, longitude,
-             ST_Distance_Sphere(point(longitude, latitude), point(${lng}, ${lat})) as distance
-      FROM BranchAdmin
-      WHERE status = 'APPROVED' AND isSubscriptionActive = 1 AND businessName LIKE CONCAT('%', ${search}, '%')
-      ORDER BY distance ASC, rating DESC
-    `;
-  } else {
-    branches = await prisma.$queryRaw`
-      SELECT id, businessName as name, category, description, logoUrl as profileImage, averageRating as rating, reviewCount as totalReviews, latitude, longitude,
-             ST_Distance_Sphere(point(longitude, latitude), point(${lng}, ${lat})) as distance
-      FROM BranchAdmin
-      WHERE status = 'APPROVED' AND isSubscriptionActive = 1
-      ORDER BY distance ASC, rating DESC
-    `;
+function normalizeDiscoveryQuery(query) {
+  return {
+    lat: Number(query.lat),
+    lng: Number(query.lng),
+    category: query.category ?? null,
+    search: query.search?.trim() || null,
+    type: query.type ?? DISCOVERY_SEARCH_TYPES.BRANCHES,
+  };
+}
+
+function formatBranch(branch) {
+  return {
+    id: branch.id,
+    name: branch.name,
+    rating: Number(branch.rating || 0),
+    totalReviews: Number(branch.totalReviews || 0),
+    profileImage: branch.profileImage,
+    topServiceCategories: [branch.category],
+    location: {
+      lat: Number(branch.latitude),
+      lng: Number(branch.longitude),
+    },
+    distance: Number((branch.distance / 1000).toFixed(2)),
+  };
+}
+
+function formatService(service) {
+  return {
+    id: service.id,
+    name: service.name,
+    price: Number(service.price),
+    durationMinutes: service.durationMinutes,
+    imageUrl: service.imageUrl,
+    branch: {
+      id: service.branchId,
+      name: service.branchName,
+      category: service.category,
+      rating: Number(service.rating || 0),
+      totalReviews: Number(service.totalReviews || 0),
+    },
+    location: {
+      lat: Number(service.latitude),
+      lng: Number(service.longitude),
+    },
+    distance: Number((service.distance / 1000).toFixed(2)),
+  };
+}
+
+export async function searchDiscovery(query) {
+  const normalizedQuery = normalizeDiscoveryQuery(query);
+
+  if (normalizedQuery.type === DISCOVERY_SEARCH_TYPES.SERVICES) {
+    return searchServices(normalizedQuery);
   }
 
-  const branchesArray = Array.isArray(branches) ? branches : [];
-  const formattedBranches = branchesArray.map((b) => ({
-    id: b.id,
-    name: b.name,
-    rating: Number(b.rating || 0),
-    totalReviews: Number(b.totalReviews || 0),
-    profileImage: b.profileImage,
-    topServiceCategories: [b.category],
-    location: {
-      lat: Number(b.latitude),
-      lng: Number(b.longitude),
-    },
-    distance: Number((b.distance / 1000).toFixed(2)),
-  }));
+  return searchBranches(normalizedQuery);
+}
 
-  return formattedBranches;
+export async function searchBranches(query) {
+  const { lat, lng, category, search } = normalizeDiscoveryQuery(query);
+
+  const branches = await prisma.$queryRaw`
+      SELECT id, businessName as name, category, description, logoUrl as profileImage, averageRating as rating, reviewCount as totalReviews, latitude, longitude,
+             ST_Distance_Sphere(point(longitude, latitude), point(${lng}, ${lat})) as distance
+      FROM BranchAdmin
+      WHERE
+        status = 'APPROVED'
+        AND isSubscriptionActive = 1
+        AND (${category} IS NULL OR category = ${category})
+        AND (
+          ${search} IS NULL
+          OR LOWER(businessName) LIKE CONCAT('%', LOWER(${search}), '%')
+          OR LOWER(description) LIKE CONCAT('%', LOWER(${search}), '%')
+        )
+      ORDER BY distance ASC, rating DESC
+    `;
+
+  const branchesArray = Array.isArray(branches) ? branches : [];
+  return branchesArray.map(formatBranch);
+}
+
+
+export async function searchServices(query) {
+  const { lat, lng, category, search } = normalizeDiscoveryQuery(query);
+
+  const services = await prisma.$queryRaw`
+    SELECT
+      s.id,
+      s.name,
+      s.price,
+      s.durationMinutes,
+      s.imageUrl,
+      b.id AS branchId,
+      b.businessName AS branchName,
+      b.category,
+      b.averageRating AS rating,
+      b.reviewCount AS totalReviews,
+      b.latitude,
+      b.longitude,
+      ST_Distance_Sphere(
+        POINT(b.longitude, b.latitude),
+        POINT(${lng}, ${lat})
+      ) AS distance
+    FROM Service s
+    INNER JOIN BranchAdmin b
+      ON b.id = s.branchId
+    WHERE
+      s.status = 'APPROVED'
+      AND b.status = 'APPROVED'
+      AND b.isSubscriptionActive = 1
+      AND (${category} IS NULL OR b.category = ${category})
+      AND (
+        ${search} IS NULL
+        OR LOWER(s.name) LIKE CONCAT('%', LOWER(${search}), '%')
+        OR LOWER(b.businessName) LIKE CONCAT('%', LOWER(${search}), '%')
+        OR LOWER(s.description) LIKE CONCAT('%', LOWER(${search}), '%')
+      )
+    ORDER BY distance ASC, rating DESC
+  `;
+
+  const servicesArray = Array.isArray(services) ? services : [];
+  return servicesArray.map(formatService);
 }

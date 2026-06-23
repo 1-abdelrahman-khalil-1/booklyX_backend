@@ -11,6 +11,19 @@ import {
     PaymentNotPaidError,
 } from "../errors.js";
 
+function calculateTrend(current, previous) {
+  if (previous === 0) {
+    return current > 0 ? 100 : 0;
+  }
+  const diff = current - previous;
+  const percentage = (diff / previous) * 100;
+  return Number(percentage.toFixed(1));
+}
+
+function roundMoney(value) {
+  return Number(value.toFixed(2));
+}
+
 export async function getBranchFinanceStats(branchAdminUserId) {
   const branchAdmin = await prisma.branchAdmin.findUnique({ where: { userId: branchAdminUserId }, select: { id: true } });
   if (!branchAdmin) throw new BranchNotFoundError();
@@ -18,17 +31,73 @@ export async function getBranchFinanceStats(branchAdminUserId) {
 
   const startOfMonth = dayjs().startOf("month").toDate();
   const endOfMonth = dayjs().endOf("month").toDate();
-
-  const [monthlyPayments, totalPayments, activeServices, completedBookings] = await Promise.all([
-    prisma.bookingPayment.findMany({ where: { branchId: branchAdmin.id, status: PaymentStatus.PAID, paidAt: { gte: startOfMonth, lte: endOfMonth } }, select: { amount: true } }),
-    prisma.bookingPayment.count({ where: { branchId: branchAdmin.id, status: PaymentStatus.PAID } }),
+  const lastMonthStart = dayjs().subtract(1, "month").startOf("month").toDate();
+  const lastMonthEnd = dayjs().subtract(1, "month").endOf("month").toDate();
+ 
+  const [
+    currentRevenueAgg,
+    lastRevenueAgg,
+    currentPaymentsCount,
+    lastPaymentsCount,
+    activeServices,
+    lastApprovedServices,
+    currentCompletedBookings,
+    lastCompletedBookings,
+  ] = await Promise.all([
+    prisma.bookingPayment.aggregate({
+      where: { branchId: branchAdmin.id, status: PaymentStatus.PAID, paidAt: { gte: startOfMonth, lte: endOfMonth } },
+      _sum: { amount: true },
+    }),
+    prisma.bookingPayment.aggregate({
+      where: { branchId: branchAdmin.id, status: PaymentStatus.PAID, paidAt: { gte: lastMonthStart, lte: lastMonthEnd } },
+      _sum: { amount: true },
+    }),
+    prisma.bookingPayment.count({
+      where: { branchId: branchAdmin.id, status: { in: [PaymentStatus.PAID, PaymentStatus.REFUNDED] }, paidAt: { gte: startOfMonth, lte: endOfMonth } },
+    }),
+    prisma.bookingPayment.count({
+      where: { branchId: branchAdmin.id, status: { in: [PaymentStatus.PAID, PaymentStatus.REFUNDED] }, paidAt: { gte: lastMonthStart, lte: lastMonthEnd } },
+    }),
     prisma.service.count({ where: { branchId: branchAdmin.id, status: ServiceApprovalStatus.APPROVED } }),
-    prisma.appointment.count({ where: { branchId: branchAdmin.id, status: AppointmentStatus.COMPLETED } }),
+    prisma.service.count({
+      where: {
+        branchId: branchAdmin.id,
+        status: ServiceApprovalStatus.APPROVED,
+        OR: [
+          { approvedAt: { lte: lastMonthEnd } },
+          { approvedAt: null, createdAt: { lte: lastMonthEnd } },
+        ],
+      },
+    }),
+    prisma.appointment.count({
+      where: { branchId: branchAdmin.id, status: AppointmentStatus.COMPLETED, scheduledAt: { gte: startOfMonth, lte: endOfMonth } },
+    }),
+    prisma.appointment.count({
+      where: { branchId: branchAdmin.id, status: AppointmentStatus.COMPLETED, scheduledAt: { gte: lastMonthStart, lte: lastMonthEnd } },
+    }),
   ]);
 
-  const monthlyRevenue = monthlyPayments.reduce((sum, p) => sum + p.amount, 0);
+  const monthlyRevenue = Number(currentRevenueAgg._sum.amount ?? 0);
+  const lastMonthlyRevenue = Number(lastRevenueAgg._sum.amount ?? 0);
 
-  return { monthlyRevenue: Number(monthlyRevenue.toFixed(2)), totalPayments, activeServices, completedBookings };
+  return {
+    monthlyRevenue: {
+      value: roundMoney(monthlyRevenue),
+      trend: calculateTrend(monthlyRevenue, lastMonthlyRevenue),
+    },
+    totalPayments: {
+      value: currentPaymentsCount,
+      trend: calculateTrend(currentPaymentsCount, lastPaymentsCount),
+    },
+    activeServices: {
+      value: activeServices,
+      trend: calculateTrend(activeServices, lastApprovedServices),
+    },
+    completedBookings: {
+      value: currentCompletedBookings,
+      trend: calculateTrend(currentCompletedBookings, lastCompletedBookings),
+    },
+  };
 }
 
 export async function listFinancePayments(branchAdminUserId, query = {}) {

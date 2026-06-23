@@ -821,6 +821,20 @@ describe("Branch Admin Service - Appointments", () => {
         updatedAt: new Date(),
         createdAt: new Date(),
         category: { id: 5, name: "Hair Care" },
+        staffLinks: [
+          {
+            staff: {
+              id: 21,
+              userId: 31,
+              profileImageUrl: "https://cdn.booklyx.com/staff/mazen.png",
+              staffRole: "BARBER",
+              isActive: true,
+              user: {
+                name: "Mazen Tamer",
+              },
+            },
+          },
+        ],
       };
 
       jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 10 });
@@ -830,6 +844,16 @@ describe("Branch Admin Service - Appointments", () => {
       expect(result.id).toBe(serviceId);
       expect(result.name).toBe("Haircut");
       expect(result.category.name).toBe("Hair Care");
+      expect(result.staff).toEqual([
+        {
+          id: 21,
+          userId: 31,
+          name: "Mazen Tamer",
+          profileImageUrl: "https://cdn.booklyx.com/staff/mazen.png",
+          staffRole: "BARBER",
+          isActive: true,
+        },
+      ]);
     });
   });
 });

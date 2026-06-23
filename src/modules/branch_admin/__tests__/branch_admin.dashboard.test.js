@@ -50,25 +50,33 @@ describe("Branch Admin Service - Dashboard & Finance", () => {
       jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(mockBranchAdmin);
       jest.spyOn(prisma.appointment, "count")
         .mockResolvedValueOnce(15) // totalBookings
+        .mockResolvedValueOnce(10) // previousTotalBookings
         .mockResolvedValueOnce(10) // completedBookings
-        .mockResolvedValueOnce(2);  // canceledBookings
-      jest.spyOn(prisma.bookingPayment, "findMany").mockResolvedValue([
-        { amount: 100 },
-        { amount: 250 },
-      ]);
-      jest.spyOn(prisma.appointment, "groupBy").mockResolvedValue([{ clientId: 1 }, { clientId: 2 }]);
-      jest.spyOn(prisma.staff, "count").mockResolvedValue(4);
-      jest.spyOn(prisma.service, "count").mockResolvedValue(8);
+        .mockResolvedValueOnce(5) // previousCompletedBookings
+        .mockResolvedValueOnce(2) // canceledBookings
+        .mockResolvedValueOnce(4); // previousCanceledBookings
+      jest.spyOn(prisma.bookingPayment, "aggregate")
+        .mockResolvedValueOnce({ _sum: { amount: 350 } })
+        .mockResolvedValueOnce({ _sum: { amount: 200 } });
+      jest.spyOn(prisma.appointment, "groupBy")
+        .mockResolvedValueOnce([{ clientId: 1 }, { clientId: 2 }])
+        .mockResolvedValueOnce([{ clientId: 1 }]);
+      jest.spyOn(prisma.staff, "count")
+        .mockResolvedValueOnce(4)
+        .mockResolvedValueOnce(2);
+      jest.spyOn(prisma.service, "count")
+        .mockResolvedValueOnce(8)
+        .mockResolvedValueOnce(4);
 
       const stats = await getBranchDashboardStats(branchAdminUserId, "this_month");
 
-      expect(stats.totalBookings).toBe(15);
-      expect(stats.completedBookings).toBe(10);
-      expect(stats.canceledBookings).toBe(2);
-      expect(stats.totalRevenue).toBe(350);
-      expect(stats.totalClients).toBe(2);
-      expect(stats.totalStaff).toBe(4);
-      expect(stats.totalServices).toBe(8);
+      expect(stats.totalBookings).toEqual({ value: 15, trend: 50 });
+      expect(stats.completedBookings).toEqual({ value: 10, trend: 100 });
+      expect(stats.canceledBookings).toEqual({ value: 2, trend: -50 });
+      expect(stats.totalRevenue).toEqual({ value: 350, trend: 75 });
+      expect(stats.totalClients).toEqual({ value: 2, trend: 100 });
+      expect(stats.totalStaff).toEqual({ value: 4, trend: 100 });
+      expect(stats.totalServices).toEqual({ value: 8, trend: 100 });
     });
   });
 
@@ -156,20 +164,25 @@ describe("Branch Admin Service - Dashboard & Finance", () => {
   describe("getBranchFinanceStats", () => {
     it("should return monthly revenue, total payments, active services, and completed bookings counts", async () => {
       jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue(mockBranchAdmin);
-      jest.spyOn(prisma.bookingPayment, "findMany").mockResolvedValue([
-        { amount: 500 },
-        { amount: 120 },
-      ]);
-      jest.spyOn(prisma.bookingPayment, "count").mockResolvedValue(30);
-      jest.spyOn(prisma.service, "count").mockResolvedValue(12);
-      jest.spyOn(prisma.appointment, "count").mockResolvedValue(45);
+      jest.spyOn(prisma.bookingPayment, "aggregate")
+        .mockResolvedValueOnce({ _sum: { amount: 620 } })
+        .mockResolvedValueOnce({ _sum: { amount: 400 } });
+      jest.spyOn(prisma.bookingPayment, "count")
+        .mockResolvedValueOnce(30)
+        .mockResolvedValueOnce(20);
+      jest.spyOn(prisma.service, "count")
+        .mockResolvedValueOnce(12)
+        .mockResolvedValueOnce(10);
+      jest.spyOn(prisma.appointment, "count")
+        .mockResolvedValueOnce(45)
+        .mockResolvedValueOnce(30);
 
       const stats = await getBranchFinanceStats(branchAdminUserId);
 
-      expect(stats.monthlyRevenue).toBe(620);
-      expect(stats.totalPayments).toBe(30);
-      expect(stats.activeServices).toBe(12);
-      expect(stats.completedBookings).toBe(45);
+      expect(stats.monthlyRevenue).toEqual({ value: 620, trend: 55 });
+      expect(stats.totalPayments).toEqual({ value: 30, trend: 50 });
+      expect(stats.activeServices).toEqual({ value: 12, trend: 20 });
+      expect(stats.completedBookings).toEqual({ value: 45, trend: 50 });
     });
   });
 
