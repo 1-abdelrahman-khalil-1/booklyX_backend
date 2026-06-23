@@ -33,6 +33,8 @@ export async function getHomeDashboard(query, userId) {
       discountValue: true,
       imageUrl: true,
       branchId: true,
+      startDate: true,
+      endDate: true,
       branch: {
         select: {
           businessName: true,
