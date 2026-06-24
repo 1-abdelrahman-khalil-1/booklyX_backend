@@ -1,5 +1,7 @@
-import { ASSETS } from "../config/assets.js";
 import { BusinessCategory, StaffRole } from "../../src/generated/prisma/client.js";
+
+const cloudinaryAssetsUrl = new URL("../config/assets.cloudinary.js", import.meta.url);
+const { ASSETS } = await import(cloudinaryAssetsUrl.href);
 
 export function pickRandom(arr, seed = 0) {
   if (!arr?.length) return null;

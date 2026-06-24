@@ -1,9 +1,8 @@
 import dayjs from "dayjs";
-import { prisma } from "../helpers/prisma.js";
-import { OFFER_TARGETS } from "../config/constants.js";
-import { pickRandom } from "../helpers/random.js";
 import { OfferDiscountType } from "../../src/generated/prisma/client.js";
-import { ASSETS } from "../config/assets.js";
+import { ASSETS } from "../config/assets.cloudinary.js";
+import { OFFER_TARGETS } from "../config/constants.js";
+import { prisma } from "../helpers/prisma.js";
 
 export async function seedOffers(seededBranchAdmins, serviceLookup) {
   for (const { branchAdmin, branchSubmission } of seededBranchAdmins) {

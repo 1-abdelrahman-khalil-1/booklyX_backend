@@ -15,6 +15,7 @@
     "test:esm": "NODE_OPTIONS=--experimental-vm-modules npx jest --runInBand src/modules/auth/__tests__/auth.service.test.js src/middleware/__tests__/authenticate.test.js src/modules/branch_admin/__tests__/branch_admin.service.test.js",
     "test:ci": "npm run test:non-esm && npm run test:esm",
     "openapi:validate": "npm exec swagger-cli validate openapi.yaml",
+    "assets:cloudinary": "node scripts/generate-cloudinary-assets.mjs",
     "api:login": "node scripts/api-session.mjs login",
     "api:refresh": "node scripts/api-session.mjs refresh",
     "api:session": "node scripts/api-session.mjs show",

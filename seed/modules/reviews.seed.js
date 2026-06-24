@@ -1,8 +1,8 @@
 import dayjs from "dayjs";
-import { prisma } from "../helpers/prisma.js";
 import { REVIEW_COMMENTS } from "../config/constants.js";
-import { getExecutionAttachment } from "../helpers/random.js";
 import { validateReviewSeed } from "../factories/review.factory.js";
+import { prisma } from "../helpers/prisma.js";
+import { getExecutionAttachment } from "../helpers/random.js";
 
 async function refreshStaffRating(staffId) {
   const aggregate = await prisma.review.aggregate({
@@ -38,7 +38,8 @@ async function refreshBranchRating(branchId) {
 
 export async function seedReviews(reviewTargets) {
   for (const [index, target] of reviewTargets.entries()) {
-    const rating = (index % 5) + 1;
+    // Keep seeded ratings in the positive range while varying per run.
+    const rating = Math.floor(Math.random() * 3) + 3;
     const comment = REVIEW_COMMENTS[index % REVIEW_COMMENTS.length];
 
     const reviewSeed = validateReviewSeed({

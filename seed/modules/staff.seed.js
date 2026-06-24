@@ -1,19 +1,23 @@
 import pLimit from "p-limit";
-import { prisma } from "../helpers/prisma.js";
-import { hashPassword } from "../helpers/bcrypt.js";
-import { daysAgo, monthsAgo, monthsFromNow } from "../helpers/dates.js";
-import { pickRandom } from "../helpers/random.js";
-import { ASSETS } from "../config/assets.js";
 import {
   AvailabilityStatus,
   BranchStatus,
   Role,
   ServiceApprovalStatus,
+  StaffRole,
   UserStatus,
 } from "../../src/generated/prisma/client.js";
-import { getSeedStaff, getSeedInitialStaffUsers } from "../generators/staff.generator.js";
+import { ASSETS } from "../config/assets.cloudinary.js";
 import { STAFF_ROLE_POOL } from "../config/constants.js";
-import { getStaffProfileImage } from "../helpers/random.js";
+import { getSeedInitialStaffUsers, getSeedStaff } from "../generators/staff.generator.js";
+import { hashPassword } from "../helpers/bcrypt.js";
+import { daysAgo, monthsAgo, monthsFromNow } from "../helpers/dates.js";
+import { prisma } from "../helpers/prisma.js";
+import { getStaffProfileImage, pickRandom } from "../helpers/random.js";
+
+const FIXED_STAFF_ROLE_BY_EMAIL = {
+  "youssef.salah@medicare.com": StaffRole.DOCTOR,
+};
 
 function buildStaffAvailability(staffSeeds) {
   return staffSeeds.flatMap((staff, index) => [
@@ -64,7 +68,9 @@ export async function seedStaff(branchSubmissions, staffSeeds = null) {
 
   const initialStaffUsers = getSeedInitialStaffUsers();
   const mappedInitialStaff = initialStaffUsers.map((staff, index) => {
-    const staffRole = STAFF_ROLE_POOL[index % STAFF_ROLE_POOL.length];
+    const staffRole =
+      FIXED_STAFF_ROLE_BY_EMAIL[staff.email] ??
+      STAFF_ROLE_POOL[index % STAFF_ROLE_POOL.length];
     const branchEmail = approvedBranchEmails[index % approvedBranchEmails.length];
 
     return {
