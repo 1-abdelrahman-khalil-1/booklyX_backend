@@ -153,7 +153,7 @@ export function buildClientAppointmentPreviewSelect() {
   };
 }
 
-export function buildClientAppointmentDetailsSelect() {
+export function buildClientAppointmentDetailsSelect(clientId) {
   return {
     id: true,
     scheduledAt: true,
@@ -198,5 +198,16 @@ export function buildClientAppointmentDetailsSelect() {
         appliedOfferId: true,
       },
     },
+    review: {
+      where: { clientId },
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+      }
+    },
+    createdAt: true,
+    updatedAt: true,
   };
 }

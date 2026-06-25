@@ -289,14 +289,17 @@ export async function getAppointmentDetails(appointmentId, authUser) {
       id: appointmentId,
       clientId: client.id,
     },
-    select: buildClientAppointmentDetailsSelect(),
+    select: buildClientAppointmentDetailsSelect(client.id),
   });
 
   if (!appointment) {
     throw new AppointmentNotFoundError();
   }
-
-  return appointment;
+  const isRated = (appointment.status === AppointmentStatus.COMPLETED && appointment.review) === null ? false : true;
+  return (appointment.status === AppointmentStatus.COMPLETED) ? {
+    ...appointment,
+    isRated: isRated
+  } : appointment;
 }
 
 export async function cancelAppointment(appointmentId, authUser) {
