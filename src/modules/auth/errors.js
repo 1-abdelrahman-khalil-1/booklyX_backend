@@ -10,14 +10,14 @@ export class AuthValidationError extends AppError {
 
 export class UserNotFound extends AppError {
   constructor() {
-    super(tr.USER_NOT_FOUND, 401);
+    super(tr.USER_NOT_FOUND, 404);
     this.name = "UserNotFound";
   }
 }
 
 export class InvalidCredentialsError extends AppError {
   constructor() {
-    super(tr.INVALID_CREDENTIALS, 401);
+    super(tr.INVALID_CREDENTIALS, 404);
     this.name = "InvalidCredentialsError";
   }
 }
