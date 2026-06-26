@@ -2406,6 +2406,10 @@ components:
         categoryName:
           type: string
           example: Hair Care
+        imageUrl:
+          type: string
+          format: uri
+          example: https://cdn.booklyx.com/services/haircut.png
         image:
           type: string
           format: binary
@@ -2415,6 +2419,7 @@ components:
         price: 150
         durationMinutes: 30
         categoryName: Hair Care
+        imageUrl: https://cdn.booklyx.com/services/haircut.png
 
     UpdateServiceRequestJson:
       type: object
@@ -7780,7 +7785,10 @@ paths:
     post:
       tags: [Branch_admin/Services]
       summary: Create service
-      description: Create a service (submitted for admin approval).
+      description: |
+        Create a service (submitted for admin approval).
+        This endpoint supports `multipart/form-data` to upload a service image (stored as a Cloudinary URL).
+        File field name: `image`.
       operationId: postBranchAdminServices
       security:
         - bearerAuth: []

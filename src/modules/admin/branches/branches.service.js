@@ -1,6 +1,7 @@
 import { BranchStatus, UserStatus } from "../../../generated/prisma/client.js";
 import { tr } from "../../../lib/i18n/index.js";
 import prisma from "../../../lib/prisma.js";
+import { ensureBranchAdminUserAccount } from "../../branch_admin/helpers.js";
 import { BranchIsNotPendingError, BranchNotFound, BranchCannotBeBlockedUnapprovedError } from "../errors.js";
 
 export async function listBranches(status) {
@@ -124,7 +125,15 @@ export async function approveBranch(id) {
   if (!branch) throw new BranchNotFound();
   if (branch.status !== BranchStatus.PENDING_APPROVAL) throw new BranchIsNotPendingError();
 
-  await prisma.branchAdmin.update({ where: { id: branch.id }, data: { status: BranchStatus.APPROVED, rejectionReason: null } });
+  await prisma.$transaction(async (tx) => {
+    await tx.branchAdmin.update({
+      where: { id: branch.id },
+      data: { status: BranchStatus.APPROVED, rejectionReason: null },
+    });
+
+    await ensureBranchAdminUserAccount(branch.id, tx);
+  });
+
   return { message: tr.BRANCH_APPROVED };
 }
 

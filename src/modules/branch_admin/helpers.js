@@ -1,7 +1,9 @@
 import bcrypt from "bcrypt";
+import { Role, UserStatus } from "../../generated/prisma/client.js";
 import prisma from "../../lib/prisma.js";
 import { CODE_EXPIRES_MINUTES, FIXED_OTP_CODE, MAX_ATTEMPTS, SALT_ROUNDS } from "./constants.js";
 import {
+    DuplicateBranchAdminUserError,
     InvalidOTPError,
     MaxAttemptsExceededError,
     OTPExpiredError
@@ -36,6 +38,119 @@ export function buildServicePayload(req) {
     ...req.body,
     imageUrl: getUploadedFileUrl(firstUploadedFile(req, "image")) ?? req.body.imageUrl,
   };
+}
+
+export async function ensureBranchAdminUserAccount(branchAdminId, tx , preferredUserId) {
+  const branchAdmin = await tx.branchAdmin.findUnique({
+    where: { id: branchAdminId },
+    select: {
+      id: true,
+      userId: true,
+      ownerName: true,
+      email: true,
+      phone: true,
+      passwordHash: true,
+      emailVerified: true,
+      phoneVerified: true,
+    },
+  });
+
+  if (!branchAdmin) {
+    throw new Error("BRANCH_ADMIN_NOT_FOUND");
+  }
+
+  if (branchAdmin.userId) {
+    return branchAdmin.userId;
+  }
+
+  if (preferredUserId) {
+    const preferredUser = await tx.user.findUnique({
+      where: { id: preferredUserId },
+      select: { id: true, email: true, phone: true, role: true },
+    });
+
+    if (
+      preferredUser &&
+      preferredUser.role === Role.branch_admin &&
+      preferredUser.email === branchAdmin.email &&
+      preferredUser.phone === branchAdmin.phone
+    ) {
+      await tx.user.update({
+        where: { id: preferredUser.id },
+        data: {
+          name: branchAdmin.ownerName,
+          password: branchAdmin.passwordHash,
+          status: UserStatus.ACTIVE,
+          emailVerified: branchAdmin.emailVerified,
+          phoneVerified: branchAdmin.phoneVerified,
+        },
+      });
+
+      await tx.branchAdmin.update({
+        where: { id: branchAdmin.id },
+        data: { userId: preferredUser.id },
+      });
+
+      return preferredUser.id;
+    }
+  }
+
+  const existingUser = await tx.user.findFirst({
+    where: {
+      OR: [{ email: branchAdmin.email }, { phone: branchAdmin.phone }],
+    },
+    select: { id: true, email: true, phone: true, role: true },
+  });
+
+  if (existingUser) {
+    const isExactMatch =
+      existingUser.email === branchAdmin.email &&
+      existingUser.phone === branchAdmin.phone &&
+      existingUser.role === Role.branch_admin;
+
+    if (!isExactMatch) {
+      throw new DuplicateBranchAdminUserError();
+    }
+
+    await tx.user.update({
+      where: { id: existingUser.id },
+      data: {
+        name: branchAdmin.ownerName,
+        password: branchAdmin.passwordHash,
+        status: UserStatus.ACTIVE,
+        emailVerified: branchAdmin.emailVerified,
+        phoneVerified: branchAdmin.phoneVerified,
+      },
+    });
+
+    await tx.branchAdmin.update({
+      where: { id: branchAdmin.id },
+      data: { userId: existingUser.id },
+    });
+
+    return existingUser.id;
+  }
+
+  const createdUser = await tx.user.create({
+    data: {
+      name: branchAdmin.ownerName,
+      email: branchAdmin.email,
+      password: branchAdmin.passwordHash,
+      phone: branchAdmin.phone,
+      role: Role.branch_admin,
+      status: UserStatus.ACTIVE,
+      emailVerified: branchAdmin.emailVerified,
+      phoneVerified: branchAdmin.phoneVerified,
+    },
+    select: { id: true },
+  });
+
+  await tx.branchAdmin.update({
+    where: { id: branchAdmin.id },
+    data: { userId: createdUser.id },
+  });
+
+  return createdUser.id;
 }
 
 export function buildStaffPayload(req) {

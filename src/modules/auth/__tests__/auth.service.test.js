@@ -9,17 +9,25 @@ import {
 import { BranchStatus, Platform, Role, UserStatus } from "../../../generated/prisma/client.js";
 jest.unstable_mockModule("../../../lib/prisma.js", () => ({
   default: {
+    $transaction: jest.fn(),
     systemCounter: {
       upsert: jest.fn(),
     },
     user: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
     },
     client: {
       upsert: jest.fn(),
     },
     branchAdmin: {
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
     },
     refreshToken: {
       create: jest.fn(),
@@ -61,6 +69,7 @@ describe("Auth Service - login", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env = { ...originalEnv, JWT_SECRET: "test-secret" };
+    prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
   });
 
   afterEach(() => {
@@ -262,6 +271,88 @@ describe("Auth Service - login", () => {
 
     expect(result).toHaveProperty("requiresSubscription", true);
     expect(result).toHaveProperty("token", "6|mock-jwt-token");
+    expect(result.user.role).toBe(Role.branch_admin);
+  });
+
+  it("should repair an approved branch_admin account that is missing its linked user", async () => {
+    const approvedBranchRecord = {
+      id: 99,
+      email: "orphan-branch@example.com",
+      phone: "01000000099",
+      status: BranchStatus.APPROVED,
+      userId: null,
+      passwordHash: "hashed-branch-password",
+    };
+
+    const repairedUser = {
+      id: 99,
+      email: approvedBranchRecord.email,
+      password: approvedBranchRecord.passwordHash,
+      status: UserStatus.ACTIVE,
+      role: Role.branch_admin,
+      emailVerified: true,
+      phoneVerified: true,
+      branchAdmin: {
+        id: approvedBranchRecord.id,
+        status: BranchStatus.APPROVED,
+        userId: 99,
+        isSubscriptionActive: false,
+        plan: {
+          id: 1,
+          name: "Starter",
+          price: 100,
+          maxStaff: 5,
+          maxServices: 10,
+          loyaltyEnabled: true,
+          offersEnabled: true,
+        },
+      },
+    };
+
+    prisma.user.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(repairedUser);
+    prisma.branchAdmin.findFirst.mockResolvedValue(approvedBranchRecord);
+    prisma.branchAdmin.findUnique.mockResolvedValue({
+      id: approvedBranchRecord.id,
+      userId: null,
+      ownerName: "Orphan Branch",
+      email: approvedBranchRecord.email,
+      phone: approvedBranchRecord.phone,
+      passwordHash: approvedBranchRecord.passwordHash,
+      emailVerified: true,
+      phoneVerified: true,
+    });
+    prisma.user.findFirst.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue({ id: 99 });
+    prisma.branchAdmin.update.mockResolvedValue({ id: approvedBranchRecord.id, userId: 99 });
+    prisma.systemCounter.upsert.mockResolvedValue({ value: 8 });
+    bcrypt.compare.mockResolvedValue(true);
+    jwt.sign.mockReturnValue("mock-jwt-token");
+
+    const result = await login(
+      { email: approvedBranchRecord.email, password: "password123", role: Role.branch_admin },
+      Platform.WEB,
+    );
+
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: {
+        name: "Orphan Branch",
+        email: approvedBranchRecord.email,
+        password: approvedBranchRecord.passwordHash,
+        phone: approvedBranchRecord.phone,
+        role: Role.branch_admin,
+        status: UserStatus.ACTIVE,
+        emailVerified: true,
+        phoneVerified: true,
+      },
+      select: { id: true },
+    });
+    expect(prisma.branchAdmin.update).toHaveBeenCalledWith({
+      where: { id: approvedBranchRecord.id },
+      data: { userId: 99 },
+    });
+    expect(result).toHaveProperty("requiresSubscription", true);
     expect(result.user.role).toBe(Role.branch_admin);
   });
 

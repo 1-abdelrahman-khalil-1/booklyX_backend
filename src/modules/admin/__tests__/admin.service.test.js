@@ -335,14 +335,52 @@ describe("Admin Service - approveBranch", () => {
   });
 
   it("should approve the branch successfully when status is pending", async () => {
-    jest.spyOn(prisma.branchAdmin, "findUnique").mockResolvedValue({ id: 1, status: BranchStatus.PENDING_APPROVAL });
+    jest.spyOn(prisma, "$transaction").mockImplementation(async (callback) => callback(prisma));
+    jest.spyOn(prisma.branchAdmin, "findUnique")
+      .mockResolvedValueOnce({ id: 1, status: BranchStatus.PENDING_APPROVAL })
+      .mockResolvedValueOnce({
+        id: 1,
+        userId: null,
+        ownerName: "Branch Owner",
+        email: "branch@example.com",
+        phone: "01000000001",
+        passwordHash: "hashed-password",
+        emailVerified: true,
+        phoneVerified: true,
+      });
     const updateSpy = jest.spyOn(prisma.branchAdmin, "update").mockResolvedValue({});
+    const userFindFirstSpy = jest.spyOn(prisma.user, "findFirst").mockResolvedValue(null);
+    const userCreateSpy = jest.spyOn(prisma.user, "create").mockResolvedValue({ id: 41 });
 
     const result = await approveBranch(1);
-    expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({
+
+    expect(updateSpy).toHaveBeenNthCalledWith(1, expect.objectContaining({
       where: { id: 1 },
       data: { status: BranchStatus.APPROVED, rejectionReason: null },
     }));
+    expect(userFindFirstSpy).toHaveBeenCalledWith({
+      where: {
+        OR: [{ email: "branch@example.com" }, { phone: "01000000001" }],
+      },
+      select: { id: true, email: true, phone: true, role: true },
+    });
+    expect(userCreateSpy).toHaveBeenCalledWith({
+      data: {
+        name: "Branch Owner",
+        email: "branch@example.com",
+        password: "hashed-password",
+        phone: "01000000001",
+        role: "branch_admin",
+        status: UserStatus.ACTIVE,
+        emailVerified: true,
+        phoneVerified: true,
+      },
+      select: { id: true },
+    });
+    expect(updateSpy).toHaveBeenNthCalledWith(2, {
+      where: { id: 1 },
+      data: { userId: 41 },
+    });
     expect(result.message).toBeDefined();
   });
 });

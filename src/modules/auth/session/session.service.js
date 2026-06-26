@@ -16,50 +16,80 @@ import {
     UserNotFound,
 } from "../errors.js";
 import * as helpers from "../helpers.js";
+import { ensureBranchAdminUserAccount } from "../../branch_admin/helpers.js";
+
+function buildLoginUserInclude(role) {
+  return {
+    branchAdmin: role === Role.branch_admin ? {
+      include: {
+        plan: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            maxStaff: true,
+            maxServices: true,
+            loyaltyEnabled: true,
+            offersEnabled: true
+          }
+        }
+      }
+    } : false,
+    client: role === Role.client ? {
+      select: {
+        profileImageUrl: true,
+      }
+    } : false,
+    staff: role === Role.staff ? {
+      select: {
+        profileImageUrl: true,
+      }
+    } : false,
+  };
+}
 
 export async function login(data, platform) {
   if (!platform) throw new AuthValidationError("INVALID_PLATFORM");
   if (!data || !data.email || !data.password || !data.role) throw new AuthValidationError("INVALID_LOGIN");
 
   const { email, role, password } = data;
+  const userInclude = buildLoginUserInclude(role);
 
-  const user = await prisma.user.findUnique({
+  let user = await prisma.user.findUnique({
     where: { email, role },
-    include: {
-      branchAdmin: role === Role.branch_admin ? {
-        include: {
-          plan: {
-            select: {
-              id: true,
-              name: true,
-              price: true,
-              maxStaff: true,
-              maxServices: true,
-              loyaltyEnabled: true,
-              offersEnabled: true
-            }
-          }
-        }
-      } : false,
-      client: role === Role.client ? {
-        select: {
-          profileImageUrl: true,
-        }
-      } : false,
-      staff: role === Role.staff ? {
-        select: {
-          profileImageUrl: true,
-        }
-      } : false,
-    },
+    include: userInclude,
   });
 
-  const branchAdminRecord = !user ? await prisma.branchAdmin.findFirst({ where: { email } }) : null;
+  const branchAdminRecord =
+    role === Role.branch_admin && (!user || !user.branchAdmin)
+      ? await prisma.branchAdmin.findFirst({
+        where: { email },
+        select: {
+          id: true,
+          status: true,
+          userId: true,
+          email: true,
+          phone: true,
+          passwordHash: true,
+        },
+      })
+      : null;
 
   if (!user && !branchAdminRecord) throw new UserNotFound();
 
   const isPasswordMatch = await bcrypt.compare(password, user?.password || branchAdminRecord?.passwordHash);
   if (!isPasswordMatch) throw new InvalidCredentialsError();
+
+  if (role === Role.branch_admin && branchAdminRecord?.status === BranchStatus.APPROVED && (!user || !user.branchAdmin)) {
+    await prisma.$transaction(async (tx) => {
+      await ensureBranchAdminUserAccount(branchAdminRecord.id,  tx, user?.id);
+    });
+
+    user = await prisma.user.findUnique({
+      where: { email, role },
+      include: userInclude,
+    });
+  }
 
   if (!user) throw new BranchAdminNotApprovedError();
 
