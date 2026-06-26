@@ -1,6 +1,6 @@
 import { BranchStatus, ServiceApprovalStatus } from "../../../generated/prisma/client.js";
-import prisma from "../../../lib/prisma.js";
 import { mapBranchPublicProfile } from "../../../lib/mappers/profile.mapper.js";
+import prisma from "../../../lib/prisma.js";
 import { BranchNotFoundError } from "../errors.js";
 
 export async function getBranchProfile(branchId, authUser) {
@@ -37,7 +37,7 @@ export async function getBranchProfile(branchId, authUser) {
             branchId,
           },
         },
-     
+
       });
       isFavourite = !!fav;
     }
@@ -99,7 +99,11 @@ export async function getBranchProfile(branchId, authUser) {
 export async function getBranchServices(branchId) {
   const branch = await prisma.branchAdmin.findUnique({
     where: { id: branchId },
-    select: { id: true, status: true, isSubscriptionActive: true },
+    select: {
+      id: true,
+      status: true,
+      isSubscriptionActive: true,
+    },
   });
 
   if (!branch || branch.status !== BranchStatus.APPROVED || !branch.isSubscriptionActive) {
@@ -122,6 +126,15 @@ export async function getBranchServices(branchId) {
       category: {
         select: {
           name: true,
+        },
+      },
+      staffLinks: {
+        include: {
+          staff: {
+            select: {
+              isActive: true
+            }
+          }
         },
       },
     },
