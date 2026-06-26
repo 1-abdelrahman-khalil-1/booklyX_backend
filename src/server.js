@@ -11,6 +11,7 @@ import express from "express";
 import prisma from "./lib/prisma.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { generalLimiter } from "./middleware/rateLimiter.js";
+import { requestLogger } from "./utils/requests_logger.js";
 import routes from "./routes/index.js";
 
 const app = express();
@@ -79,7 +80,7 @@ app.use(
 );
 //app.use(cors(corsOptions));
 app.use(generalLimiter);
-
+app.use(requestLogger);
 app.use("/", routes);
 
 /**
