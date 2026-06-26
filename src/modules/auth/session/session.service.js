@@ -4,16 +4,16 @@ import { BranchStatus, Role, UserStatus, VerificationType } from "../../../gener
 import prisma from "../../../lib/prisma.js";
 import { isPlatformAllowedForRole } from "../auth.permissions.js";
 import {
-  AuthValidationError,
-  BranchAdminNotApprovedError,
-  EmailNotVerifiedError,
-  InactiveUserError,
-  InvalidCredentialsError,
-  InvalidTokenError,
-  PhoneNotVerifiedError,
-  PlatformAccessDeniedError,
-  TokenExpiredError,
-  UserNotFound,
+    AuthValidationError,
+    BranchAdminNotApprovedError,
+    EmailNotVerifiedError,
+    InactiveUserError,
+    InvalidCredentialsError,
+    InvalidTokenError,
+    PhoneNotVerifiedError,
+    PlatformAccessDeniedError,
+    TokenExpiredError,
+    UserNotFound,
 } from "../errors.js";
 import * as helpers from "../helpers.js";
 
@@ -80,7 +80,13 @@ export async function login(data, platform) {
   const loginSequence = await helpers.getNextLoginSequence();
   const tokens = await helpers.issueAuthTokens(user.id, user.role, platform, loginSequence);
 
-  return { ...tokens, user: helpers.toSafeUser(user) };
+  const response = { ...tokens, user: helpers.toSafeUser(user) };
+
+  if (user.role === Role.branch_admin && !user.branchAdmin?.isSubscriptionActive) {
+    return { ...response, requiresSubscription: true };
+  }
+
+  return response;
 }
 
 export async function refresh(refreshToken, platform) {

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Role } from "../../../generated/prisma/client.js";
 import { authenticate, authorize } from "../../../middleware/authenticate.js";
+import { requireActiveBranchSubscription } from "../../../middleware/branchAdminSubscription.js";
 import { imageOnlyUpload } from "../../../middleware/upload.js";
 import {
     createOfferHandler,
@@ -14,6 +15,7 @@ const offersRouter = Router();
 const offerUploadField = imageOnlyUpload.fields([{ name: "image", maxCount: 1 }]);
 
 offersRouter.use(authenticate, authorize(Role.branch_admin));
+offersRouter.use(requireActiveBranchSubscription);
 
 offersRouter.post("/", offerUploadField, createOfferHandler);
 offersRouter.put("/:id", offerUploadField, updateOfferHandler);

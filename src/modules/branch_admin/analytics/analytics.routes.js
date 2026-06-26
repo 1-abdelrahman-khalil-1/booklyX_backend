@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Role } from "../../../generated/prisma/client.js";
 import { authenticate, authorize } from "../../../middleware/authenticate.js";
+import { requireActiveBranchSubscription } from "../../../middleware/branchAdminSubscription.js";
 import {
     getBranchDashboardStatsHandler,
     getRecentBookingsHandler,
@@ -12,16 +13,13 @@ import {
 
 const analyticsRouter = Router();
 
-analyticsRouter.get("/dashboard", authenticate, authorize(Role.branch_admin), getBranchDashboardStatsHandler);
-analyticsRouter.get("/staff-earnings", authenticate, authorize(Role.branch_admin), getStaffEarningsHandler);
-analyticsRouter.get("/revenue-chart", authenticate, authorize(Role.branch_admin), getRevenueChartDataHandler);
-analyticsRouter.get("/recent-bookings", authenticate, authorize(Role.branch_admin), getRecentBookingsHandler);
-analyticsRouter.get("/top-services", authenticate, authorize(Role.branch_admin), getTopServicesHandler);
-analyticsRouter.get(
-  "/recent-transactions",
-  authenticate,
-  authorize(Role.branch_admin),
-  getRecentTransactionsHandler,
-);
+analyticsRouter.use(authenticate, authorize(Role.branch_admin), requireActiveBranchSubscription);
+
+analyticsRouter.get("/dashboard", getBranchDashboardStatsHandler);
+analyticsRouter.get("/staff-earnings", getStaffEarningsHandler);
+analyticsRouter.get("/revenue-chart", getRevenueChartDataHandler);
+analyticsRouter.get("/recent-bookings", getRecentBookingsHandler);
+analyticsRouter.get("/top-services", getTopServicesHandler);
+analyticsRouter.get("/recent-transactions", getRecentTransactionsHandler);
 
 export default analyticsRouter;

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Role } from "../../../generated/prisma/client.js";
 import { authenticate, authorize } from "../../../middleware/authenticate.js";
+import { requireActiveBranchSubscription } from "../../../middleware/branchAdminSubscription.js";
 import { imageOnlyUpload } from "../../../middleware/upload.js";
 import {
     addServiceCategoryHandler,
@@ -8,41 +9,21 @@ import {
     deleteServiceHandler,
     getMyServiceCategoriesHandler,
     getMyServicesHandler,
-    updateServiceHandler,
     getServiceDetailsHandler,
+    updateServiceHandler,
 } from "./services.controller.js";
 
 const servicesRouter = Router();
 const serviceUploadField = imageOnlyUpload.fields([{ name: "image", maxCount: 1 }]);
 
-servicesRouter.get("/", authenticate, authorize(Role.branch_admin), getMyServicesHandler);
-servicesRouter.post(
-  "/",
-  authenticate,
-  authorize(Role.branch_admin),
-  serviceUploadField,
-  createServiceHandler,
-);
-servicesRouter.get(
-  "/categories",
-  authenticate,
-  authorize(Role.branch_admin),
-  getMyServiceCategoriesHandler,
-);
-servicesRouter.post(
-  "/categories",
-  authenticate,
-  authorize(Role.branch_admin),
-  addServiceCategoryHandler,
-);
-servicesRouter.get("/:id", authenticate, authorize(Role.branch_admin), getServiceDetailsHandler);
-servicesRouter.put(
-  "/:id",
-  authenticate,
-  authorize(Role.branch_admin),
-  serviceUploadField,
-  updateServiceHandler,
-);
-servicesRouter.delete("/:id", authenticate, authorize(Role.branch_admin), deleteServiceHandler);
+servicesRouter.use(authenticate, authorize(Role.branch_admin), requireActiveBranchSubscription);
+
+servicesRouter.get("/", getMyServicesHandler);
+servicesRouter.post("/", serviceUploadField, createServiceHandler);
+servicesRouter.get("/categories", getMyServiceCategoriesHandler);
+servicesRouter.post("/categories", addServiceCategoryHandler);
+servicesRouter.get("/:id", getServiceDetailsHandler);
+servicesRouter.put("/:id", serviceUploadField, updateServiceHandler);
+servicesRouter.delete("/:id", deleteServiceHandler);
 
 export default servicesRouter;

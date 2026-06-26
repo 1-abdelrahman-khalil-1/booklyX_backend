@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Role } from "../../../generated/prisma/client.js";
 import { authenticate, authorize } from "../../../middleware/authenticate.js";
+import { requireActiveBranchSubscription } from "../../../middleware/branchAdminSubscription.js";
 import {
     cancelAppointmentHandler,
     getAppointmentDetailsHandler,
@@ -9,13 +10,10 @@ import {
 
 const appointmentsRouter = Router();
 
-appointmentsRouter.get("/", authenticate, authorize(Role.branch_admin), listAppointmentsHandler);
-appointmentsRouter.get("/:id", authenticate, authorize(Role.branch_admin), getAppointmentDetailsHandler);
-appointmentsRouter.patch(
-  "/:id/cancel",
-  authenticate,
-  authorize(Role.branch_admin),
-  cancelAppointmentHandler,
-);
+appointmentsRouter.use(authenticate, authorize(Role.branch_admin), requireActiveBranchSubscription);
+
+appointmentsRouter.get("/", listAppointmentsHandler);
+appointmentsRouter.get("/:id", getAppointmentDetailsHandler);
+appointmentsRouter.patch("/:id/cancel", cancelAppointmentHandler);
 
 export default appointmentsRouter;

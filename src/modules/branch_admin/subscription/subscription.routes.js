@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Role } from "../../../generated/prisma/client.js";
 import { authenticate, authorize } from "../../../middleware/authenticate.js";
+import { requireActiveBranchSubscription } from "../../../middleware/branchAdminSubscription.js";
 import {
     activateSubscriptionHandler,
     cancelSubscriptionHandler,
@@ -16,8 +17,11 @@ subscriptionRouter.post(
   authorize(Role.branch_admin),
   activateSubscriptionHandler,
 );
-subscriptionRouter.post("/renew", authenticate, authorize(Role.branch_admin), renewSubscriptionHandler);
-subscriptionRouter.put("/:id", authenticate, authorize(Role.branch_admin), changeSubscriptionPlanHandler);
-subscriptionRouter.post("/cancel", authenticate, authorize(Role.branch_admin), cancelSubscriptionHandler);
+
+subscriptionRouter.use(authenticate, authorize(Role.branch_admin), requireActiveBranchSubscription);
+
+subscriptionRouter.post("/renew", renewSubscriptionHandler);
+subscriptionRouter.put("/:id", changeSubscriptionPlanHandler);
+subscriptionRouter.post("/cancel", cancelSubscriptionHandler);
 
 export default subscriptionRouter;

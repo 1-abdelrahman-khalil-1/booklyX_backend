@@ -6,7 +6,7 @@ import {
     it,
     jest,
 } from "@jest/globals";
-import { Role, UserStatus } from "../../../generated/prisma/client.js";
+import { BranchStatus, Platform, Role, UserStatus } from "../../../generated/prisma/client.js";
 jest.unstable_mockModule("../../../lib/prisma.js", () => ({
   default: {
     systemCounter: {
@@ -226,5 +226,79 @@ describe("Auth Service - login", () => {
     const result = await login(validLoginData, validPlatform);
 
     expect(result.user.profileImageUrl).toBe("https://example.com/client.png");
+  });
+
+  it("should include requiresSubscription for approved branch_admin accounts without active subscription", async () => {
+    const mockUser = {
+      id: 2,
+      email: "branch@example.com",
+      password: "hashed-password",
+      status: UserStatus.ACTIVE,
+      role: Role.branch_admin,
+      emailVerified: true,
+      phoneVerified: true,
+      branchAdmin: {
+        id: 20,
+        status: BranchStatus.APPROVED,
+        isSubscriptionActive: false,
+        plan: {
+          id: 1,
+          name: "Starter",
+          price: 100,
+          maxStaff: 5,
+          maxServices: 10,
+          loyaltyEnabled: true,
+          offersEnabled: true,
+        },
+      },
+    };
+
+    prisma.user.findUnique.mockResolvedValue(mockUser);
+    prisma.systemCounter.upsert.mockResolvedValue({ value: 6 });
+    bcrypt.compare.mockResolvedValue(true);
+    jwt.sign.mockReturnValue("mock-jwt-token");
+
+    const result = await login({ ...validLoginData, email: mockUser.email, role: Role.branch_admin }, Platform.WEB);
+
+    expect(result).toHaveProperty("requiresSubscription", true);
+    expect(result).toHaveProperty("token", "6|mock-jwt-token");
+    expect(result.user.role).toBe(Role.branch_admin);
+  });
+
+  it("should not include requiresSubscription for approved branch_admin accounts with active subscription", async () => {
+    const mockUser = {
+      id: 3,
+      email: "branch-active@example.com",
+      password: "hashed-password",
+      status: UserStatus.ACTIVE,
+      role: Role.branch_admin,
+      emailVerified: true,
+      phoneVerified: true,
+      branchAdmin: {
+        id: 30,
+        status: BranchStatus.APPROVED,
+        isSubscriptionActive: true,
+        plan: {
+          id: 1,
+          name: "Starter",
+          price: 100,
+          maxStaff: 5,
+          maxServices: 10,
+          loyaltyEnabled: true,
+          offersEnabled: true,
+        },
+      },
+    };
+
+    prisma.user.findUnique.mockResolvedValue(mockUser);
+    prisma.systemCounter.upsert.mockResolvedValue({ value: 7 });
+    bcrypt.compare.mockResolvedValue(true);
+    jwt.sign.mockReturnValue("mock-jwt-token");
+
+    const result = await login({ ...validLoginData, email: mockUser.email, role: Role.branch_admin }, Platform.WEB);
+
+    expect(result).not.toHaveProperty("requiresSubscription");
+    expect(result).toHaveProperty("token", "7|mock-jwt-token");
+    expect(result.user.role).toBe(Role.branch_admin);
   });
 });

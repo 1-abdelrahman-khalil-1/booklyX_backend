@@ -690,7 +690,8 @@ components:
 
     StaffRecentService:
       type: object
-      required: [appointment_id, client_name, service_name, price, commission, time]
+      required:
+        [appointment_id, client_name, service_name, price, commission, time]
       properties:
         appointment_id:
           type: integer
@@ -2109,16 +2110,7 @@ components:
 
     CreateStaffRequestJson:
       type: object
-      required:
-        [
-          name,
-          email,
-          phone,
-          password,
-          age,
-          startDate,
-          serviceIds,
-        ]
+      required: [name, email, phone, password, age, startDate, serviceIds]
       properties:
         name:
           type: string
@@ -2179,16 +2171,7 @@ components:
 
     CreateStaffRequestMultipart:
       type: object
-      required:
-        [
-          name,
-          email,
-          phone,
-          password,
-          age,
-          startDate,
-          serviceIds,
-        ]
+      required: [name, email, phone, password, age, startDate, serviceIds]
       properties:
         name:
           type: string
@@ -2398,6 +2381,9 @@ components:
     CreateServiceRequestMultipart:
       type: object
       required: [name, description, price, durationMinutes]
+      anyOf:
+        - required: [categoryId]
+        - required: [categoryName]
       properties:
         name:
           type: string
@@ -7804,12 +7790,6 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateServiceRequestJson"
-            examples:
-              default:
-                $ref: "#/components/examples/CreateServiceRequest"
           multipart/form-data:
             schema:
               $ref: "#/components/schemas/CreateServiceRequestMultipart"
