@@ -4,16 +4,16 @@ import { BranchStatus, Role, UserStatus, VerificationType } from "../../../gener
 import prisma from "../../../lib/prisma.js";
 import { isPlatformAllowedForRole } from "../auth.permissions.js";
 import {
-    AuthValidationError,
-    BranchAdminNotApprovedError,
-    EmailNotVerifiedError,
-    InactiveUserError,
-    InvalidCredentialsError,
-    InvalidTokenError,
-    PhoneNotVerifiedError,
-    PlatformAccessDeniedError,
-    TokenExpiredError,
-    UserNotFound,
+  AuthValidationError,
+  BranchAdminNotApprovedError,
+  EmailNotVerifiedError,
+  InactiveUserError,
+  InvalidCredentialsError,
+  InvalidTokenError,
+  PhoneNotVerifiedError,
+  PlatformAccessDeniedError,
+  TokenExpiredError,
+  UserNotFound,
 } from "../errors.js";
 import * as helpers from "../helpers.js";
 import { ensureBranchAdminUserAccount } from "../../branch_admin/helpers.js";
@@ -82,7 +82,7 @@ export async function login(data, platform) {
 
   if (role === Role.branch_admin && branchAdminRecord?.status === BranchStatus.APPROVED && (!user || !user.branchAdmin)) {
     await prisma.$transaction(async (tx) => {
-      await ensureBranchAdminUserAccount(branchAdminRecord.id,  tx, user?.id);
+      await ensureBranchAdminUserAccount(branchAdminRecord.id, tx, user?.id);
     });
 
     user = await prisma.user.findUnique({
@@ -114,6 +114,8 @@ export async function login(data, platform) {
 
   if (user.role === Role.branch_admin && !user.branchAdmin?.isSubscriptionActive) {
     return { ...response, requiresSubscription: true };
+  } else if (user.role === Role.branch_admin && user.branchAdmin?.isSubscriptionActive ) {
+    return { ...response, requiresSubscription: false };
   }
 
   return response;
