@@ -95,7 +95,7 @@ export async function authenticate(req, res, next) {
     });
 
     if (!user || user.status !== UserStatus.ACTIVE) {
-      errorResponse(res, 401, t(tr.AUTH_REQUIRED, lang));
+      errorResponse(res, 404, t(tr.AUTH_REQUIRED, lang));
       return;
     }
 
@@ -126,7 +126,7 @@ export function authorize(...allowedRoles) {
     const lang = getLanguage(req);
 
     if (!req.user) {
-      errorResponse(res, 401, t(tr.AUTH_REQUIRED, lang));
+      errorResponse(res, 404, t(tr.AUTH_REQUIRED, lang));
       return;
     }
 
