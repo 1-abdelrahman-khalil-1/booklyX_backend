@@ -148,7 +148,7 @@ export async function claimOffer(userId, offerId) {
 
 export async function getClaimedOffers(userId, query) {
   const client = await getClientByUserId(userId);
- const { service_id: serviceId, status } = query;
+  const { service_id: serviceId, status } = query;
   const where = { clientId: client.id };
   const now = new Date();
 
@@ -169,9 +169,20 @@ export async function getClaimedOffers(userId, query) {
       ],
     };
   }
-
   const claimedOffers = await prisma.claimedOffer.findMany({
-    where,
+    where: {
+      ...where,
+      offer: {
+        services: {
+          some: {
+            serviceId,
+            service: {
+              status: ServiceApprovalStatus.APPROVED,
+            },
+          },
+        },
+      },
+    },
     include: {
       offer: {
         include: {
@@ -180,21 +191,14 @@ export async function getClaimedOffers(userId, query) {
               id: true,
               businessName: true,
               logoUrl: true,
-              services: {
-                where: {
-                  id: serviceId,
-                  status: ServiceApprovalStatus.APPROVED,
-                },
-                select: {
-                  id: true,
-                },
-              }
             },
           },
         },
       },
     },
-    orderBy: { claimedAt: "desc" },
+    orderBy: {
+      claimedAt: "desc",
+    },
   });
 
   return claimedOffers.map((co) => ({
