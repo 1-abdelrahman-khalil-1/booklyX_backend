@@ -5523,8 +5523,11 @@ paths:
             type: string
             enum: [unused, used, expired]
             example: unused
-        - $ref: "#/components/parameters/AcceptLanguageHeader"
-        - $ref: "#/components/parameters/PlatformHeader"
+        - name: service_id
+          in: query
+          required: false
+          schema:
+            type: integer
       responses:
         "200":
           description: Claimed offers retrieved successfully

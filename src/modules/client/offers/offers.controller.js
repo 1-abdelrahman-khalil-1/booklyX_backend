@@ -7,7 +7,7 @@ import { validateClientInput, getClaimedOffersQuerySchema } from "../client.vali
 
 export const getValidOffersHandler = asyncHandler(async (req, res) => {
   const lang = getLanguage(req);
-  const result = await getValidOffers(req.user.sub);
+  const result = await getValidOffers(req.user.sub );
   successResponse(res, 200, t(tr.OFFERS_RETRIEVED_SUCCESSFULLY, lang), result);
 });
 

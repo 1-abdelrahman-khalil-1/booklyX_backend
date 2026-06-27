@@ -85,6 +85,7 @@ export const updateClientProfileSchema = z.object({
 });
 
 export const getClaimedOffersQuerySchema = z.object({
+  service_id: zId.optional(),
   status: z.enum(["unused", "used", "expired", "all"], {
     error: tr.INVALID_ENUM_VALUE,
   }).optional().default("unused"),

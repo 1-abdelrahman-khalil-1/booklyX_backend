@@ -1,17 +1,17 @@
-import prisma from "../../../lib/prisma.js";
-import { getClientByUserId } from "../helpers.js";
 import {
+  BranchStatus,
   OfferDiscountType,
   ServiceApprovalStatus,
-  BranchStatus,
 } from "../../../generated/prisma/client.js";
+import prisma from "../../../lib/prisma.js";
 import {
   OfferAlreadyClaimedError,
-  OfferNotFoundError,
-  OfferNotAvailableError,
   OfferExpiredOrExhaustedError,
+  OfferNotAvailableError,
+  OfferNotFoundError,
   ServiceNotFoundError,
 } from "../errors.js";
+import { getClientByUserId } from "../helpers.js";
 
 export async function getValidOffers(userId) {
   const client = await getClientByUserId(userId);
@@ -146,10 +146,9 @@ export async function claimOffer(userId, offerId) {
   };
 }
 
-export async function getClaimedOffers(userId, query = {}) {
+export async function getClaimedOffers(userId, query) {
   const client = await getClientByUserId(userId);
-  const { status } = query;
-
+ const { service_id: serviceId, status } = query;
   const where = { clientId: client.id };
   const now = new Date();
 
@@ -181,6 +180,15 @@ export async function getClaimedOffers(userId, query = {}) {
               id: true,
               businessName: true,
               logoUrl: true,
+              services: {
+                where: {
+                  id: serviceId,
+                  status: ServiceApprovalStatus.APPROVED,
+                },
+                select: {
+                  id: true,
+                },
+              }
             },
           },
         },
